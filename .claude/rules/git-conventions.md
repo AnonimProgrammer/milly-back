@@ -1,0 +1,48 @@
+# Git branch and commit conventions
+
+Apply these rules whenever suggesting branch names or commit messages for milly-back.
+
+## Branch naming
+
+**Repo-wide or cross-cutting work**
+
+`{type}/{feature-title}`
+
+**Module-scoped work**
+
+`{type}/{module-name}/{feature-title}`
+
+**Allowed types:** `feat`, `fix`, `refactor`, `docs`
+
+- Use lowercase kebab-case for every segment after the type.
+- Module names match backend bounded contexts: `auth`, `venue`, `table`, `menu`, `order`, `billing`, `config`, `common`.
+
+**Examples**
+
+- `feat/auth/google-oauth2-provider`
+- `fix/billing/update-payment-validation`
+- `refactor/order/extract-status-transitions`
+- `docs/security-flow-venue-authorization`
+
+## Commit messages
+
+`{type}: {Commit title}`
+
+**Allowed types:** `feat`, `fix`, `refactor`, `docs`
+
+- Prefix with type, then colon and a single space.
+- Write a clear, concise title (imperative or sentence case).
+- Optional body for extra context.
+
+**Examples**
+
+- `feat: Google OAuth2 provider integrated`
+- `fix: Payment update to avoid duplicate charges`
+- `refactor: Extract order status machine into domain service`
+- `docs: Document WebSocket ticket flow`
+
+## Agent behavior
+
+- Use only the allowed types.
+- Prefer the module-scoped branch form when work is confined to one module.
+- Do not create branches or commits until the user asks.
