@@ -51,3 +51,20 @@ CREATE TABLE user_auth (
     CONSTRAINT fk_user_auth_user FOREIGN KEY (user_id) REFERENCES users (id),
     CONSTRAINT fk_user_auth_provider FOREIGN KEY (provider_id) REFERENCES auth_providers (id)
 );
+
+CREATE INDEX idx_user_auth_user_id ON user_auth (user_id);
+
+CREATE TRIGGER trg_user_auth_updated_at
+    BEFORE UPDATE ON user_auth
+    FOR EACH ROW
+    EXECUTE FUNCTION set_updated_at();
+
+CREATE TABLE user_roles (
+    user_id UUID NOT NULL,
+    role_id UUID NOT NULL,
+    PRIMARY KEY (user_id, role_id),
+    CONSTRAINT fk_user_roles_user FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT fk_user_roles_role FOREIGN KEY (role_id) REFERENCES roles (id)
+);
+
+CREATE INDEX idx_user_roles_role_id ON user_roles (role_id);
