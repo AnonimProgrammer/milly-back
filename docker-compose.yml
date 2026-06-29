@@ -1,0 +1,43 @@
+services:
+  app:
+    build: .
+    container_name: milly-back
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    env_file:
+      - .env
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DATABASE_URL: jdbc:postgresql://db:5432/milly
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - milly-network
+
+  db:
+    image: postgres:16-alpine
+    container_name: milly-db
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME:-milly}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-milly}
+      POSTGRES_DB: milly
+    volumes:
+      - milly-db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - milly-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U milly -d milly"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  milly-network:
+    driver: bridge
+
+volumes:
+  milly-db-data:
