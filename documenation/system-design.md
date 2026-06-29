@@ -19,6 +19,9 @@ For WebSocket details see [web-socket-flow.md](./web-socket-flow.md). For login,
 3. [Pages and routes](#pages-and-routes)
 4. [Communication model](#communication-model)
 5. [Persistence](#persistence)
+6. [Backend modules](#backend-modules)
+7. [Frontend modules](#frontend-modules)
+8. [Client flows](#client-flows)
 
 ---
 
@@ -221,3 +224,161 @@ See [web-socket-flow.md](./web-socket-flow.md) for ticket exchange and subscript
 | **Ephemeral cache** | Caffeine (in-memory) | WebSocket handshake tickets; optional hot path for invitation redemption | Short-lived, single-use |
 
 PostgreSQL holds all business and identity data. Caffeine is not a domain entity cache — it holds short-lived tokens consumed at handshake or redemption (same pattern as WebSocket tickets).
+
+---
+
+## Backend modules
+
+Backend follows **Clean Architecture** with one module per bounded context. Module names are **singular**.
+
+```
+com.milly/
+├── config/                         # Global: Security, WebSocket broker, Jackson
+├── common/                         # Shared kernel: IDs, Money, errors
+├── auth/                           # Global user identity, login, JWT, WS tickets
+├── venue/                          # Venues, memberships, venue roles, invitations
+├── table/
+├── menu/
+├── order/
+└── billing/
+```
+
+### Per-module structure
+
+Each feature module follows the same layered layout (not every layer is required in every module):
+
+```
+{module}/
+├── domain/
+│   ├── entity/
+│   ├── value-object/
+│   └── event/
+├── application/
+│   ├── port/inbound/
+│   ├── port/outbound/
+│   ├── usecase/
+│   └── dto/
+└── infrastructure/
+    ├── adapter/inbound/http/
+    ├── adapter/outbound/persistence/
+    ├── adapter/outbound/ws/
+    └── config/
+```
+
+### Module responsibilities
+
+| Module | Owns |
+|--------|------|
+| **common** | Shared value objects, domain exceptions |
+| **auth** | Global user sign-up/sign-in (password, OAuth), JWT cookies, `POST /api/v1/ws-ticket`, Caffeine ticket store |
+| **venue** | Venue CRUD, user–venue memberships, venue roles (Manager, Waiter), invitation link/code generation and redemption |
+| **table** | Tables within a venue (QR targets) |
+| **menu** | Menu catalog per venue |
+| **order** | Order lifecycle per venue, STOMP order events |
+| **billing** | Payments per venue, STOMP payment events |
+
+All venue-bound modules scope data and operations by `venueId`. Requests without a valid membership and role are rejected.
+
+---
+
+## Frontend modules
+
+```
+src/
+├── app/                            # Next.js routes only
+└── modules/
+    ├── shared/                     # API client, WS client, store, UI primitives
+    ├── auth/                       # Login, sign-up, OAuth, session
+    ├── venue/                      # Register venue, join venue, my venues, invitations UI
+    ├── tables/
+    ├── menu/
+    ├── orders/
+    ├── billing/
+    ├── customer/                   # UI only — /table/{tableId} flow
+    └── staff/                      # UI only — /venue/{venueId}/staff shell
+```
+
+### Module responsibilities
+
+| Module | Maps to backend | Role |
+|--------|-----------------|------|
+| **shared** | common + config | REST client, STOMP client, app store, shared UI |
+| **auth** | auth | Login, sign-up, OAuth, global session |
+| **venue** | venue | Register venue, join venue, my venues list, paste invitation |
+| **tables** | table | Table CRUD, QR generation (Manager) |
+| **menu** | menu | Menu browse (customer) and CRUD (Manager) |
+| **orders** | order | Order placement, staff kanban, pending view |
+| **billing** | billing | Bill view, payments, payment progress |
+| **customer** | — | State machine: menu → pending → bill |
+| **staff** | — | Venue-scoped portal; tabs filtered by venue role |
+
+### Routes
+
+| Route | Entry | Modules |
+|-------|-------|---------|
+| `/` | Home — Join / Register venue | — |
+| `/login` | Auth | `auth` |
+| `/register-venue` | Create venue | `auth`, `venue` |
+| `/join-venue` | My venues + join via invitation | `auth`, `venue` |
+| `/venue/[venueId]/staff` | Staff dashboard | `staff`, `orders`, `tables`, `menu`, `billing` |
+| `/table/[tableId]` | Customer flow | `customer`, `menu`, `orders`, `billing` |
+
+---
+
+## Client flows
+
+### Onboarding (register venue)
+
+```mermaid
+flowchart LR
+  Home[/ Home] -->|Register Venue| Login[/login]
+  Login --> Register[/register-venue]
+  Register -->|Create venue| API[POST venue]
+  API --> Role[Assign Manager role]
+  Role --> Staff[/venue/id/staff]
+```
+
+User signs in globally, fills venue details, backend creates venue + Manager membership, redirects to staff portal.
+
+### Onboarding (join venue)
+
+```mermaid
+flowchart LR
+  Home[/ Home] -->|Join Venue| Login[/login]
+  Login --> Join[/join-venue]
+  Join -->|Paste invitation| API[Redeem invitation]
+  API --> Role[Assign venue role]
+  Role --> Staff[/venue/id/staff]
+```
+
+Invitation is single-use and time-limited (same idea as WebSocket tickets). Backend assigns Waiter or Manager as configured when the invitation was created.
+
+### Staff (inside a venue)
+
+```mermaid
+flowchart LR
+  Page[/venue/id/staff] --> Check[Backend: membership + role]
+  Check -->|403| Block[Access restricted]
+  Check -->|OK| Cookie[access-token cookie]
+  Cookie --> REST[Venue-scoped REST]
+  Cookie --> Ticket[POST /api/v1/ws-ticket]
+  Ticket --> WS[STOMP /ws?ticket=...]
+  WS --> Sub[SUBSCRIBE /topic/venue/id/staff]
+```
+
+Waiter sees orders only. Manager sees orders, menu, tables, QR, invitations. Backend enforces on every call regardless of UI state.
+
+### Customer
+
+```mermaid
+flowchart LR
+  QR[Scan QR] --> Page[/table/tableId]
+  Page --> REST[Public REST]
+  Page --> WS[STOMP /ws]
+  WS --> Sub[SUBSCRIBE /topic/table/id]
+  REST --> PG[(PostgreSQL)]
+  REST --> Push[Publish events]
+  Push --> Sub
+```
+
+Customer needs no login. REST and WebSocket stay scoped to the table (and its venue on the backend).
