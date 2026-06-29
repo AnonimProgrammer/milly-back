@@ -21,6 +21,11 @@ Describes how Milly separates **system identity** from **venue access**: global 
 7. [Token refresh flow](#token-refresh-flow)
 8. [Request authorization flow](#request-authorization-flow)
 9. [Venue-scoped authorization](#venue-scoped-authorization)
+10. [Logout flow](#logout-flow)
+11. [WebSocket security (summary)](#websocket-security-summary)
+12. [Concrete endpoint examples](#concrete-endpoint-examples)
+13. [Security notes](#security-notes)
+14. [Environment requirements](#environment-requirements)
 
 ---
 
@@ -260,3 +265,177 @@ flowchart LR
 | 2 | User has venue membership with required role for this `venueId` | **403 Forbidden** |
 
 Minimum venue role per action is defined in [Roles — definitions and assignment](#roles--definitions-and-assignment). The frontend may hide UI by venue role, but the **backend always enforces** permissions.
+
+---
+
+## Logout flow
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant API as AuthController
+    participant Session as SessionStore
+    participant WS as WebSocket Client
+
+    Client->>API: POST /api/v1/auth/logout<br/>Cookie: access-token, refresh-token
+    API->>Session: Invalidate refresh token / session record
+    API-->>Client: 200 OK (Set-Cookie: clear both cookies)
+    Client->>WS: Close STOMP connection
+```
+
+On logout:
+
+1. Backend invalidates the server-side session (refresh token revocation).
+2. Backend clears `access-token` and `refresh-token` cookies (`Max-Age=0`).
+3. Frontend closes any active WebSocket connection.
+
+---
+
+## WebSocket security (summary)
+
+REST cookie auth does not carry reliably to WebSocket handshakes. Staff real-time connections use a **single-use ticket** exchanged from the authenticated session:
+
+1. Staff calls `POST /api/v1/ws-ticket` — server reads and validates the `access-token` cookie.
+2. Server returns a short-lived ticket UUID (30 s TTL, single use, stored in Caffeine).
+3. Client connects: `wss://{host}/ws?ticket={uuid}`.
+4. On handshake the ticket is claimed and bound to `userId`.
+5. A subscription interceptor enforces venue-scoped topics at `SUBSCRIBE` time.
+
+Customers connect **anonymously** to `/ws` and may subscribe only to `/topic/table/{tableId}`.
+
+Full sequence diagrams, failure modes, and subscription guard rules are in [web-socket-flow.md](./web-socket-flow.md).
+
+---
+
+## Concrete endpoint examples
+
+### 1) Sign-up via Continue (new user, password)
+
+`POST /api/v1/auth/continue`
+
+```json
+{
+  "provider": "PASSWORD",
+  "credentials": {
+    "email": "staff@example.com",
+    "password": "securepassword"
+  },
+  "profile": {
+    "firstName": "Alex",
+    "lastName": "Rivera",
+    "email": "staff@example.com"
+  }
+}
+```
+
+Typical response:
+
+```http
+HTTP/1.1 200 OK
+Set-Cookie: access-token=...; HttpOnly; Secure; SameSite=Lax; Path=/
+Set-Cookie: refresh-token=...; HttpOnly; Secure; SameSite=Lax; Path=/
+
+{"newUser": true}
+```
+
+### 2) Login via Continue (existing user, password)
+
+`POST /api/v1/auth/continue`
+
+```json
+{
+  "provider": "PASSWORD",
+  "credentials": {
+    "email": "staff@example.com",
+    "password": "securepassword"
+  }
+}
+```
+
+Typical response:
+
+```http
+HTTP/1.1 200 OK
+Set-Cookie: access-token=...; HttpOnly; Secure; SameSite=Lax; Path=/
+Set-Cookie: refresh-token=...; HttpOnly; Secure; SameSite=Lax; Path=/
+
+{"newUser": false}
+```
+
+### 3) Sign-up / login via Google
+
+`POST /api/v1/auth/continue`
+
+```json
+{
+  "provider": "GOOGLE",
+  "credentials": {
+    "idToken": "<google-id-token>"
+  },
+  "profile": {
+    "firstName": "Alex",
+    "lastName": "Rivera",
+    "email": "staff@example.com"
+  }
+}
+```
+
+`profile` is required only on first sign-up. Response shape is the same as password flow (cookies set, `newUser` flag in body).
+
+### 4) Refresh session
+
+`POST /api/v1/auth/refresh`
+
+No request body. Browser sends `refresh-token` cookie automatically.
+
+```http
+HTTP/1.1 200 OK
+Set-Cookie: access-token=...; HttpOnly; Secure; SameSite=Lax; Path=/
+Set-Cookie: refresh-token=...; HttpOnly; Secure; SameSite=Lax; Path=/
+```
+
+### 5) Calling a venue-scoped staff endpoint
+
+```http
+GET /api/v1/venues/{venueId}/orders
+Cookie: access-token=<jwt>
+```
+
+| Outcome | Response |
+|---------|----------|
+| No / invalid cookie | `401 Unauthorized` |
+| Valid session, no membership at venue | `403 Forbidden` |
+| Valid session, Waiter or Manager at venue | `200 OK` + order data |
+
+### 6) Calling a Manager-only endpoint as Waiter
+
+```http
+POST /api/v1/venues/{venueId}/menu/items
+Cookie: access-token=<jwt>
+```
+
+Waiter at this venue → `403 Forbidden`. Manager at this venue → `201 Created`.
+
+---
+
+## Security notes
+
+- **Stateless JWT** with server-side refresh-token revocation on logout (`SessionCreationPolicy.STATELESS` for access validation).
+- **HttpOnly cookies** protect tokens from XSS; `Secure` and `SameSite` reduce CSRF and interception risk.
+- **CSRF**: cookie-based auth requires CSRF protection on mutating endpoints (e.g. double-submit cookie or SameSite=Strict where compatible).
+- **Password provider** accepts `email` (or `username`) + `password` in credentials; passwords hashed with BCrypt before storage.
+- **Google provider** requires a valid ID token with matching audience and verified email.
+- **Apple provider** (when enabled) validates Apple identity tokens per Apple's JWKS.
+- **Customer routes** (`/table/{tableId}`) remain fully public; security relies on table-scoped REST and WebSocket subscription guards (see [web-socket-flow.md](./web-socket-flow.md)).
+
+---
+
+## Environment requirements
+
+| Variable | Required | Default | Purpose |
+|----------|----------|---------|---------|
+| `JWT_SECRET` | Yes | — | HMAC signing key (use a strong random secret, e.g. 64 chars) |
+| `JWT_ACCESS_TTL_SECONDS` | No | `900` | Access token lifetime |
+| `JWT_REFRESH_TTL_SECONDS` | No | `1209600` | Refresh token lifetime (14 days) |
+| `GOOGLE_CLIENT_ID` | For Google auth | — | Google ID token audience validation |
+| `APPLE_CLIENT_ID` | For Apple auth | — | Apple identity token validation |
