@@ -29,3 +29,25 @@ CREATE TRIGGER trg_users_updated_at
     BEFORE UPDATE ON users
     FOR EACH ROW
     EXECUTE FUNCTION set_updated_at();
+
+CREATE TABLE roles (
+    id   UUID NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    CONSTRAINT uk_roles_name UNIQUE (name)
+);
+
+CREATE TABLE user_auth (
+    id               UUID        NOT NULL PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id          UUID        NOT NULL,
+    provider_id      UUID        NOT NULL,
+    provider_user_id TEXT,
+    email            TEXT,
+    password_hash    TEXT,
+    metadata         JSONB,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT uk_user_auth_provider_email UNIQUE (provider_id, email),
+    CONSTRAINT uk_user_auth_provider_user UNIQUE (provider_id, provider_user_id),
+    CONSTRAINT fk_user_auth_user FOREIGN KEY (user_id) REFERENCES users (id),
+    CONSTRAINT fk_user_auth_provider FOREIGN KEY (provider_id) REFERENCES auth_providers (id)
+);
