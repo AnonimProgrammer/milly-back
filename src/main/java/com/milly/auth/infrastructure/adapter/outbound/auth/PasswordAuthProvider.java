@@ -7,21 +7,18 @@ import com.milly.auth.domain.entity.UserAuthEntity;
 import com.milly.auth.domain.valueobject.AuthProviderType;
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserAuthJpaRepository;
 import com.milly.common.exception.InvalidCredentialsException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 public class PasswordAuthProvider implements AuthProvider {
 
     private final UserAuthJpaRepository userAuthRepository;
     private final PasswordEncoder passwordEncoder;
-
-    public PasswordAuthProvider(UserAuthJpaRepository userAuthRepository, PasswordEncoder passwordEncoder) {
-        this.userAuthRepository = userAuthRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     @Override
     public AuthProviderType getType() {
