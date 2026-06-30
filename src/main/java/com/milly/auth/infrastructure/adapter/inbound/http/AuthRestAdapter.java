@@ -2,29 +2,34 @@ package com.milly.auth.infrastructure.adapter.inbound.http;
 
 import com.milly.auth.application.dto.ContinueAuthRequest;
 import com.milly.auth.application.dto.ContinueAuthResponse;
+import com.milly.auth.application.dto.CurrentUserResponse;
+
 import com.milly.auth.application.usecase.ContinueAuthUseCase;
+import com.milly.auth.application.usecase.GetCurrentUserUseCase;
 import com.milly.auth.infrastructure.adapter.outbound.security.AuthCookieWriter;
 import com.milly.common.web.ApiResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthRestAdapter {
 
     private final ContinueAuthUseCase continueAuthUseCase;
+    private final GetCurrentUserUseCase getCurrentUserUseCase;
     private final boolean secureCookies;
 
     public AuthRestAdapter(
-            ContinueAuthUseCase continueAuthUseCase,
+            ContinueAuthUseCase continueAuthUseCase, GetCurrentUserUseCase getCurrentUserUseCase,
             @Value("${auth.cookies.secure:false}") boolean secureCookies) {
         this.continueAuthUseCase = continueAuthUseCase;
+        this.getCurrentUserUseCase = getCurrentUserUseCase;
         this.secureCookies = secureCookies;
     }
 
@@ -38,7 +43,19 @@ public class AuthRestAdapter {
                 new ContinueAuthResponseBody(result.newUser()),
                 "Authentication successful."));
     }
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<CurrentUserResponse>> getCurrentUser(
+            @AuthenticationPrincipal UUID userId) {
 
+        CurrentUserResponse response = getCurrentUserUseCase.execute(userId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        response,
+                        "Current user retrieved successfully."
+                )
+        );
+    }
     public record ContinueAuthResponseBody(boolean newUser) {
     }
 }
