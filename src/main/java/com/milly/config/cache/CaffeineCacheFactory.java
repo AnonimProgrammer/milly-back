@@ -2,17 +2,15 @@ package com.milly.config.cache;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import lombok.RequiredArgsConstructor;
 import org.springframework.cache.caffeine.CaffeineCache;
 
 import java.time.Duration;
 
+@RequiredArgsConstructor
 public class CaffeineCacheFactory {
 
-    private final long defaultMaximumSize;
-
-    public CaffeineCacheFactory(CacheProperties properties) {
-        this.defaultMaximumSize = properties.defaultMaximumSize();
-    }
+    private final CacheProperties properties;
 
     public CaffeineCache buildSpringCache(String name, CacheSpec spec) {
         return new CaffeineCache(name, buildNativeCache(spec));
@@ -30,6 +28,6 @@ public class CaffeineCacheFactory {
     }
 
     public CacheSpec specWithDefaultMaxSize(Duration expireAfterWrite) {
-        return CacheSpec.of(expireAfterWrite, defaultMaximumSize);
+        return CacheSpec.of(expireAfterWrite, properties.defaultMaximumSize());
     }
 }
