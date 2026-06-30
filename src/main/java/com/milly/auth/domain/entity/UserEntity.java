@@ -55,4 +55,18 @@ public class UserEntity {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    public static UserEntity createActive(
+            String firstName,
+            String lastName,
+            String email,
+            LocalDate birthDate) {
+        UserEntity user = new UserEntity();
+        user.setFirstName(firstName);
+        user.setLastName(lastName);
+        user.setEmail(email);
+        user.setBirthDate(birthDate);
+        user.setStatus(UserStatus.ACTIVE);
+        return user;
+    }
 }

@@ -53,4 +53,19 @@ public class UserAuthEntity {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    public static UserAuthEntity create(
+            UUID userId,
+            UUID providerId,
+            String providerUserId,
+            String email,
+            String passwordHash) {
+        UserAuthEntity userAuth = new UserAuthEntity();
+        userAuth.setUserId(userId);
+        userAuth.setProviderId(providerId);
+        userAuth.setProviderUserId(providerUserId);
+        userAuth.setEmail(email);
+        userAuth.setPasswordHash(passwordHash);
+        return userAuth;
+    }
 }
