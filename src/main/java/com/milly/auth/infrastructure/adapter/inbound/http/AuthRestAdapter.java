@@ -8,6 +8,7 @@ import com.milly.auth.application.dto.CurrentUserResponse;
 import com.milly.auth.application.usecase.ContinueAuthUseCase;
 import com.milly.auth.application.usecase.GetCurrentUserUseCase;
 import com.milly.auth.application.dto.RefreshSessionResponse;
+import com.milly.auth.application.usecase.LogoutUseCase;
 import com.milly.auth.application.usecase.RefreshSessionUseCase;
 import com.milly.auth.infrastructure.adapter.outbound.security.AuthCookieWriter;
 import com.milly.common.web.ApiResponse;
@@ -29,6 +30,7 @@ public class AuthRestAdapter {
 
     private final ContinueAuthUseCase continueAuthUseCase;
     private final GetCurrentUserUseCase getCurrentUserUseCase;
+    private final LogoutUseCase logoutUseCase;
     private final RefreshSessionUseCase refreshSessionUseCase;
 
     @Value("${auth.cookies.secure:false}")
@@ -55,6 +57,17 @@ public class AuthRestAdapter {
                         "Current user retrieved successfully."
                 )
         );
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponse<Void>> logout(
+            HttpServletRequest request,
+            HttpServletResponse response) {
+        String refreshToken = AuthCookieWriter.readCookie(request, AuthCookieWriter.REFRESH_TOKEN_COOKIE)
+                .orElse(null);
+        logoutUseCase.execute(refreshToken);
+        AuthCookieWriter.clearAuthCookies(response, secureCookies);
+        return ResponseEntity.ok(ApiResponse.success(null, "Logged out."));
     }
 
     @PostMapping("/refresh")
