@@ -1,6 +1,7 @@
 package com.milly.auth.infrastructure.adapter.outbound.auth;
 
 import com.milly.auth.application.model.ExternalIdentity;
+import com.milly.auth.application.port.outbound.AuthProvider;
 import com.milly.auth.domain.valueobject.AuthProviderType;
 import com.milly.auth.infrastructure.config.AuthProperties;
 import com.milly.auth.domain.Credentials;
@@ -23,7 +24,7 @@ import java.text.ParseException;
 import java.util.Map;
 
 @Component
-public class AppleAuthProvider {
+public class AppleAuthProvider implements AuthProvider {
 
     private static final URI APPLE_JWKS_URI = URI.create("https://appleid.apple.com/auth/keys");
     private static final String APPLE_ISSUER = "https://appleid.apple.com";
@@ -35,6 +36,12 @@ public class AppleAuthProvider {
         this.clientId = authProperties.apple().clientId();
     }
 
+    @Override
+    public AuthProviderType getType() {
+        return AuthProviderType.APPLE;
+    }
+
+    @Override
     public ExternalIdentity authenticate(Map<String, Object> credentials) {
         if (clientId == null || clientId.isBlank()) {
             throw new UnsupportedOperationException("Apple authentication is not configured.");
