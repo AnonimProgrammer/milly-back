@@ -23,6 +23,14 @@ public record AuthProperties(
             long accessTtlSeconds,
             long refreshTtlSeconds
     ) {
+        public Jwt {
+            if (accessTtlSeconds <= 0) {
+                accessTtlSeconds = 900;
+            }
+            if (refreshTtlSeconds <= 0) {
+                refreshTtlSeconds = 1_209_600;
+            }
+        }
     }
 
     public record Google(String clientId) {
