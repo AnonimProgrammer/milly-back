@@ -27,6 +27,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-webmvc'
     implementation 'org.springframework.boot:spring-boot-starter-json'
     implementation 'org.springframework.boot:spring-boot-starter-websocket'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.github.ben-manes.caffeine:caffeine'
     implementation 'org.flywaydb:flyway-database-postgresql'
     implementation 'com.github.f4b6a3:ulid-creator:5.2.4'
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
