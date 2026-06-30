@@ -5,7 +5,6 @@ import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,7 +23,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String AUTH_ERROR_MESSAGE_ATTRIBUTE = "authErrorMessage";
     private static final String MISSING_AUTH_DETAILS_MESSAGE = "No authentication details were provided.";
-    private static final String INVALID_OR_EXPIRED_TOKEN_MESSAGE = "JWT token is expired or invalid.";
+    private static final String INVALID_OR_EXPIRED_TOKEN_MESSAGE = JwtTokenService.INVALID_TOKEN_MESSAGE;
 
     private final JwtTokenService jwtTokenService;
 
@@ -37,7 +36,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
-        Optional<String> accessToken = extractAccessToken(request);
+        Optional<String> accessToken = AuthCookieWriter.readCookie(request, AuthCookieWriter.ACCESS_TOKEN_COOKIE);
         if (accessToken.isEmpty()) {
             request.setAttribute(AUTH_ERROR_MESSAGE_ATTRIBUTE, MISSING_AUTH_DETAILS_MESSAGE);
             filterChain.doFilter(request, response);
@@ -52,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        Claims claims = jwtTokenService.parseAccessToken(token);
+        Claims claims = jwtTokenService.parseToken(token, false);
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 jwtTokenService.extractUserId(claims), null, extractAuthorities(claims));
         SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -70,20 +69,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 .map(String.class::cast)
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                 .toList();
-    }
-
-    private Optional<String> extractAccessToken(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) {
-            return Optional.empty();
-        }
-        for (Cookie cookie : cookies) {
-            if (AuthCookieWriter.ACCESS_TOKEN_COOKIE.equals(cookie.getName())
-                    && cookie.getValue() != null
-                    && !cookie.getValue().isBlank()) {
-                return Optional.of(cookie.getValue());
-            }
-        }
-        return Optional.empty();
     }
 }

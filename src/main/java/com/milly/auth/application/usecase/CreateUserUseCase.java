@@ -1,7 +1,7 @@
 package com.milly.auth.application.usecase;
 
 import com.milly.auth.application.dto.ContinueAuthRequest;
-import com.milly.auth.application.model.ExternalIdentity;
+import com.milly.auth.domain.model.ExternalIdentity;
 import com.milly.auth.domain.entity.AuthProviderEntity;
 import com.milly.auth.domain.entity.RoleEntity;
 import com.milly.auth.domain.entity.UserAuthEntity;

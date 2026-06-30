@@ -1,4 +1,4 @@
-package com.milly.auth.application.model;
+package com.milly.auth.domain.model;
 
 import com.milly.auth.domain.valueobject.AuthProviderType;
 

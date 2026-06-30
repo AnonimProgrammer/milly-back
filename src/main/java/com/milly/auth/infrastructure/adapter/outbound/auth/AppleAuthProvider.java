@@ -1,6 +1,6 @@
 package com.milly.auth.infrastructure.adapter.outbound.auth;
 
-import com.milly.auth.application.model.ExternalIdentity;
+import com.milly.auth.domain.model.ExternalIdentity;
 import com.milly.auth.application.port.outbound.AuthProvider;
 import com.milly.auth.domain.valueobject.AuthProviderType;
 import com.milly.auth.infrastructure.config.AuthProperties;

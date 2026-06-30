@@ -1,6 +1,6 @@
 package com.milly.auth.application.port.outbound;
 
-import com.milly.auth.application.model.ExternalIdentity;
+import com.milly.auth.domain.model.ExternalIdentity;
 import com.milly.auth.domain.valueobject.AuthProviderType;
 
 import java.util.Map;
