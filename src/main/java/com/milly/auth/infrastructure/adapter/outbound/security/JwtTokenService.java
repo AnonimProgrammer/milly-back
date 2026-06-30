@@ -1,6 +1,7 @@
 package com.milly.auth.infrastructure.adapter.outbound.security;
 
-import com.milly.auth.application.model.AuthUser;
+import com.milly.auth.domain.model.AuthUser;
+import com.milly.auth.domain.model.IssuedRefreshToken;
 import com.milly.auth.domain.valueobject.RoleName;
 import com.milly.auth.infrastructure.config.AuthProperties;
 import com.milly.common.exception.InvalidCredentialsException;
@@ -21,6 +22,7 @@ import java.util.UUID;
 @Service
 public class JwtTokenService {
 
+    public static final String INVALID_TOKEN_MESSAGE = "Token is invalid.";
     public static final String ROLES_CLAIM = "roles";
     public static final String TOKEN_TYPE_CLAIM = "type";
     public static final String REFRESH_TOKEN_TYPE = "refresh";
@@ -48,46 +50,53 @@ public class JwtTokenService {
                 .compact();
     }
 
-    public String issueRefreshToken(AuthUser user) {
+    public IssuedRefreshToken issueRefreshToken(AuthUser user) {
         Instant now = Instant.now();
+        String jti = UUID.randomUUID().toString();
 
-        return Jwts.builder()
+        String token = Jwts.builder()
                 .subject(user.id().toString())
+                .id(jti)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(refreshTtl)))
                 .claim(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE)
                 .signWith(signingKey)
                 .compact();
+
+        return new IssuedRefreshToken(token, jti);
     }
 
-    public Claims parseAccessToken(String token) {
-        Claims claims = parseClaims(token);
-        if (REFRESH_TOKEN_TYPE.equals(claims.get(TOKEN_TYPE_CLAIM, String.class))) {
-            throw new InvalidCredentialsException("JWT token is expired or invalid.");
+    public Claims parseToken(String token, boolean expectRefresh) {
+        try {
+            Claims claims = parseClaims(token);
+            boolean isRefresh = REFRESH_TOKEN_TYPE.equals(claims.get(TOKEN_TYPE_CLAIM, String.class));
+            if (isRefresh == expectRefresh) {
+                return claims;
+            }
+        } catch (JwtException | IllegalArgumentException ignored) {
         }
-        return claims;
-    }
-
-    public Claims parseRefreshToken(String token) {
-        Claims claims = parseClaims(token);
-        String tokenType = claims.get(TOKEN_TYPE_CLAIM, String.class);
-        if (!REFRESH_TOKEN_TYPE.equals(tokenType)) {
-            throw new InvalidCredentialsException("Invalid refresh token.");
-        }
-        return claims;
+        throw new InvalidCredentialsException(INVALID_TOKEN_MESSAGE);
     }
 
     public boolean isValidToken(String token) {
         try {
-            parseAccessToken(token);
+            parseToken(token, false);
             return true;
-        } catch (JwtException | IllegalArgumentException exception) {
+        } catch (InvalidCredentialsException exception) {
             return false;
         }
     }
 
     public UUID extractUserId(Claims claims) {
         return UUID.fromString(claims.getSubject());
+    }
+
+    public String extractJti(Claims claims) {
+        String jti = claims.getId();
+        if (jti == null || jti.isBlank()) {
+            throw new InvalidCredentialsException(INVALID_TOKEN_MESSAGE);
+        }
+        return jti;
     }
 
     private Claims parseClaims(String token) {

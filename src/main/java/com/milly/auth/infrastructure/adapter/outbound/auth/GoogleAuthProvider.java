@@ -1,6 +1,7 @@
 package com.milly.auth.infrastructure.adapter.outbound.auth;
 
-import com.milly.auth.application.model.ExternalIdentity;
+import com.milly.auth.domain.model.ExternalIdentity;
+import com.milly.auth.application.port.outbound.AuthProvider;
 import com.milly.auth.domain.Credentials;
 import com.milly.auth.domain.valueobject.AuthProviderType;
 import com.milly.common.exception.InvalidCredentialsException;
@@ -10,7 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
-public class GoogleAuthProvider {
+public class GoogleAuthProvider implements AuthProvider {
 
     private final GoogleJwtTokenService googleJwtTokenService;
 
@@ -18,6 +19,12 @@ public class GoogleAuthProvider {
         this.googleJwtTokenService = googleJwtTokenService;
     }
 
+    @Override
+    public AuthProviderType getType() {
+        return AuthProviderType.GOOGLE;
+    }
+
+    @Override
     public ExternalIdentity authenticate(Map<String, Object> credentials) {
         String idToken = Credentials.requiredRaw(credentials, "idToken", "identityToken", "token");
         Jwt jwt = googleJwtTokenService.decodeIdentityToken(idToken);

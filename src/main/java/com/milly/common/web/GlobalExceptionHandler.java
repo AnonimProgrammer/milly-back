@@ -13,17 +13,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidCredentials(InvalidCredentialsException exception) {
-        return error(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED, exception.getMessage());
+        return HttpErrorResponses.of(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED, exception.getMessage());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(ResourceNotFoundException exception) {
-        return error(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, exception.getMessage());
+        return HttpErrorResponses.of(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, exception.getMessage());
     }
 
     @ExceptionHandler(UnsupportedOperationException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnsupportedOperation(UnsupportedOperationException exception) {
-        return error(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, exception.getMessage());
+        return HttpErrorResponses.of(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, exception.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -32,16 +32,11 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .map(error -> error.getDefaultMessage() == null ? "Validation failed." : error.getDefaultMessage())
                 .orElse("Validation failed.");
-        return error(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, message);
+        return HttpErrorResponses.of(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, message);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException exception) {
-        return error(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, exception.getMessage());
-    }
-
-    private ResponseEntity<ApiResponse<Void>> error(HttpStatus status, ErrorCode errorCode, String message) {
-        return ResponseEntity.status(status)
-                .body(ApiResponse.error(status.value(), message, errorCode.name()));
+        return HttpErrorResponses.of(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, exception.getMessage());
     }
 }
