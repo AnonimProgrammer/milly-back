@@ -5,7 +5,8 @@ import com.milly.auth.application.dto.ContinueAuthResponse;
 import com.milly.auth.application.model.AuthUser;
 import com.milly.auth.application.model.ExternalIdentity;
 import com.milly.auth.application.model.IdentityResolution;
-import com.milly.auth.application.usecase.factory.IdentityAuthProviderFactory;
+import com.milly.auth.application.port.outbound.AuthProvider;
+import com.milly.auth.application.usecase.factory.AuthProviderFactory;
 import com.milly.auth.domain.Credentials;
 import com.milly.auth.domain.entity.UserEntity;
 import com.milly.auth.domain.valueobject.RoleName;
@@ -19,13 +20,13 @@ import java.util.List;
 @Service
 public class ContinueAuthUseCase {
 
-    private final IdentityAuthProviderFactory providerFactory;
+    private final AuthProviderFactory providerFactory;
     private final ResolveIdentityUseCase resolveIdentityUseCase;
     private final UserRoleJpaRepository userRoleRepository;
     private final JwtTokenService jwtTokenService;
 
     public ContinueAuthUseCase(
-            IdentityAuthProviderFactory providerFactory,
+            AuthProviderFactory providerFactory,
             ResolveIdentityUseCase resolveIdentityUseCase,
             UserRoleJpaRepository userRoleRepository,
             JwtTokenService jwtTokenService) {
@@ -37,7 +38,9 @@ public class ContinueAuthUseCase {
 
     @Transactional
     public ContinueAuthResponse execute(ContinueAuthRequest request) {
-        ExternalIdentity identity = providerFactory.authenticate(request.provider(), request.credentials());
+        AuthProvider provider = providerFactory.get(request.provider());
+        ExternalIdentity identity = provider.authenticate(request.credentials());
+
         String rawPassword = Credentials.optionalRaw(request.credentials(), "password");
 
         IdentityResolution resolution = resolveIdentityUseCase.execute(identity, request.profile(), rawPassword);

@@ -1,6 +1,7 @@
 package com.milly.auth.infrastructure.adapter.outbound.auth;
 
 import com.milly.auth.application.model.ExternalIdentity;
+import com.milly.auth.application.port.outbound.AuthProvider;
 import com.milly.auth.domain.Credentials;
 import com.milly.auth.domain.entity.UserAuthEntity;
 import com.milly.auth.domain.valueobject.AuthProviderType;
@@ -12,7 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
-public class PasswordAuthProvider {
+public class PasswordAuthProvider implements AuthProvider {
 
     private final UserAuthJpaRepository userAuthRepository;
     private final PasswordEncoder passwordEncoder;
@@ -22,6 +23,12 @@ public class PasswordAuthProvider {
         this.passwordEncoder = passwordEncoder;
     }
 
+    @Override
+    public AuthProviderType getType() {
+        return AuthProviderType.PASSWORD;
+    }
+
+    @Override
     public ExternalIdentity authenticate(Map<String, Object> credentials) {
         String identifier = Credentials.requiredNormalized(credentials, "username", "email");
         String password = Credentials.requiredRaw(credentials, "password");
