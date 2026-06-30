@@ -2,6 +2,7 @@ package com.milly.auth.infrastructure.adapter.inbound.http;
 
 import com.milly.auth.application.dto.ContinueAuthRequest;
 import com.milly.auth.application.dto.ContinueAuthResponse;
+import com.milly.auth.application.dto.ContinueAuthResponseBody;
 import com.milly.auth.application.dto.CurrentUserResponse;
 
 import com.milly.auth.application.usecase.ContinueAuthUseCase;
@@ -43,19 +44,16 @@ public class AuthRestAdapter {
                 new ContinueAuthResponseBody(result.newUser()),
                 "Authentication successful."));
     }
+
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<CurrentUserResponse>> getCurrentUser(
             @AuthenticationPrincipal UUID userId) {
-
         CurrentUserResponse response = getCurrentUserUseCase.execute(userId);
-
         return ResponseEntity.ok(
                 ApiResponse.success(
                         response,
                         "Current user retrieved successfully."
                 )
         );
-    }
-    public record ContinueAuthResponseBody(boolean newUser) {
     }
 }
