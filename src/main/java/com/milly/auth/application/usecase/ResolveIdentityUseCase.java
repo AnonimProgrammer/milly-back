@@ -10,24 +10,17 @@ import com.milly.auth.infrastructure.adapter.outbound.persistence.UserAuthJpaRep
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserJpaRepository;
 import com.milly.common.exception.InvalidCredentialsException;
 import com.milly.common.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ResolveIdentityUseCase {
 
     private final UserAuthJpaRepository userAuthRepository;
     private final UserJpaRepository userRepository;
     private final CreateUserUseCase createUserUseCase;
-
-    public ResolveIdentityUseCase(
-            UserAuthJpaRepository userAuthRepository,
-            UserJpaRepository userRepository,
-            CreateUserUseCase createUserUseCase) {
-        this.userAuthRepository = userAuthRepository;
-        this.userRepository = userRepository;
-        this.createUserUseCase = createUserUseCase;
-    }
 
     @Transactional
     public IdentityResolution execute(

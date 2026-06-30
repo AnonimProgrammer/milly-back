@@ -10,29 +10,20 @@ import com.milly.auth.infrastructure.adapter.outbound.persistence.UserJpaReposit
 import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
 import com.milly.common.exception.InvalidCredentialsException;
 import io.jsonwebtoken.Claims;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class RefreshSessionUseCase {
 
     private final JwtTokenService jwtTokenService;
     private final UserJpaRepository userRepository;
     private final LoadAuthUserUseCase loadAuthUserUseCase;
     private final RefreshTokenStore refreshTokenStore;
-
-    public RefreshSessionUseCase(
-            JwtTokenService jwtTokenService,
-            UserJpaRepository userRepository,
-            LoadAuthUserUseCase loadAuthUserUseCase,
-            RefreshTokenStore refreshTokenStore) {
-        this.jwtTokenService = jwtTokenService;
-        this.userRepository = userRepository;
-        this.loadAuthUserUseCase = loadAuthUserUseCase;
-        this.refreshTokenStore = refreshTokenStore;
-    }
 
     @Transactional(readOnly = true)
     public RefreshSessionResponse execute(String refreshToken) {

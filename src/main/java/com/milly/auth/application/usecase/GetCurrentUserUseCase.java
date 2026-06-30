@@ -7,23 +7,18 @@ import com.milly.auth.infrastructure.adapter.outbound.persistence.UserJpaReposit
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserRoleJpaRepository;
 import com.milly.common.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class GetCurrentUserUseCase {
 
     private final UserJpaRepository userRepository;
     private final UserRoleJpaRepository userRoleRepository;
-
-    public GetCurrentUserUseCase(
-            UserJpaRepository userRepository,
-            UserRoleJpaRepository userRoleRepository) {
-        this.userRepository = userRepository;
-        this.userRoleRepository = userRoleRepository;
-    }
 
     @Transactional
     public CurrentUserResponse execute(UUID userId) {

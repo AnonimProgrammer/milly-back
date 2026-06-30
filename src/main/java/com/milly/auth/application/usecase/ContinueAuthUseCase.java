@@ -11,10 +11,12 @@ import com.milly.auth.application.port.outbound.RefreshTokenStore;
 import com.milly.auth.application.usecase.factory.AuthProviderFactory;
 import com.milly.auth.domain.Credentials;
 import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class ContinueAuthUseCase {
 
     private final AuthProviderFactory providerFactory;
@@ -22,19 +24,6 @@ public class ContinueAuthUseCase {
     private final LoadAuthUserUseCase loadAuthUserUseCase;
     private final JwtTokenService jwtTokenService;
     private final RefreshTokenStore refreshTokenStore;
-
-    public ContinueAuthUseCase(
-            AuthProviderFactory providerFactory,
-            ResolveIdentityUseCase resolveIdentityUseCase,
-            LoadAuthUserUseCase loadAuthUserUseCase,
-            JwtTokenService jwtTokenService,
-            RefreshTokenStore refreshTokenStore) {
-        this.providerFactory = providerFactory;
-        this.resolveIdentityUseCase = resolveIdentityUseCase;
-        this.loadAuthUserUseCase = loadAuthUserUseCase;
-        this.jwtTokenService = jwtTokenService;
-        this.refreshTokenStore = refreshTokenStore;
-    }
 
     @Transactional
     public ContinueAuthResponse execute(ContinueAuthRequest request) {
