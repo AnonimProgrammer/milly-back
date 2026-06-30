@@ -15,11 +15,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice(assignableTypes = AuthRestAdapter.class)
 public class AuthExceptionHandler {
 
-    private final boolean secureCookies;
-
-    public AuthExceptionHandler(@Value("${auth.cookies.secure:false}") boolean secureCookies) {
-        this.secureCookies = secureCookies;
-    }
+    @Value("${auth.cookies.secure:false}")
+    private boolean secureCookies;
 
     @ExceptionHandler(RefreshSessionFailedException.class)
     public ResponseEntity<ApiResponse<Void>> handleRefreshSessionFailed(
