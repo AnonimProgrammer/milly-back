@@ -2,6 +2,7 @@ package com.milly.auth.infrastructure.adapter.inbound.http;
 
 import com.milly.auth.application.dto.ContinueAuthRequest;
 import com.milly.auth.application.dto.ContinueAuthResponse;
+import com.milly.auth.application.dto.ContinueAuthResponseBody;
 import com.milly.auth.application.dto.CurrentUserResponse;
 
 import com.milly.auth.application.usecase.ContinueAuthUseCase;
@@ -66,8 +67,5 @@ public class AuthRestAdapter {
         AuthCookieWriter.writeAuthCookies(
                 response, result.accessToken(), result.refreshToken(), secureCookies);
         return ResponseEntity.ok(ApiResponse.success(null, "Session refreshed."));
-    }
-
-    public record ContinueAuthResponseBody(boolean newUser) {
     }
 }
