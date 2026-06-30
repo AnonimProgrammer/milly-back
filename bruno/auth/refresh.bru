@@ -1,0 +1,26 @@
+meta {
+  name: Refresh session
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/api/v1/auth/refresh
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Run after **Continue — login (password)** so the cookie jar sends refresh-token automatically.
+
+  Expected:
+  - Valid cookie → 200, new access-token and refresh-token cookies, `"Session refreshed."`
+  - Missing/invalid/reused refresh cookie → 401, both cookies cleared, `"Token is invalid."`
+  - Each successful refresh rotates the refresh token; the previous one cannot be reused.
+
+  To test failure cases, override the Cookie header (e.g. `refresh-token=not-a-valid-jwt`) or reuse an old refresh-token value after a successful refresh.
+}
