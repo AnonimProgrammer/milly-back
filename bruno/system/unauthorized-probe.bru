@@ -1,0 +1,15 @@
+meta {
+  name: Unauthorized probe
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/v1/venues
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
