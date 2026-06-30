@@ -17,11 +17,13 @@ import com.milly.auth.infrastructure.adapter.outbound.persistence.UserRoleJpaRep
 import com.milly.common.domain.Preconditions;
 import com.milly.common.exception.InvalidCredentialsException;
 import com.milly.common.exception.ResourceNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class CreateUserUseCase {
 
     private final UserJpaRepository userRepository;
@@ -30,21 +32,6 @@ public class CreateUserUseCase {
     private final RoleJpaRepository roleRepository;
     private final UserRoleJpaRepository userRoleRepository;
     private final PasswordEncoder passwordEncoder;
-
-    public CreateUserUseCase(
-            UserJpaRepository userRepository,
-            UserAuthJpaRepository userAuthRepository,
-            AuthProviderJpaRepository authProviderRepository,
-            RoleJpaRepository roleRepository,
-            UserRoleJpaRepository userRoleRepository,
-            PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.userAuthRepository = userAuthRepository;
-        this.authProviderRepository = authProviderRepository;
-        this.roleRepository = roleRepository;
-        this.userRoleRepository = userRoleRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     @Transactional
     public UserEntity execute(

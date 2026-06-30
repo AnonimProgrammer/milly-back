@@ -17,6 +17,7 @@ import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.SignedJWT;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -24,17 +25,14 @@ import java.text.ParseException;
 import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 public class AppleAuthProvider implements AuthProvider {
 
     private static final URI APPLE_JWKS_URI = URI.create("https://appleid.apple.com/auth/keys");
     private static final String APPLE_ISSUER = "https://appleid.apple.com";
 
-    private final String clientId;
+    private final AuthProperties authProperties;
     private volatile ConfigurableJWTProcessor<SecurityContext> jwtProcessor;
-
-    public AppleAuthProvider(AuthProperties authProperties) {
-        this.clientId = authProperties.apple().clientId();
-    }
 
     @Override
     public AuthProviderType getType() {
@@ -43,12 +41,13 @@ public class AppleAuthProvider implements AuthProvider {
 
     @Override
     public ExternalIdentity authenticate(Map<String, Object> credentials) {
+        String clientId = authProperties.apple().clientId();
         if (clientId == null || clientId.isBlank()) {
             throw new UnsupportedOperationException("Apple authentication is not configured.");
         }
 
         String idToken = Credentials.requiredRaw(credentials, "idToken", "identityToken", "token");
-        JWTClaimsSet claims = verifyToken(idToken);
+        JWTClaimsSet claims = verifyToken(idToken, clientId);
 
         String providerUserId = claims.getSubject();
         if (providerUserId == null || providerUserId.isBlank()) {
@@ -67,7 +66,7 @@ public class AppleAuthProvider implements AuthProvider {
         }
     }
 
-    private JWTClaimsSet verifyToken(String idToken) {
+    private JWTClaimsSet verifyToken(String idToken, String clientId) {
         try {
             SignedJWT signedJwt = SignedJWT.parse(idToken);
             JWTClaimsSet claims = processor().process(signedJwt, null);

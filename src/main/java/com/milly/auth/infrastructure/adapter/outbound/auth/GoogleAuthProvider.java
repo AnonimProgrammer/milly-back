@@ -5,19 +5,17 @@ import com.milly.auth.application.port.outbound.AuthProvider;
 import com.milly.auth.domain.Credentials;
 import com.milly.auth.domain.valueobject.AuthProviderType;
 import com.milly.common.exception.InvalidCredentialsException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
 @Component
+@RequiredArgsConstructor
 public class GoogleAuthProvider implements AuthProvider {
 
     private final GoogleJwtTokenService googleJwtTokenService;
-
-    public GoogleAuthProvider(GoogleJwtTokenService googleJwtTokenService) {
-        this.googleJwtTokenService = googleJwtTokenService;
-    }
 
     @Override
     public AuthProviderType getType() {
