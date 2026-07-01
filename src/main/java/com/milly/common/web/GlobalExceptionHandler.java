@@ -1,5 +1,6 @@
 package com.milly.common.web;
 
+import com.milly.common.exception.ForbiddenException;
 import com.milly.common.exception.InvalidCredentialsException;
 import com.milly.common.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidCredentials(InvalidCredentialsException exception) {
         return HttpErrorResponses.of(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED, exception.getMessage());
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ApiResponse<Void>> handleForbidden(ForbiddenException exception) {
+        return HttpErrorResponses.of(HttpStatus.FORBIDDEN, ErrorCode.FORBIDDEN, exception.getMessage());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
