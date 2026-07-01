@@ -24,6 +24,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -154,6 +155,51 @@ class VenueControllerIntegrationTests {
                         .cookie(new Cookie(AuthCookieWriter.ACCESS_TOKEN_COOKIE, "invalid-token"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRequest()))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.errorCode").value("UNAUTHORIZED"));
+
+        assertNothingPersisted();
+    }
+
+    @Test
+    void getVenueMembershipReturnsActualMembershipRole() throws Exception {
+        UUID userId = UUID.randomUUID();
+        VenueEntity venue = venueRepository.save(
+                VenueEntity.createActive("Milly Bistro", "Barcelona, Spain"));
+        venueMembershipRepository.save(
+                VenueMembershipEntity.create(venue.getId(), userId, VenueRole.WAITER));
+
+        mockMvc.perform(get("/api/v1/venues/{id}/me", venue.getId())
+                        .cookie(accessTokenCookie(userId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(200))
+                .andExpect(jsonPath("$.message").value("Venue membership retrieved successfully."))
+                .andExpect(jsonPath("$.data.*", hasSize(4)))
+                .andExpect(jsonPath("$.data.venueId").value(venue.getId().toString()))
+                .andExpect(jsonPath("$.data.venueName").value("Milly Bistro"))
+                .andExpect(jsonPath("$.data.location").value("Barcelona, Spain"))
+                .andExpect(jsonPath("$.data.role").value("WAITER"));
+    }
+
+    @Test
+    void getVenueMembershipReturnsForbiddenWithoutMembership() throws Exception {
+        UUID userId = UUID.randomUUID();
+        UUID venueId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/v1/venues/{id}/me", venueId)
+                        .cookie(accessTokenCookie(userId)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403))
+                .andExpect(jsonPath("$.message").value("You do not have access to this venue."))
+                .andExpect(jsonPath("$.errorCode").value("FORBIDDEN"));
+
+        assertNothingPersisted();
+    }
+
+    @Test
+    void getVenueMembershipReturnsUnauthorizedWithoutSessionCookie() throws Exception {
+        mockMvc.perform(get("/api/v1/venues/{id}/me", UUID.randomUUID()))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.status").value(401))
                 .andExpect(jsonPath("$.errorCode").value("UNAUTHORIZED"));
