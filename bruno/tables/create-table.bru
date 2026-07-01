@@ -1,0 +1,28 @@
+meta {
+  name: Create table
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/venues/{{venueId}}/tables
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+  Cookie: access-token={{accessToken}}
+}
+
+body:json {
+  {
+    "label": "Table 1"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
