@@ -1,0 +1,27 @@
+meta {
+  name: Add items to order
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/public/tables/{{testTableId}}/orders/{{testOrderId}}/items
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "items": [
+      {
+        "menuItemId": "{{testMenuItemId}}",
+        "quantity": 1
+      }
+    ]
+  }
+}
