@@ -13,8 +13,8 @@ public record OrderResponse(
         UUID id,
         UUID tableId,
         OrderStatus status,
-        OffsetDateTime createdAt,
-        List<OrderItemResponse> items
+        List<OrderItemResponse> items,
+        OffsetDateTime createdAt
 ) {
 
     public static OrderResponse of(OrderEntity order, List<OrderItemEntity> items) {
@@ -22,8 +22,8 @@ public record OrderResponse(
                 order.getId(),
                 order.getTableId(),
                 order.getStatus(),
-                order.getCreatedAt(),
-                items.stream().map(OrderItemResponse::of).toList()
+                items.stream().map(OrderItemResponse::of).toList(),
+                order.getCreatedAt()
         );
     }
 

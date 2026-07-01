@@ -8,6 +8,7 @@ import com.milly.order.infrastructure.adapter.outbound.persistence.OrderItemJpaR
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderJpaRepository;
 import com.milly.table.domain.valueobject.TableStatus;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,20 +18,14 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
+
 public class ListOrdersUseCase {
 
     private final TableJpaRepository tableRepository;
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
 
-    public ListOrdersUseCase(
-            TableJpaRepository tableRepository,
-            OrderJpaRepository orderRepository,
-            OrderItemJpaRepository orderItemRepository) {
-        this.tableRepository = tableRepository;
-        this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
-    }
 
     @Transactional(readOnly = true)
     public List<OrderResponse> execute(UUID tableId) {

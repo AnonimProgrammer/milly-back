@@ -9,6 +9,7 @@ import com.milly.order.application.usecase.CreateOrderUseCase;
 import com.milly.order.application.usecase.GetOrderUseCase;
 import com.milly.order.application.usecase.ListOrdersUseCase;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/api/v1/public/tables/{tableId}/orders")
 public class PublicOrderRestAdapter {
 
@@ -24,17 +26,6 @@ public class PublicOrderRestAdapter {
     private final ListOrdersUseCase listOrdersUseCase;
     private final GetOrderUseCase getOrderUseCase;
     private final AddOrderItemsUseCase addOrderItemsUseCase;
-
-    public PublicOrderRestAdapter(
-            CreateOrderUseCase createOrderUseCase,
-            ListOrdersUseCase listOrdersUseCase,
-            GetOrderUseCase getOrderUseCase,
-            AddOrderItemsUseCase addOrderItemsUseCase) {
-        this.createOrderUseCase = createOrderUseCase;
-        this.listOrdersUseCase = listOrdersUseCase;
-        this.getOrderUseCase = getOrderUseCase;
-        this.addOrderItemsUseCase = addOrderItemsUseCase;
-    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<OrderResponse>> createOrder(

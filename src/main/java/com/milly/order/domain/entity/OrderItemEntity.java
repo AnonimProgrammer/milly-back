@@ -10,21 +10,26 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Entity
 @Table(name = "order_items")
 public class OrderItemEntity {
 
+    @Builder.Default
     @Id
     private UUID id = UlidCreator.getUlid().toUuid();
 
@@ -46,13 +51,4 @@ public class OrderItemEntity {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
-
-    public static OrderItemEntity create(UUID orderId, UUID menuItemId, Integer quantity, Money unitPrice) {
-        OrderItemEntity item = new OrderItemEntity();
-        item.orderId = orderId;
-        item.menuItemId = menuItemId;
-        item.quantity = quantity;
-        item.unitPrice = unitPrice;
-        return item;
-    }
 }

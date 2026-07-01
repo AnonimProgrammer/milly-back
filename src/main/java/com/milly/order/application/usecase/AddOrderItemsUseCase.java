@@ -13,8 +13,10 @@ import com.milly.order.domain.entity.OrderItemEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderItemJpaRepository;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderJpaRepository;
+import com.milly.table.domain.entity.TableEntity;
 import com.milly.table.domain.valueobject.TableStatus;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AddOrderItemsUseCase {
 
     private final TableJpaRepository tableRepository;
@@ -31,20 +34,10 @@ public class AddOrderItemsUseCase {
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
 
-    public AddOrderItemsUseCase(
-            TableJpaRepository tableRepository,
-            MenuItemJpaRepository menuItemRepository,
-            OrderJpaRepository orderRepository,
-            OrderItemJpaRepository orderItemRepository) {
-        this.tableRepository = tableRepository;
-        this.menuItemRepository = menuItemRepository;
-        this.orderRepository = orderRepository;
-        this.orderItemRepository = orderItemRepository;
-    }
 
     @Transactional
     public OrderResponse execute(UUID tableId, UUID orderId, AddOrderItemsRequest request) {
-        var table = tableRepository.findById(tableId)
+        TableEntity table = tableRepository.findById(tableId)
                 .filter(t -> t.getStatus() == TableStatus.ACTIVE)
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found."));
 
@@ -83,6 +76,11 @@ public class AddOrderItemsUseCase {
             throw new ResourceNotFoundException("Menu item not found: " + dto.menuItemId());
         }
 
-        return OrderItemEntity.create(orderId, menuItem.getId(), dto.quantity(), menuItem.getPrice());
-    }
+        return OrderItemEntity.builder()
+                .orderId(orderId)
+                .menuItemId(menuItem.getId())
+                .quantity(dto.quantity())
+                .unitPrice(menuItem.getPrice())
+                .build();   }
+
 }

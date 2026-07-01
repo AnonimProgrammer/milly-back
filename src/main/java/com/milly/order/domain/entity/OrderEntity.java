@@ -8,23 +8,22 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AccessLevel;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Entity
 @Table(name = "orders")
 public class OrderEntity {
-
+    @Builder.Default
     @Id
     private UUID id = UlidCreator.getUlid().toUuid();
 
@@ -49,11 +48,5 @@ public class OrderEntity {
     @Column(name = "closed_at")
     private OffsetDateTime closedAt;
 
-    public static OrderEntity create(UUID venueId, UUID tableId, OrderStatus status) {
-        OrderEntity order = new OrderEntity();
-        order.venueId = venueId;
-        order.tableId = tableId;
-        order.status = status;
-        return order;
-    }
+
 }
