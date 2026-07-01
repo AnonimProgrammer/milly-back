@@ -1,0 +1,27 @@
+meta {
+  name: Place order
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/public/tables/{{testTableId}}/orders
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "items": [
+      {
+        "menuItemId": "{{testMenuItemId}}",
+        "quantity": 2
+      }
+    ]
+  }
+}
