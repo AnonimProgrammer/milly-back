@@ -45,4 +45,16 @@ public class TableEntity {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    public static TableEntity createActive(UUID venueId, String label) {
+        TableEntity table = new TableEntity();
+        table.setVenueId(venueId);
+        table.setLabel(label);
+        table.setStatus(TableStatus.ACTIVE);
+        return table;
+    }
+
+    public void deactivate() {
+        this.status = TableStatus.INACTIVE;
+    }
 }

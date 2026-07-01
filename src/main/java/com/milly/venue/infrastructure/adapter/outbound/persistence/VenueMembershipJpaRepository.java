@@ -8,5 +8,5 @@ import java.util.UUID;
 
 public interface VenueMembershipJpaRepository extends JpaRepository<VenueMembershipEntity, UUID> {
 
-    Optional<VenueMembershipEntity> findByVenueIdAndUserId(UUID venueId, UUID userId);
+    Optional<VenueMembershipEntity> findByUserIdAndVenueId(UUID userId, UUID venueId);
 }

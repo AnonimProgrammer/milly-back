@@ -1,0 +1,21 @@
+meta {
+  name: Deactivate table
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/venues/{{venueId}}/tables/{{tableId}}/deactivate
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Cookie: access-token={{accessToken}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

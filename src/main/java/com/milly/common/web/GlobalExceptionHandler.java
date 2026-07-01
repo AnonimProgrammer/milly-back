@@ -1,5 +1,6 @@
 package com.milly.common.web;
 
+import com.milly.common.exception.ForbiddenException;
 import com.milly.common.exception.InvalidCredentialsException;
 import com.milly.common.exception.InvalidStateTransitionException;
 import com.milly.common.exception.ResourceNotFoundException;

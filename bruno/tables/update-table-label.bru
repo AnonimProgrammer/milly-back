@@ -1,0 +1,28 @@
+meta {
+  name: Update table label
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/venues/{{venueId}}/tables/{{tableId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+  Cookie: access-token={{accessToken}}
+}
+
+body:json {
+  {
+    "label": "Table A"
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
