@@ -1,0 +1,20 @@
+meta {
+  name: Get venue membership
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/api/v1/venues/{{venueId}}/me
+  body: none
+  auth: inherit
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Run after authentication so the cookie jar sends `access-token` automatically.
+  Set `venueId` to a venue where the current user has a membership.
+}
