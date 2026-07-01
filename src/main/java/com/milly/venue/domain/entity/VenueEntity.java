@@ -47,8 +47,8 @@ public class VenueEntity {
 
     public static VenueEntity createActive(String name, String location) {
         VenueEntity venue = new VenueEntity();
-        venue.setName(name);
-        venue.setLocation(location);
+        venue.setName(name.trim());
+        venue.setLocation(location.trim());
         venue.setStatus(VenueStatus.ACTIVE);
         return venue;
     }
