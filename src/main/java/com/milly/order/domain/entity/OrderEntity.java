@@ -48,4 +48,12 @@ public class OrderEntity {
 
     @Column(name = "closed_at")
     private OffsetDateTime closedAt;
+
+    public static OrderEntity create(UUID venueId, UUID tableId, OrderStatus status) {
+        OrderEntity order = new OrderEntity();
+        order.venueId = venueId;
+        order.tableId = tableId;
+        order.status = status;
+        return order;
+    }
 }

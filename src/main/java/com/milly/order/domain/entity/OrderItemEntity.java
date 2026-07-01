@@ -46,4 +46,13 @@ public class OrderItemEntity {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
+
+    public static OrderItemEntity create(UUID orderId, UUID menuItemId, Integer quantity, Money unitPrice) {
+        OrderItemEntity item = new OrderItemEntity();
+        item.orderId = orderId;
+        item.menuItemId = menuItemId;
+        item.quantity = quantity;
+        item.unitPrice = unitPrice;
+        return item;
+    }
 }
