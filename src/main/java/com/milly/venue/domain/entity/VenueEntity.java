@@ -44,4 +44,12 @@ public class VenueEntity {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
+
+    public static VenueEntity createActive(String name, String location) {
+        VenueEntity venue = new VenueEntity();
+        venue.setName(name.trim());
+        venue.setLocation(location.trim());
+        venue.setStatus(VenueStatus.ACTIVE);
+        return venue;
+    }
 }
