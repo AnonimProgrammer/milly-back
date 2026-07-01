@@ -1,0 +1,21 @@
+meta {
+  name: List tables
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/api/v1/venues/{{venueId}}/tables
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+  Cookie: access-token={{accessToken}}
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
