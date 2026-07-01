@@ -1,6 +1,7 @@
 package com.milly.common.web;
 
 import com.milly.common.exception.InvalidCredentialsException;
+import com.milly.common.exception.InvalidStateTransitionException;
 import com.milly.common.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(ResourceNotFoundException exception) {
         return HttpErrorResponses.of(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, exception.getMessage());
+    }
+    @ExceptionHandler(InvalidStateTransitionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidStateTransition(InvalidStateTransitionException exception) {
+        return HttpErrorResponses.of(HttpStatus.CONFLICT, ErrorCode.CONFLICT, exception.getMessage());
     }
 
     @ExceptionHandler(UnsupportedOperationException.class)
