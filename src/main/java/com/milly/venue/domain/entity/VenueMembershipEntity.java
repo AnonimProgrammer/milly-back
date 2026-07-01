@@ -40,4 +40,12 @@ public class VenueMembershipEntity {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
+
+    public static VenueMembershipEntity create(UUID venueId, UUID userId, VenueRole role) {
+        VenueMembershipEntity membership = new VenueMembershipEntity();
+        membership.setVenueId(venueId);
+        membership.setUserId(userId);
+        membership.setRole(role);
+        return membership;
+    }
 }
