@@ -1,0 +1,20 @@
+meta {
+  name: Get menu item
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/venues/{{venueId}}/menu/items/{{testMenuItemId}}
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

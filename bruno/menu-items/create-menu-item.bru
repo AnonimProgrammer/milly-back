@@ -1,0 +1,36 @@
+meta {
+  name: Create menu item
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/venues/{{venueId}}/menu/items
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "name": "Margherita Pizza",
+    "description": "Tomato, mozzarella, and basil",
+    "price": 12.50
+  }
+}
+
+script:post-response {
+  const json = res.getBody();
+  if (json?.data?.id) {
+    bru.setEnvVar('testMenuItemId', json.data.id);
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

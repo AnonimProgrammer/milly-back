@@ -1,0 +1,27 @@
+meta {
+  name: Update menu item
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/venues/{{venueId}}/menu/items/{{testMenuItemId}}
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "price": 13.00
+  }
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
