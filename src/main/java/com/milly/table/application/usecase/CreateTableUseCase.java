@@ -6,6 +6,7 @@ import com.milly.table.domain.entity.TableEntity;
 import com.milly.table.domain.valueobject.TableStatus;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
 import com.milly.venue.application.service.VenueAuthorizationService;
+import com.milly.venue.domain.valueobject.VenueRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +22,7 @@ public class CreateTableUseCase {
 
     @Transactional
     public TableResponse execute(UUID userId, UUID venueId, CreateTableRequest request) {
-        venueAuthorizationService.requireManager(userId, venueId);
+        venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER);
 
         TableEntity table = TableEntity.create(venueId, request.label(), TableStatus.ACTIVE);
         return TableResponse.of(tableRepository.save(table));

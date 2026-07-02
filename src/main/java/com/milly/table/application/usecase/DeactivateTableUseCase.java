@@ -4,6 +4,7 @@ import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.table.domain.entity.TableEntity;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
 import com.milly.venue.application.service.VenueAuthorizationService;
+import com.milly.venue.domain.valueobject.VenueRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +20,7 @@ public class DeactivateTableUseCase {
 
     @Transactional
     public void execute(UUID userId, UUID venueId, UUID tableId) {
-        venueAuthorizationService.requireManager(userId, venueId);
+        venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER);
 
         TableEntity table = tableRepository.findByIdAndVenueId(tableId, venueId)
                 .orElseThrow(ResourceNotFoundException::new);
