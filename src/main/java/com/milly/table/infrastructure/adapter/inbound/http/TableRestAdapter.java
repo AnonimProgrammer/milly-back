@@ -1,5 +1,6 @@
 package com.milly.table.infrastructure.adapter.inbound.http;
 
+import com.milly.common.web.ApiResponse;
 import com.milly.table.application.dto.CreateTableRequest;
 import com.milly.table.application.dto.TableResponse;
 import com.milly.table.application.dto.UpdateTableLabelRequest;
@@ -8,7 +9,6 @@ import com.milly.table.application.usecase.DeactivateTableUseCase;
 import com.milly.table.application.usecase.GetTableUseCase;
 import com.milly.table.application.usecase.ListTablesUseCase;
 import com.milly.table.application.usecase.UpdateTableLabelUseCase;
-import com.milly.common.web.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
