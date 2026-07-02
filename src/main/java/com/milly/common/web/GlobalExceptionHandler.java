@@ -29,8 +29,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(InvalidStateTransitionException.class)
-    public ResponseEntity<ApiResponse<Void>> handleInvalidStateTransition(InvalidStateTransitionException exception) {
-        return HttpErrorResponses.of(HttpStatus.CONFLICT, ErrorCode.CONFLICT, exception.getMessage());
+    public ResponseEntity<ApiResponse<Void>> handleInvalidStateTransition(InvalidStateTransitionException ignored) {
+        return HttpErrorResponses.of(
+                HttpStatus.CONFLICT, ErrorCode.CONFLICT, InvalidStateTransitionException.MESSAGE);
     }
 
     @ExceptionHandler(UnsupportedOperationException.class)

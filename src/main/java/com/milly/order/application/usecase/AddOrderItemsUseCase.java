@@ -44,8 +44,7 @@ public class AddOrderItemsUseCase {
                 .orElseThrow(ResourceNotFoundException::new);
 
         if (order.getStatus() != OrderStatus.APPROVED) {
-            throw new InvalidStateTransitionException(
-                    "Items can only be added to an APPROVED order. Current status: " + order.getStatus());
+            throw new InvalidStateTransitionException();
         }
 
         List<UUID> menuItemIds = request.items().stream()
