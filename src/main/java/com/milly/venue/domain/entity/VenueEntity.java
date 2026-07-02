@@ -45,11 +45,11 @@ public class VenueEntity {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    public static VenueEntity createActive(String name, String location) {
+    public static VenueEntity create(String name, String location, VenueStatus status) {
         VenueEntity venue = new VenueEntity();
         venue.setName(name.trim());
         venue.setLocation(location.trim());
-        venue.setStatus(VenueStatus.ACTIVE);
+        venue.setStatus(status);
         return venue;
     }
 }

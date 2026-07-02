@@ -6,8 +6,6 @@ import com.milly.venue.application.dto.CreateVenueResponse;
 import com.milly.venue.application.dto.VenueMembershipResponse;
 import com.milly.venue.application.usecase.CreateVenueUseCase;
 import com.milly.venue.application.usecase.GetVenueMembershipUseCase;
-import com.milly.venue.domain.entity.VenueEntity;
-import com.milly.venue.domain.valueobject.VenueRole;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -25,7 +23,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/venues")
 @RequiredArgsConstructor
-public class VenueController {
+public class VenueRestAdapter {
 
     private final CreateVenueUseCase createVenueUseCase;
     private final GetVenueMembershipUseCase getVenueMembershipUseCase;
@@ -34,8 +32,7 @@ public class VenueController {
     public ResponseEntity<ApiResponse<CreateVenueResponse>> createVenue(
             @AuthenticationPrincipal UUID userId,
             @Valid @RequestBody CreateVenueRequest request) {
-        VenueEntity venue = createVenueUseCase.execute(userId, request.name(), request.location());
-        CreateVenueResponse response = CreateVenueResponse.of(venue, VenueRole.MANAGER);
+        CreateVenueResponse response = createVenueUseCase.execute(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(response, "Venue created successfully."));
     }
@@ -45,7 +42,6 @@ public class VenueController {
             @PathVariable UUID id,
             @AuthenticationPrincipal UUID userId) {
         VenueMembershipResponse response = getVenueMembershipUseCase.execute(id, userId);
-        return ResponseEntity.ok(
-                ApiResponse.success(response, "Venue membership retrieved successfully."));
+        return ResponseEntity.ok(ApiResponse.success(response, "Venue membership retrieved successfully."));
     }
 }
