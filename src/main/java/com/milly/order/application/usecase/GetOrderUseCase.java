@@ -25,10 +25,10 @@ public class GetOrderUseCase {
     public OrderResponse execute(UUID tableId, UUID orderId) {
         tableRepository.findById(tableId)
                 .filter(t -> t.getStatus() == TableStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("Table not found."));
+                .orElseThrow(ResourceNotFoundException::new);
 
         OrderEntity order = orderRepository.findByIdAndTableId(orderId, tableId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found."));
+                .orElseThrow(ResourceNotFoundException::new);
 
         return OrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()));
     }

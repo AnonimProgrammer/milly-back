@@ -1,10 +1,9 @@
 package com.milly.table.application.usecase;
 
+import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.table.application.dto.TableResponse;
-import com.milly.table.application.mapper.TableResponseMapper;
 import com.milly.table.domain.entity.TableEntity;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
-import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.venue.application.service.VenueAuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,8 +23,8 @@ public class GetTableUseCase {
         venueAuthorizationService.requireManager(userId, venueId);
 
         TableEntity table = tableRepository.findByIdAndVenueId(tableId, venueId)
-                .orElseThrow(() -> new ResourceNotFoundException("Table not found."));
+                .orElseThrow(ResourceNotFoundException::new);
 
-        return TableResponseMapper.toResponse(table);
+        return TableResponse.of(table);
     }
 }

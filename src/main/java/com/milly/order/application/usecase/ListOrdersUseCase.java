@@ -19,19 +19,17 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-
 public class ListOrdersUseCase {
 
     private final TableJpaRepository tableRepository;
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
 
-
     @Transactional(readOnly = true)
     public List<OrderResponse> execute(UUID tableId) {
         tableRepository.findById(tableId)
                 .filter(t -> t.getStatus() == TableStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("Table not found."));
+                .orElseThrow(ResourceNotFoundException::new);
 
         List<OrderEntity> orders = orderRepository.findAllByTableIdOrderByCreatedAtDesc(tableId);
         List<UUID> orderIds = orders.stream().map(OrderEntity::getId).toList();
