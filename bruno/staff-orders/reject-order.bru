@@ -1,0 +1,16 @@
+meta {
+  name: Reject order
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/venues/{{testVenueId}}/orders/{{testOrderId}}/reject
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
