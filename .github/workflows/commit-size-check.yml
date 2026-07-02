@@ -1,0 +1,45 @@
+name: Commit size check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  check-commit-size:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Ensure each commit is under 300 changed lines
+        env:
+          MAX_LINES: 300
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          failed=0
+
+          while read -r sha; do
+            lines=$(git show --numstat --format="" "$sha" | awk '
+              $1 ~ /^[0-9]+$/ { added += $1 }
+              $2 ~ /^[0-9]+$/ { deleted += $2 }
+              END { print added + deleted + 0 }
+            ')
+            subject=$(git log -1 --format=%s "$sha")
+
+            if [ "$lines" -gt "$MAX_LINES" ]; then
+              echo "::error::Commit ${sha:0:7} exceeds ${MAX_LINES} changed lines (${lines}): ${subject}"
+              failed=1
+            else
+              echo "OK ${sha:0:7}: ${lines} changed lines - ${subject}"
+            fi
+          done < <(git rev-list --no-merges "$BASE_SHA".."$HEAD_SHA")
+
+          if [ "$failed" -ne 0 ]; then
+            echo ""
+            echo "One or more commits exceed ${MAX_LINES} changed lines (additions + deletions)."
+            echo "Split large commits into smaller ones before merging."
+            exit 1
+          fi
