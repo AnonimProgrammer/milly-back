@@ -22,6 +22,14 @@ body:json {
   }
 }
 
+script:post-response {
+  const json = res.getBody();
+  if (json?.data?.id) {
+    bru.setEnvVar('testTableId', json.data.id);
+    bru.setEnvVar('tableId', json.data.id);
+  }
+}
+
 settings {
   encodeUrl: true
   timeout: 0
