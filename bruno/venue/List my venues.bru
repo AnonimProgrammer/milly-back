@@ -1,0 +1,23 @@
+meta {
+  name: List my venues
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/v1/venues
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Run **Continue – login (password)** first so Bruno stores auth cookies.
+
+  Returns every venue the current user belongs to, with their role at each one.
+  Returns an empty `data` array if the user has no memberships. Returns `401`
+  if the auth cookie is missing or expired.
+}

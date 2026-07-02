@@ -6,6 +6,7 @@ import com.milly.venue.application.dto.CreateVenueResponse;
 import com.milly.venue.application.dto.VenueMembershipResponse;
 import com.milly.venue.application.usecase.CreateVenueUseCase;
 import com.milly.venue.application.usecase.GetVenueMembershipUseCase;
+import com.milly.venue.application.usecase.ListMyVenuesUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -27,6 +29,14 @@ public class VenueRestAdapter {
 
     private final CreateVenueUseCase createVenueUseCase;
     private final GetVenueMembershipUseCase getVenueMembershipUseCase;
+    private final ListMyVenuesUseCase listMyVenuesUseCase;
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<VenueMembershipResponse>>> listMyVenues(
+            @AuthenticationPrincipal UUID userId) {
+        List<VenueMembershipResponse> response = listMyVenuesUseCase.execute(userId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Venues retrieved successfully."));
+    }
 
     @PostMapping
     public ResponseEntity<ApiResponse<CreateVenueResponse>> createVenue(
