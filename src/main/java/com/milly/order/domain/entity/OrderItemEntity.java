@@ -45,7 +45,7 @@ public class OrderItemEntity {
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private OffsetDateTime createdAt = OffsetDateTime.now();
 
     public static OrderItemEntity create(
             UUID orderId,

@@ -39,7 +39,7 @@ public class VenueMembershipEntity {
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
-    private OffsetDateTime createdAt;
+    private OffsetDateTime createdAt = OffsetDateTime.now();
 
     public static VenueMembershipEntity create(UUID venueId, UUID userId, VenueRole role) {
         VenueMembershipEntity membership = new VenueMembershipEntity();
