@@ -3,6 +3,7 @@ package com.milly.order.application.usecase;
 import com.milly.common.exception.InvalidStateTransitionException;
 import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.StaffOrderResponse;
+import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderItemJpaRepository;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderJpaRepository;
@@ -25,7 +26,7 @@ public class RejectOrderUseCase {
     public StaffOrderResponse execute(UUID venueId, UUID userId, UUID orderId) {
         venueAuthorizationService.requireMember(userId, venueId);
 
-        var order = orderRepository.findByIdAndVenueId(orderId, venueId)
+        OrderEntity order = orderRepository.findByIdAndVenueId(orderId, venueId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found."));
 
         if (order.getStatus() != OrderStatus.PENDING) {
