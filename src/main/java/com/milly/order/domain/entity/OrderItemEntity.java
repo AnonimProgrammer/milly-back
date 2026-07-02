@@ -10,8 +10,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -22,14 +20,11 @@ import java.util.UUID;
 
 @Getter
 @Setter
-@Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Entity
 @Table(name = "order_items")
 public class OrderItemEntity {
 
-    @Builder.Default
     @Id
     private UUID id = UlidCreator.getUlid().toUuid();
 
@@ -51,4 +46,17 @@ public class OrderItemEntity {
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
+
+    public static OrderItemEntity create(
+            UUID orderId,
+            UUID menuItemId,
+            Integer quantity,
+            Money unitPrice) {
+        OrderItemEntity item = new OrderItemEntity();
+        item.setOrderId(orderId);
+        item.setMenuItemId(menuItemId);
+        item.setQuantity(quantity);
+        item.setUnitPrice(unitPrice);
+        return item;
+    }
 }
