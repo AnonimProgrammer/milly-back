@@ -6,8 +6,7 @@ import java.util.Map;
 
 public final class Preconditions {
 
-    private Preconditions() {
-    }
+    private Preconditions() {}
 
     public static <T> T required(T value, String message) {
         if (value == null || (value instanceof String string && string.isBlank())) {
