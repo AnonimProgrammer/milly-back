@@ -23,13 +23,7 @@ public record AuthProperties(
             long accessTtlSeconds,
             long refreshTtlSeconds
     ) {
-        static final String DEV_FALLBACK_SECRET =
-                "dev-jwt-secret-with-at-least-sixty-four-characters-for-hmac-signing";
-
         public Jwt {
-            if (secret == null || secret.isBlank()) {
-                secret = DEV_FALLBACK_SECRET;
-            }
             if (accessTtlSeconds <= 0) {
                 accessTtlSeconds = 900;
             }
