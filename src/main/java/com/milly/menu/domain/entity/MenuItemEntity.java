@@ -57,4 +57,39 @@ public class MenuItemEntity {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt = OffsetDateTime.now();
+
+    public static MenuItemEntity create(
+            UUID venueId,
+            String name,
+            String description,
+            Money price,
+            MenuItemStatus status) {
+        MenuItemEntity menuItem = new MenuItemEntity();
+        menuItem.setVenueId(venueId);
+        menuItem.setName(name.trim());
+        menuItem.setDescription(normalizeDescription(description));
+        menuItem.setPrice(price);
+        menuItem.setStatus(status);
+        return menuItem;
+    }
+
+    public void updateName(String name) {
+        this.name = name.trim();
+    }
+
+    public void updateDescription(String description) {
+        this.description = normalizeDescription(description);
+    }
+
+    public void updatePrice(Money price) {
+        this.price = price;
+    }
+
+    public void delete() {
+        this.status = MenuItemStatus.DELETED;
+    }
+
+    private static String normalizeDescription(String description) {
+        return description == null ? null : description.trim();
+    }
 }
