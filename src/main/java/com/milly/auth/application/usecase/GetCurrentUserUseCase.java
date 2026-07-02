@@ -22,7 +22,7 @@ public class GetCurrentUserUseCase {
     @Transactional
     public CurrentUserResponse execute(UUID userId) {
         UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+                .orElseThrow(ResourceNotFoundException::new);
 
         AuthUser authUser = loadAuthUserUseCase.execute(user);
         return new CurrentUserResponse(

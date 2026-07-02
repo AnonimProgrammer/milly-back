@@ -34,19 +34,17 @@ public class AddOrderItemsUseCase {
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
 
-
     @Transactional
     public OrderResponse execute(UUID tableId, UUID orderId, AddOrderItemsRequest request) {
         TableEntity table = tableRepository.findById(tableId)
                 .filter(t -> t.getStatus() == TableStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("Table not found."));
+                .orElseThrow(ResourceNotFoundException::new);
 
         OrderEntity order = orderRepository.findByIdAndTableId(orderId, tableId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found."));
+                .orElseThrow(ResourceNotFoundException::new);
 
         if (order.getStatus() != OrderStatus.APPROVED) {
-            throw new InvalidStateTransitionException(
-                    "Items can only be added to an APPROVED order. Current status: " + order.getStatus());
+            throw new InvalidStateTransitionException();
         }
 
         List<UUID> menuItemIds = request.items().stream()
@@ -73,14 +71,13 @@ public class AddOrderItemsUseCase {
         if (menuItem == null
                 || menuItem.getStatus() != MenuItemStatus.ACTIVE
                 || !menuItem.getVenueId().equals(venueId)) {
-            throw new ResourceNotFoundException("Menu item not found: " + dto.menuItemId());
+            throw new ResourceNotFoundException();
         }
 
-        return OrderItemEntity.builder()
-                .orderId(orderId)
-                .menuItemId(menuItem.getId())
-                .quantity(dto.quantity())
-                .unitPrice(menuItem.getPrice())
-                .build();   }
-
+        return OrderItemEntity.create(
+                orderId,
+                menuItem.getId(),
+                dto.quantity(),
+                menuItem.getPrice());
+    }
 }

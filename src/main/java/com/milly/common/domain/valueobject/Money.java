@@ -12,8 +12,7 @@ public class Money {
     @Column(name = "amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal amount;
 
-    protected Money() {
-    }
+    protected Money() {}
 
     private Money(BigDecimal amount) {
         this.amount = Objects.requireNonNull(amount, "amount");

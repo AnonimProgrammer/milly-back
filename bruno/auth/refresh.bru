@@ -22,5 +22,5 @@ docs {
   - Missing/invalid/reused refresh cookie → 401, both cookies cleared, `"Token is invalid."`
   - Each successful refresh rotates the refresh token; the previous one cannot be reused.
 
-  To test failure cases, override the Cookie header (e.g. `refresh-token=not-a-valid-jwt`) or reuse an old refresh-token value after a successful refresh.
+  To test failure cases, clear cookies in Bruno or reuse an old refresh-token value after a successful refresh.
 }

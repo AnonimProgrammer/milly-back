@@ -14,8 +14,7 @@ public final class AuthCookieWriter {
     public static final String ACCESS_TOKEN_COOKIE = "access-token";
     public static final String REFRESH_TOKEN_COOKIE = "refresh-token";
 
-    private AuthCookieWriter() {
-    }
+    private AuthCookieWriter() {}
 
     public static void writeAuthCookies(
             HttpServletResponse response,

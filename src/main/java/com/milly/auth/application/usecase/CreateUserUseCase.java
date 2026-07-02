@@ -1,12 +1,12 @@
 package com.milly.auth.application.usecase;
 
 import com.milly.auth.application.dto.ContinueAuthRequest;
-import com.milly.auth.domain.model.ExternalIdentity;
 import com.milly.auth.domain.entity.AuthProviderEntity;
 import com.milly.auth.domain.entity.RoleEntity;
 import com.milly.auth.domain.entity.UserAuthEntity;
 import com.milly.auth.domain.entity.UserEntity;
 import com.milly.auth.domain.entity.UserRoleEntity;
+import com.milly.auth.domain.model.ExternalIdentity;
 import com.milly.auth.domain.valueobject.AuthProviderType;
 import com.milly.auth.domain.valueobject.RoleName;
 import com.milly.auth.infrastructure.adapter.outbound.persistence.AuthProviderJpaRepository;
@@ -43,9 +43,9 @@ public class CreateUserUseCase {
         }
 
         AuthProviderEntity provider = authProviderRepository.findByType(identity.provider())
-                .orElseThrow(() -> new ResourceNotFoundException("Provider is not registered."));
+                .orElseThrow(ResourceNotFoundException::new);
         RoleEntity defaultRole = roleRepository.findByName(RoleName.USER)
-                .orElseThrow(() -> new ResourceNotFoundException("Default role not found."));
+                .orElseThrow(ResourceNotFoundException::new);
 
         UserEntity user = UserEntity.createActive(
                 Preconditions.required(profile.firstName(), "Missing required field: firstName"),

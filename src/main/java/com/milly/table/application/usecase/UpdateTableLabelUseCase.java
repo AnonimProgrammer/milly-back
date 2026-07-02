@@ -1,12 +1,12 @@
 package com.milly.table.application.usecase;
 
+import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.table.application.dto.TableResponse;
 import com.milly.table.application.dto.UpdateTableLabelRequest;
-import com.milly.table.application.mapper.TableResponseMapper;
 import com.milly.table.domain.entity.TableEntity;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
-import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.venue.application.service.VenueAuthorizationService;
+import com.milly.venue.domain.valueobject.VenueRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,12 +22,12 @@ public class UpdateTableLabelUseCase {
 
     @Transactional
     public TableResponse execute(UUID userId, UUID venueId, UUID tableId, UpdateTableLabelRequest request) {
-        venueAuthorizationService.requireManager(userId, venueId);
+        venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER);
 
         TableEntity table = tableRepository.findByIdAndVenueId(tableId, venueId)
-                .orElseThrow(() -> new ResourceNotFoundException("Table not found."));
+                .orElseThrow(ResourceNotFoundException::new);
 
         table.setLabel(request.label());
-        return TableResponseMapper.toResponse(tableRepository.save(table));
+        return TableResponse.of(tableRepository.save(table));
     }
 }

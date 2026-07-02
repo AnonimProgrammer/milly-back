@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.UUID;
 
 @RestController
-@RequiredArgsConstructor
 @RequestMapping("/api/v1/public/tables")
+@RequiredArgsConstructor
 public class PublicTableRestAdapter {
 
     private final GetPublicTableUseCase getPublicTableUseCase;

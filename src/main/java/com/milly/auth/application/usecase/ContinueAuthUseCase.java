@@ -2,14 +2,14 @@ package com.milly.auth.application.usecase;
 
 import com.milly.auth.application.dto.ContinueAuthRequest;
 import com.milly.auth.application.dto.ContinueAuthResponse;
-import com.milly.auth.domain.model.AuthUser;
-import com.milly.auth.domain.model.ExternalIdentity;
-import com.milly.auth.domain.model.IdentityResolution;
-import com.milly.auth.domain.model.IssuedRefreshToken;
 import com.milly.auth.application.port.outbound.AuthProvider;
 import com.milly.auth.application.port.outbound.RefreshTokenStore;
 import com.milly.auth.application.usecase.factory.AuthProviderFactory;
 import com.milly.auth.domain.Credentials;
+import com.milly.auth.domain.model.AuthUser;
+import com.milly.auth.domain.model.ExternalIdentity;
+import com.milly.auth.domain.model.IdentityResolution;
+import com.milly.auth.domain.model.IssuedRefreshToken;
 import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

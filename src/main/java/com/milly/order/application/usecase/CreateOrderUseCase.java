@@ -32,12 +32,11 @@ public class CreateOrderUseCase {
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
 
-
     @Transactional
     public OrderResponse execute(UUID tableId, CreateOrderRequest request) {
         TableEntity table = tableRepository.findById(tableId)
                 .filter(t -> t.getStatus() == TableStatus.ACTIVE)
-                .orElseThrow(() -> new ResourceNotFoundException("Table not found."));
+                .orElseThrow(ResourceNotFoundException::new);
 
         List<UUID> menuItemIds = request.items().stream()
                 .map(CreateOrderRequest.ItemDto::menuItemId)
@@ -46,11 +45,10 @@ public class CreateOrderUseCase {
         Map<UUID, MenuItemEntity> menuItems = menuItemRepository.findAllById(menuItemIds).stream()
                 .collect(Collectors.toMap(MenuItemEntity::getId, m -> m));
 
-        OrderEntity order = OrderEntity.builder()
-                .venueId(table.getVenueId())
-                .tableId(table.getId())
-                .status(OrderStatus.PENDING)
-                .build();
+        OrderEntity order = OrderEntity.create(
+                table.getVenueId(),
+                table.getId(),
+                OrderStatus.PENDING);
         OrderEntity savedOrder = orderRepository.save(order);
 
         List<OrderItemEntity> items = request.items().stream()
@@ -70,14 +68,13 @@ public class CreateOrderUseCase {
         if (menuItem == null
                 || menuItem.getStatus() != MenuItemStatus.ACTIVE
                 || !menuItem.getVenueId().equals(venueId)) {
-            throw new ResourceNotFoundException("Menu item not found: " + dto.menuItemId());
+            throw new ResourceNotFoundException();
         }
 
-        return OrderItemEntity.builder()
-                .orderId(orderId)
-                .menuItemId(menuItem.getId())
-                .quantity(dto.quantity())
-                .unitPrice(menuItem.getPrice())
-                .build();
+        return OrderItemEntity.create(
+                orderId,
+                menuItem.getId(),
+                dto.quantity(),
+                menuItem.getPrice());
     }
 }

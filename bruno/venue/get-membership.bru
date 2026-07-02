@@ -7,7 +7,7 @@ meta {
 get {
   url: {{baseUrl}}/api/v1/venues/{{venueId}}/me
   body: none
-  auth: inherit
+  auth: none
 }
 
 headers {
@@ -15,6 +15,9 @@ headers {
 }
 
 docs {
-  Run after authentication so the cookie jar sends `access-token` automatically.
-  Set `venueId` to a venue where the current user has a membership.
+  Prerequisites:
+  1. Run **Continue — login (password)** so Bruno stores auth cookies.
+  2. Set `venueId` in the local environment to `data.id` from **Register venue** (or any venue you belong to).
+
+  Without a valid `venueId`, the URL becomes `/api/v1/venues//me` and the request will fail.
 }

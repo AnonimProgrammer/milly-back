@@ -31,6 +31,5 @@ public record ContinueAuthRequest(
             @NotNull(message = "Birth date is required.")
             @Past(message = "Birth date must be in the past.")
             LocalDate birthDate
-    ) {
-    }
+    ) {}
 }

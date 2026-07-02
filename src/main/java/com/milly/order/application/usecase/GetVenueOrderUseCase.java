@@ -25,7 +25,7 @@ public class GetVenueOrderUseCase {
         venueAuthorizationService.requireMember(userId, venueId);
 
         OrderEntity order = orderRepository.findByIdAndVenueId(orderId, venueId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found."));
+                .orElseThrow(ResourceNotFoundException::new);
 
         return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()));
     }
