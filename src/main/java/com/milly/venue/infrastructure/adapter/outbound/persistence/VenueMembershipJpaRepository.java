@@ -14,4 +14,5 @@ public interface VenueMembershipJpaRepository extends JpaRepository<VenueMembers
 
     boolean existsByVenueIdAndUserIdAndRoleIn(UUID venueId, UUID userId, List<VenueRole> roles);
 
+    List<VenueMembershipEntity> findAllByUserId(UUID userId);
 }
