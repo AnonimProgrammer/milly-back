@@ -2,10 +2,10 @@ package com.milly.auth.application.usecase;
 
 import com.milly.auth.application.dto.RefreshSessionResponse;
 import com.milly.auth.application.exception.RefreshSessionFailedException;
-import com.milly.auth.domain.model.AuthUser;
-import com.milly.auth.domain.model.IssuedRefreshToken;
 import com.milly.auth.application.port.outbound.RefreshTokenStore;
 import com.milly.auth.domain.entity.UserEntity;
+import com.milly.auth.domain.model.AuthUser;
+import com.milly.auth.domain.model.IssuedRefreshToken;
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserJpaRepository;
 import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
 import com.milly.common.exception.InvalidCredentialsException;

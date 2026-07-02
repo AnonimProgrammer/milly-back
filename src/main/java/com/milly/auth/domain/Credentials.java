@@ -7,8 +7,7 @@ import java.util.Map;
 
 public final class Credentials {
 
-    private Credentials() {
-    }
+    private Credentials() {}
 
     public static String requiredRaw(Map<String, Object> credentials, String... keys) {
         for (String key : keys) {

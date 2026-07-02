@@ -33,9 +33,7 @@ public record AuthProperties(
         }
     }
 
-    public record Google(String clientId) {
-    }
+    public record Google(String clientId) {}
 
-    public record Apple(String clientId) {
-    }
+    public record Apple(String clientId) {}
 }

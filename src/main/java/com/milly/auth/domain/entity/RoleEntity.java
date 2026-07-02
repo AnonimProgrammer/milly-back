@@ -28,8 +28,4 @@ public class RoleEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, unique = true)
     private RoleName name;
-
-    public RoleEntity(RoleName name) {
-        this.name = name;
-    }
 }

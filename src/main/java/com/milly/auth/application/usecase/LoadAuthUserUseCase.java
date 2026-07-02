@@ -1,7 +1,7 @@
 package com.milly.auth.application.usecase;
 
-import com.milly.auth.domain.model.AuthUser;
 import com.milly.auth.domain.entity.UserEntity;
+import com.milly.auth.domain.model.AuthUser;
 import com.milly.auth.domain.valueobject.RoleName;
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserRoleJpaRepository;
 import lombok.RequiredArgsConstructor;

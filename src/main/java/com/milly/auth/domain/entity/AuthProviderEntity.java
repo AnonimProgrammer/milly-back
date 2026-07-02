@@ -28,8 +28,4 @@ public class AuthProviderEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, unique = true)
     private AuthProviderType type;
-
-    public AuthProviderEntity(AuthProviderType type) {
-        this.type = type;
-    }
 }

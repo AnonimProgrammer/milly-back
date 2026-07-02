@@ -1,10 +1,10 @@
 package com.milly.auth.infrastructure.adapter.outbound.auth;
 
-import com.milly.auth.domain.model.ExternalIdentity;
 import com.milly.auth.application.port.outbound.AuthProvider;
+import com.milly.auth.domain.Credentials;
+import com.milly.auth.domain.model.ExternalIdentity;
 import com.milly.auth.domain.valueobject.AuthProviderType;
 import com.milly.auth.infrastructure.config.AuthProperties;
-import com.milly.auth.domain.Credentials;
 import com.milly.common.exception.InvalidCredentialsException;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
