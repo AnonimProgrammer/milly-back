@@ -15,11 +15,15 @@ public class VenueAuthorizationService {
 
     private final VenueMembershipJpaRepository venueMembershipRepository;
 
-    public void requireManager(UUID userId, UUID venueId) {
-        VenueMembershipEntity membership = venueMembershipRepository.findByUserIdAndVenueId(userId, venueId)
+    public VenueMembershipEntity requireMember(UUID userId, UUID venueId) {
+        return venueMembershipRepository.findByUserIdAndVenueId(userId, venueId)
                 .orElseThrow(AccessDeniedException::new);
+    }
 
-        if (membership.getRole() != VenueRole.MANAGER) {
+    public void requireRole(UUID userId, UUID venueId, VenueRole role) {
+        VenueMembershipEntity membership = requireMember(userId, venueId);
+
+        if (membership.getRole() != role) {
             throw new AccessDeniedException();
         }
     }
