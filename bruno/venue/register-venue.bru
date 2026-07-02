@@ -7,7 +7,7 @@ meta {
 post {
   url: {{baseUrl}}/api/v1/venues
   body: json
-  auth: inherit
+  auth: none
 }
 
 headers {
@@ -23,6 +23,8 @@ body:json {
 }
 
 docs {
-  Run after authentication so the cookie jar sends `access-token` automatically.
-  The authenticated user becomes the venue's Manager.
+  Run **Continue — login (password)** first so Bruno stores auth cookies.
+
+  On success, copy `data.id` from the response into the `venueId` environment variable
+  before calling **Get venue membership** or table endpoints.
 }
