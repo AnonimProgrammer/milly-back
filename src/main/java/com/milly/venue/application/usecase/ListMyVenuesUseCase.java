@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -36,6 +37,7 @@ public class ListMyVenuesUseCase {
 
         return memberships.stream()
                 .map(membership -> VenueMembershipResponse.of(venuesById.get(membership.getVenueId()), membership))
+                .sorted(Comparator.comparing(VenueMembershipResponse::venueName))
                 .toList();
     }
 }
