@@ -24,7 +24,7 @@ public class GetVenueMembershipUseCase {
     @Transactional(readOnly = true)
     public VenueMembershipResponse execute(UUID venueId, UUID userId) {
         VenueMembershipEntity membership = venueMembershipRepository
-                .findByUserIdAndVenueId( userId,venueId)
+                .findByUserIdAndVenueId(userId, venueId)
                 .orElseThrow(() -> new AccessDeniedException(ACCESS_DENIED_MESSAGE));
         VenueEntity venue = venueRepository.findById(venueId)
                 .orElseThrow(() -> new AccessDeniedException(ACCESS_DENIED_MESSAGE));

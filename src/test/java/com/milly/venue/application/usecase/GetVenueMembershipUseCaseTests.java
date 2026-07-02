@@ -42,7 +42,7 @@ class GetVenueMembershipUseCaseTests {
         VenueEntity venue = VenueEntity.createActive("Milly Bistro", "Barcelona, Spain");
         VenueMembershipEntity membership = VenueMembershipEntity.create(
                 venue.getId(), userId, role);
-        when(venueMembershipRepository.findByVenueIdAndUserId(venue.getId(), userId))
+        when(venueMembershipRepository.findByUserIdAndVenueId(userId, venue.getId()))
                 .thenReturn(Optional.of(membership));
         when(venueRepository.findById(venue.getId())).thenReturn(Optional.of(venue));
 
@@ -58,7 +58,7 @@ class GetVenueMembershipUseCaseTests {
     void executeThrowsAccessDeniedWhenMembershipDoesNotExist() {
         UUID venueId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
-        when(venueMembershipRepository.findByVenueIdAndUserId(venueId, userId))
+        when(venueMembershipRepository.findByUserIdAndVenueId(userId, venueId))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> getVenueMembershipUseCase.execute(venueId, userId))
