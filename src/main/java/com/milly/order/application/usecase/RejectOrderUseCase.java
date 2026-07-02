@@ -27,11 +27,10 @@ public class RejectOrderUseCase {
         venueAuthorizationService.requireMember(userId, venueId);
 
         OrderEntity order = orderRepository.findByIdAndVenueId(orderId, venueId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found."));
+                .orElseThrow(ResourceNotFoundException::new);
 
         if (order.getStatus() != OrderStatus.PENDING) {
-            throw new InvalidStateTransitionException(
-                    "Order can only be rejected from PENDING. Current status: " + order.getStatus());
+            throw new InvalidStateTransitionException();
         }
 
         order.setStatus(OrderStatus.REJECTED);

@@ -28,11 +28,10 @@ public class CloseOrderUseCase {
         venueAuthorizationService.requireMember(userId, venueId);
 
         OrderEntity order = orderRepository.findByIdAndVenueId(orderId, venueId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found."));
+                .orElseThrow(ResourceNotFoundException::new);
 
         if (order.getStatus() != OrderStatus.APPROVED) {
-            throw new InvalidStateTransitionException(
-                    "Order can only be closed from APPROVED. Current status: " + order.getStatus());
+            throw new InvalidStateTransitionException();
         }
 
         order.setStatus(OrderStatus.CLOSED);
