@@ -1,7 +1,6 @@
 package com.milly.table.application.usecase;
 
 import com.milly.table.application.dto.TableResponse;
-import com.milly.table.application.mapper.TableResponseMapper;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
 import com.milly.venue.application.service.VenueAuthorizationService;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +22,7 @@ public class ListTablesUseCase {
         venueAuthorizationService.requireManager(userId, venueId);
 
         return tableRepository.findByVenueIdOrderByLabelAsc(venueId).stream()
-                .map(TableResponseMapper::toResponse)
+                .map(TableResponse::of)
                 .toList();
     }
 }

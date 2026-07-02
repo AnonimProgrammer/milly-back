@@ -2,7 +2,6 @@ package com.milly.table.application.usecase;
 
 import com.milly.table.application.dto.CreateTableRequest;
 import com.milly.table.application.dto.TableResponse;
-import com.milly.table.application.mapper.TableResponseMapper;
 import com.milly.table.domain.entity.TableEntity;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
 import com.milly.venue.application.service.VenueAuthorizationService;
@@ -24,6 +23,6 @@ public class CreateTableUseCase {
         venueAuthorizationService.requireManager(userId, venueId);
 
         TableEntity table = TableEntity.createActive(venueId, request.label());
-        return TableResponseMapper.toResponse(tableRepository.save(table));
+        return TableResponse.of(tableRepository.save(table));
     }
 }
