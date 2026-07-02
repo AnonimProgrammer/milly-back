@@ -3,6 +3,7 @@ package com.milly.table.application.usecase;
 import com.milly.table.application.dto.CreateTableRequest;
 import com.milly.table.application.dto.TableResponse;
 import com.milly.table.domain.entity.TableEntity;
+import com.milly.table.domain.valueobject.TableStatus;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
 import com.milly.venue.application.service.VenueAuthorizationService;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +23,7 @@ public class CreateTableUseCase {
     public TableResponse execute(UUID userId, UUID venueId, CreateTableRequest request) {
         venueAuthorizationService.requireManager(userId, venueId);
 
-        TableEntity table = TableEntity.createActive(venueId, request.label());
+        TableEntity table = TableEntity.create(venueId, request.label(), TableStatus.ACTIVE);
         return TableResponse.of(tableRepository.save(table));
     }
 }

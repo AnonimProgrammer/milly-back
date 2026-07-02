@@ -46,11 +46,11 @@ public class TableEntity {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    public static TableEntity createActive(UUID venueId, String label) {
+    public static TableEntity create(UUID venueId, String label, TableStatus status) {
         TableEntity table = new TableEntity();
         table.setVenueId(venueId);
         table.setLabel(label);
-        table.setStatus(TableStatus.ACTIVE);
+        table.setStatus(status);
         return table;
     }
 
