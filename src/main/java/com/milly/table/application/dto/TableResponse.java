@@ -11,6 +11,7 @@ public record TableResponse(
         UUID venueId,
         String label,
         TableStatus status,
+        String qrImageUrl,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {
@@ -20,6 +21,7 @@ public record TableResponse(
                 table.getVenueId(),
                 table.getLabel(),
                 table.getStatus(),
+                table.getQrImageUrl(),
                 table.getCreatedAt(),
                 table.getUpdatedAt());
     }

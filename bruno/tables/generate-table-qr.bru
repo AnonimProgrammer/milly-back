@@ -1,0 +1,20 @@
+meta {
+  name: Generate table QR
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/v1/venues/{{venueId}}/tables/{{tableId}}/qr
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
