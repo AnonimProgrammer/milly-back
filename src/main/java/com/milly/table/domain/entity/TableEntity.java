@@ -38,6 +38,9 @@ public class TableEntity {
     @Column(nullable = false)
     private TableStatus status;
 
+    @Column(name = "qr_image_url")
+    private String qrImageUrl;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
