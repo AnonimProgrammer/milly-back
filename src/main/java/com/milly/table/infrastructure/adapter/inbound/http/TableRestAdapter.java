@@ -4,8 +4,10 @@ import com.milly.common.web.ApiResponse;
 import com.milly.table.application.dto.CreateTableRequest;
 import com.milly.table.application.dto.TableResponse;
 import com.milly.table.application.dto.UpdateTableLabelRequest;
+import com.milly.table.application.dto.TableQrResponse;
 import com.milly.table.application.usecase.CreateTableUseCase;
 import com.milly.table.application.usecase.DeactivateTableUseCase;
+import com.milly.table.application.usecase.GenerateTableQrUseCase;
 import com.milly.table.application.usecase.GetTableUseCase;
 import com.milly.table.application.usecase.ListTablesUseCase;
 import com.milly.table.application.usecase.UpdateTableLabelUseCase;
@@ -34,6 +36,7 @@ public class TableRestAdapter {
     private final GetTableUseCase getTableUseCase;
     private final UpdateTableLabelUseCase updateTableLabelUseCase;
     private final DeactivateTableUseCase deactivateTableUseCase;
+    private final GenerateTableQrUseCase generateTableQrUseCase;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<TableResponse>>> listTables(
@@ -78,5 +81,14 @@ public class TableRestAdapter {
             @PathVariable UUID tableId) {
         deactivateTableUseCase.execute(userId, venueId, tableId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{tableId}/qr")
+    public ResponseEntity<ApiResponse<TableQrResponse>> generateTableQr(
+            @AuthenticationPrincipal UUID userId,
+            @PathVariable UUID venueId,
+            @PathVariable UUID tableId) {
+        TableQrResponse qr = generateTableQrUseCase.execute(userId, venueId, tableId);
+        return ResponseEntity.ok(ApiResponse.success(qr, "Table QR generated successfully."));
     }
 }
