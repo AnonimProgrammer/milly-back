@@ -1,4 +1,4 @@
-package com.milly.config.storage;
+package com.milly.config.infrastructure.config.storage;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;

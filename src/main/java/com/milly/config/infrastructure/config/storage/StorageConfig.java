@@ -1,5 +1,8 @@
-package com.milly.config.storage;
+package com.milly.config.infrastructure.config.storage;
 
+import com.milly.config.application.port.outbound.BlobStorage;
+import com.milly.config.infrastructure.adapter.outbound.storage.InMemoryBlobStorage;
+import com.milly.config.infrastructure.adapter.outbound.storage.S3BlobStorage;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

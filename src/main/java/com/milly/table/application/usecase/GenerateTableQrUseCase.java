@@ -1,7 +1,7 @@
 package com.milly.table.application.usecase;
 
 import com.milly.common.exception.ResourceNotFoundException;
-import com.milly.config.storage.BlobStorage;
+import com.milly.config.application.port.outbound.BlobStorage;
 import com.milly.table.application.dto.TableQrResponse;
 import com.milly.table.application.service.TableCustomerUrlBuilder;
 import com.milly.table.domain.entity.TableEntity;
