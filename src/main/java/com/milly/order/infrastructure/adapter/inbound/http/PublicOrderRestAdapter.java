@@ -57,6 +57,7 @@ public class PublicOrderRestAdapter {
         return ResponseEntity.ok(ApiResponse.success(response, "Order retrieved successfully."));
     }
 
+    @Idempotent
     @PostMapping("/{orderId}/items")
     public ResponseEntity<ApiResponse<OrderResponse>> addItems(
             @PathVariable UUID tableId,
