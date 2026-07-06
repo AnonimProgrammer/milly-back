@@ -1,6 +1,6 @@
 package com.milly.auth.infrastructure.adapter.inbound.http;
 
-import com.milly.config.websocket.NoOpStompSessionHandler;
+import com.milly.config.infrastructure.adapter.outbound.websocket.NoOpStompSessionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

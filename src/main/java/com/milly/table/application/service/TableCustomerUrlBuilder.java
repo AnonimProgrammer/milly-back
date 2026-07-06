@@ -1,6 +1,6 @@
 package com.milly.table.application.service;
 
-import com.milly.config.client.ClientProperties;
+import com.milly.config.infrastructure.config.client.ClientProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

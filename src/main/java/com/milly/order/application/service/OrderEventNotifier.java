@@ -1,7 +1,7 @@
 package com.milly.order.application.service;
 
-import com.milly.config.websocket.StompTopics;
-import com.milly.config.websocket.WsEventPublisher;
+import com.milly.config.domain.constant.StompTopics;
+import com.milly.config.application.port.outbound.WsEventPublisher;
 import com.milly.order.application.dto.OrderEvent;
 import com.milly.order.application.dto.OrderEventType;
 import lombok.RequiredArgsConstructor;

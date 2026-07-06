@@ -1,6 +1,6 @@
 package com.milly.table.application.usecase;
 
-import com.milly.config.storage.BlobStorage;
+import com.milly.config.application.port.outbound.BlobStorage;
 import com.milly.table.domain.entity.TableEntity;
 import com.milly.table.domain.valueobject.TableStatus;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
