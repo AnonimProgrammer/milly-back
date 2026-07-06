@@ -1,5 +1,7 @@
-package com.milly.config.storage;
+package com.milly.config.infrastructure.adapter.outbound.storage;
 
+import com.milly.config.domain.model.BlobObject;
+import com.milly.config.infrastructure.config.storage.StorageProperties;
 import com.milly.common.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
