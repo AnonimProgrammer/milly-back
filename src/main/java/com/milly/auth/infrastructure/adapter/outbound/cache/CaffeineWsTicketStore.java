@@ -2,6 +2,7 @@ package com.milly.auth.infrastructure.adapter.outbound.cache;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.milly.auth.application.port.outbound.WsTicketStore;
+import com.milly.auth.domain.model.WsTicket;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -12,16 +13,16 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CaffeineWsTicketStore implements WsTicketStore {
 
-    private final Cache<UUID, UUID> wsTicketCache;
+    private final Cache<UUID, WsTicket> wsTicketCache;
 
     @Override
-    public void register(UUID ticketId, UUID userId) {
-        wsTicketCache.put(ticketId, userId);
+    public void register(WsTicket ticket) {
+        wsTicketCache.put(ticket.ticketId(), ticket);
     }
 
     @Override
     public Optional<UUID> claim(UUID ticketId) {
-        UUID userId = wsTicketCache.asMap().remove(ticketId);
-        return Optional.ofNullable(userId);
+        WsTicket ticket = wsTicketCache.asMap().remove(ticketId);
+        return ticket == null ? Optional.empty() : Optional.of(ticket.userId());
     }
 }
