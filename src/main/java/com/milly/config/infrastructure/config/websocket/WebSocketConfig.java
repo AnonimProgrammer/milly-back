@@ -1,6 +1,8 @@
-package com.milly.config.websocket;
+package com.milly.config.infrastructure.config.websocket;
 
-import com.milly.config.client.ClientProperties;
+import com.milly.config.infrastructure.adapter.inbound.websocket.TopicSubscriptionInterceptor;
+import com.milly.config.infrastructure.adapter.inbound.websocket.WsTicketHandshakeInterceptor;
+import com.milly.config.infrastructure.config.client.ClientProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
