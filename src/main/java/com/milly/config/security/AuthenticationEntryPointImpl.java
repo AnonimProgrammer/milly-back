@@ -1,5 +1,6 @@
 package com.milly.config.security;
 
+import org.jspecify.annotations.NonNull;
 import tools.jackson.databind.ObjectMapper;
 import com.milly.common.web.ApiResponse;
 import com.milly.common.web.ErrorCode;
@@ -24,9 +25,9 @@ public class AuthenticationEntryPointImpl implements AuthenticationEntryPoint {
 
     @Override
     public void commence(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            AuthenticationException authException) throws IOException {
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull AuthenticationException authException) throws IOException {
         HttpStatus status = HttpStatus.UNAUTHORIZED;
         Object requestMessage = request.getAttribute(JwtAuthenticationFilter.AUTH_ERROR_MESSAGE_ATTRIBUTE);
         String message = requestMessage instanceof String errorMessage ? errorMessage : DEFAULT_MESSAGE;
