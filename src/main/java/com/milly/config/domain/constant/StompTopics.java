@@ -1,4 +1,4 @@
-package com.milly.config.websocket;
+package com.milly.config.domain.constant;
 
 import java.util.Optional;
 import java.util.UUID;
