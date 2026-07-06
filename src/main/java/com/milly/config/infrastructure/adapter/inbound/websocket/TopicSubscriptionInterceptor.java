@@ -1,6 +1,8 @@
-package com.milly.config.websocket;
+package com.milly.config.infrastructure.adapter.inbound.websocket;
 
 import com.milly.common.exception.AccessDeniedException;
+import com.milly.config.domain.constant.StompTopics;
+import com.milly.config.domain.constant.WebSocketSessionAttributes;
 import com.milly.venue.application.service.VenueAuthorizationService;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
