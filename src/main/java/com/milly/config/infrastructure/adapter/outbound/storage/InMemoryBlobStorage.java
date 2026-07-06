@@ -1,5 +1,7 @@
-package com.milly.config.storage;
+package com.milly.config.infrastructure.adapter.outbound.storage;
 
+import com.milly.config.application.port.outbound.BlobStorage;
+import com.milly.config.domain.model.BlobObject;
 import com.milly.common.exception.ResourceNotFoundException;
 
 import java.util.Map;
