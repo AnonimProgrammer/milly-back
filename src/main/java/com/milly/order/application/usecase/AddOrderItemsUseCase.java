@@ -8,6 +8,7 @@ import com.milly.menu.infrastructure.adapter.outbound.persistence.MenuItemJpaRep
 import com.milly.order.application.dto.AddOrderItemsRequest;
 import com.milly.order.application.dto.CreateOrderRequest;
 import com.milly.order.application.dto.OrderResponse;
+import com.milly.order.application.service.OrderEventNotifier;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
@@ -33,6 +34,7 @@ public class AddOrderItemsUseCase {
     private final MenuItemJpaRepository menuItemRepository;
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
+    private final OrderEventNotifier orderEventNotifier;
 
     @Transactional
     public OrderResponse execute(UUID tableId, UUID orderId, AddOrderItemsRequest request) {
@@ -58,6 +60,8 @@ public class AddOrderItemsUseCase {
                 .map(dto -> toOrderItem(order.getId(), dto, menuItems, table.getVenueId()))
                 .toList();
         orderItemRepository.saveAll(newItems);
+
+        orderEventNotifier.orderUpdated(order.getId(), order.getVenueId(), order.getTableId());
 
         return OrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()));
     }
