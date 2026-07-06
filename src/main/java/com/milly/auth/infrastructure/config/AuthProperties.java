@@ -6,7 +6,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public record AuthProperties(
         Jwt jwt,
         Google google,
-        Apple apple
+        Apple apple,
+        WsTicket wsTicket
 ) {
 
     public AuthProperties {
@@ -15,6 +16,9 @@ public record AuthProperties(
         }
         if (apple == null) {
             apple = new Apple("");
+        }
+        if (wsTicket == null) {
+            wsTicket = new WsTicket(30);
         }
     }
 
@@ -36,4 +40,12 @@ public record AuthProperties(
     public record Google(String clientId) {}
 
     public record Apple(String clientId) {}
+
+    public record WsTicket(long ttlSeconds) {
+        public WsTicket {
+            if (ttlSeconds <= 0) {
+                ttlSeconds = 30;
+            }
+        }
+    }
 }

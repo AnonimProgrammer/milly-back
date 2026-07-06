@@ -1,6 +1,7 @@
 package com.milly.config.websocket;
 
 import com.milly.auth.application.port.outbound.WsTicketStore;
+import com.milly.auth.domain.model.WsTicket;
 import com.milly.venue.domain.entity.VenueMembershipEntity;
 import com.milly.venue.domain.valueobject.VenueRole;
 import com.milly.venue.infrastructure.adapter.outbound.persistence.VenueMembershipJpaRepository;
@@ -16,6 +17,7 @@ import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -64,7 +66,7 @@ class StompWebSocketIntegrationTest {
     @Test
     void staffConnectsWithValidTicket() throws Exception {
         UUID ticketId = UUID.randomUUID();
-        wsTicketStore.register(ticketId, staffUserId);
+        registerTicket(ticketId, staffUserId);
 
         StompSession session = connect("?ticket=" + ticketId).get(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
@@ -84,7 +86,7 @@ class StompWebSocketIntegrationTest {
     @Test
     void handshakeRejectsReusedTicket() throws Exception {
         UUID ticketId = UUID.randomUUID();
-        wsTicketStore.register(ticketId, staffUserId);
+        registerTicket(ticketId, staffUserId);
 
         StompSession firstSession = connect("?ticket=" + ticketId).get(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         firstSession.disconnect();
@@ -108,7 +110,7 @@ class StompWebSocketIntegrationTest {
     @Test
     void staffCanSubscribeToOwnVenueTopic() throws Exception {
         UUID ticketId = UUID.randomUUID();
-        wsTicketStore.register(ticketId, staffUserId);
+        registerTicket(ticketId, staffUserId);
 
         StompSession session = connect("?ticket=" + ticketId).get(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         StompSession.Subscription subscription = session.subscribe(
@@ -117,6 +119,11 @@ class StompWebSocketIntegrationTest {
 
         assertThat(subscription.getSubscriptionId()).isNotBlank();
         session.disconnect();
+    }
+
+    private void registerTicket(UUID ticketId, UUID userId) {
+        Instant issuedAt = Instant.now();
+        wsTicketStore.register(new WsTicket(ticketId, userId, issuedAt, issuedAt.plusSeconds(30)));
     }
 
     private CompletableFuture<StompSession> connect(String query) {
