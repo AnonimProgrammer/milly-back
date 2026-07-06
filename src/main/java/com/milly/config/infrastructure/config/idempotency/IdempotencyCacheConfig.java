@@ -1,6 +1,7 @@
-package com.milly.common.idempotency;
+package com.milly.config.infrastructure.config.idempotency;
 
 import com.github.benmanes.caffeine.cache.Cache;
+import com.milly.common.idempotency.IdempotencyRecord;
 import com.milly.config.domain.model.CacheSpec;
 import com.milly.config.infrastructure.config.cache.CaffeineCacheFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
