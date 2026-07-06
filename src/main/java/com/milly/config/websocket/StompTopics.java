@@ -14,6 +14,14 @@ public final class StompTopics {
 
     private StompTopics() {}
 
+    public static String tableTopic(UUID tableId) {
+        return "/topic/table/" + tableId;
+    }
+
+    public static String venueStaffTopic(UUID venueId) {
+        return "/topic/venue/" + venueId + "/staff";
+    }
+
     public static Optional<UUID> parseTableTopic(String destination) {
         return parseUuid(destination, TABLE_TOPIC, "tableId");
     }

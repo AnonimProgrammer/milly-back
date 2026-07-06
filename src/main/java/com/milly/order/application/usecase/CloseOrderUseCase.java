@@ -3,6 +3,7 @@ package com.milly.order.application.usecase;
 import com.milly.common.exception.InvalidStateTransitionException;
 import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.StaffOrderResponse;
+import com.milly.order.application.service.OrderEventNotifier;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderItemJpaRepository;
@@ -22,6 +23,7 @@ public class CloseOrderUseCase {
     private final VenueAuthorizationService venueAuthorizationService;
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
+    private final OrderEventNotifier orderEventNotifier;
 
     @Transactional
     public StaffOrderResponse execute(UUID venueId, UUID userId, UUID orderId) {
@@ -36,6 +38,8 @@ public class CloseOrderUseCase {
 
         order.setStatus(OrderStatus.CLOSED);
         order.setClosedAt(OffsetDateTime.now());
+
+        orderEventNotifier.orderClosed(order.getId(), order.getVenueId(), order.getTableId());
 
         return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()));
     }
