@@ -1,4 +1,4 @@
-package com.milly.config.storage;
+package com.milly.config.domain.model;
 
 public record BlobObject(
         String key,

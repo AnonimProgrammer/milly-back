@@ -1,4 +1,4 @@
-package com.milly.config.websocket;
+package com.milly.config.application.port.outbound;
 
 public interface WsEventPublisher {
 

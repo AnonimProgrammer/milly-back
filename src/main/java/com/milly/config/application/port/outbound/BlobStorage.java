@@ -1,4 +1,6 @@
-package com.milly.config.storage;
+package com.milly.config.application.port.outbound;
+
+import com.milly.config.domain.model.BlobObject;
 
 public interface BlobStorage {
 
