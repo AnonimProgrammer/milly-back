@@ -1,7 +1,9 @@
-package com.milly.config.websocket;
+package com.milly.config.infrastructure.config.websocket;
 
 import com.milly.auth.application.port.outbound.WsTicketStore;
 import com.milly.auth.domain.model.WsTicket;
+import com.milly.config.infrastructure.adapter.outbound.websocket.NoOpStompFrameHandler;
+import com.milly.config.infrastructure.adapter.outbound.websocket.NoOpStompSessionHandler;
 import com.milly.venue.domain.entity.VenueMembershipEntity;
 import com.milly.venue.domain.valueobject.VenueRole;
 import com.milly.venue.infrastructure.adapter.outbound.persistence.VenueMembershipJpaRepository;
