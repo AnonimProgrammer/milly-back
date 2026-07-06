@@ -1,9 +1,9 @@
 package com.milly.auth.infrastructure.config;
 
 import com.github.benmanes.caffeine.cache.Cache;
-import com.milly.config.cache.CacheNames;
-import com.milly.config.cache.CacheSpec;
-import com.milly.config.cache.CaffeineCacheFactory;
+import com.milly.config.domain.constant.CacheNames;
+import com.milly.config.domain.model.CacheSpec;
+import com.milly.config.infrastructure.config.cache.CaffeineCacheFactory;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

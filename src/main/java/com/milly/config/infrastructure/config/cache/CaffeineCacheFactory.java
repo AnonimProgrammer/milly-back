@@ -1,5 +1,6 @@
-package com.milly.config.cache;
+package com.milly.config.infrastructure.config.cache;
 
+import com.milly.config.domain.model.CacheSpec;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;

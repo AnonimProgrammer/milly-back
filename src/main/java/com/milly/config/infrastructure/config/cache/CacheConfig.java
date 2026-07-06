@@ -1,4 +1,4 @@
-package com.milly.config.cache;
+package com.milly.config.infrastructure.config.cache;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.CacheManager;
