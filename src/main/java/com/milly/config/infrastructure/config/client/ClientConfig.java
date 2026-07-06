@@ -1,4 +1,4 @@
-package com.milly.config.client;
+package com.milly.config.infrastructure.config.client;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
