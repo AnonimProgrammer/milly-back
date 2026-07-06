@@ -1,5 +1,7 @@
-package com.milly.config.security;
+package com.milly.config.infrastructure.config.security;
 
+import com.milly.config.infrastructure.adapter.inbound.http.AuthenticationEntryPointImpl;
+import com.milly.config.infrastructure.adapter.inbound.http.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
