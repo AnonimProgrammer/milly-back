@@ -1,5 +1,6 @@
 package com.milly.venue.infrastructure.adapter.inbound.http;
 
+import com.milly.common.idempotency.Idempotent;
 import com.milly.common.web.ApiResponse;
 import com.milly.venue.application.dto.CreateVenueRequest;
 import com.milly.venue.application.dto.CreateVenueResponse;
@@ -38,6 +39,7 @@ public class VenueRestAdapter {
         return ResponseEntity.ok(ApiResponse.success(response, "Venues retrieved successfully."));
     }
 
+    @Idempotent
     @PostMapping
     public ResponseEntity<ApiResponse<CreateVenueResponse>> createVenue(
             @AuthenticationPrincipal UUID userId,
