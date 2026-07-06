@@ -1,0 +1,23 @@
+meta {
+  name: Issue WebSocket ticket
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/v1/ws-ticket
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}
+
+docs {
+  Run **Continue – login (password)** first so Bruno stores the `access-token` cookie.
+
+  Issues a single-use WebSocket handshake ticket (30s TTL). Returns `ticketId` and
+  `expiresAt`. Use the ticket once when connecting to `wss://host/ws?ticket={ticketId}`.
+  Returns `401` if the auth cookie is missing or invalid.
+}
