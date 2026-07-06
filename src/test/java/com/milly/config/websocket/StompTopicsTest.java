@@ -12,7 +12,7 @@ class StompTopicsTest {
     void parsesTableTopic() {
         UUID tableId = UUID.randomUUID();
 
-        assertThat(StompTopics.parseTableTopic("/topic/table/" + tableId))
+        assertThat(StompTopics.parseTableTopic(StompTopics.tableTopic(tableId)))
                 .contains(tableId);
         assertThat(StompTopics.parseTableTopic("/topic/venue/" + tableId + "/staff"))
                 .isEmpty();
@@ -22,7 +22,7 @@ class StompTopicsTest {
     void parsesVenueStaffTopic() {
         UUID venueId = UUID.randomUUID();
 
-        assertThat(StompTopics.parseVenueStaffTopic("/topic/venue/" + venueId + "/staff"))
+        assertThat(StompTopics.parseVenueStaffTopic(StompTopics.venueStaffTopic(venueId)))
                 .contains(venueId);
         assertThat(StompTopics.parseVenueStaffTopic("/topic/table/" + venueId))
                 .isEmpty();
