@@ -1,5 +1,6 @@
-package com.milly.config.websocket;
+package com.milly.config.infrastructure.adapter.outbound.websocket;
 
+import com.milly.config.application.port.outbound.WsEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
