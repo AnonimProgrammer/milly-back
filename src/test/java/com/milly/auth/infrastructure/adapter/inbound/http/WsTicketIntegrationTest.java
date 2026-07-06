@@ -4,7 +4,7 @@ import com.milly.auth.domain.model.AuthUser;
 import com.milly.auth.domain.valueobject.RoleName;
 import com.milly.auth.infrastructure.adapter.outbound.security.AuthCookieWriter;
 import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
-import com.milly.config.websocket.NoOpStompSessionHandler;
+import com.milly.config.infrastructure.adapter.outbound.websocket.NoOpStompSessionHandler;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,6 +1,7 @@
-package com.milly.config.websocket;
+package com.milly.config.infrastructure.adapter.inbound.websocket;
 
 import com.milly.auth.application.port.outbound.WsTicketStore;
+import com.milly.config.domain.constant.WebSocketSessionAttributes;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpStatus;
