@@ -6,11 +6,15 @@ import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import tools.jackson.databind.ObjectMapper;
+
+import java.util.UUID;
 
 /**
  * Intercepts {@link Idempotent}-annotated controller methods and, when an
@@ -49,6 +53,8 @@ public class IdempotencyAspect {
             return joinPoint.proceed();
         }
 
+        String scopeKey = buildScopeKey(request, idempotencyKey);
+
         return joinPoint.proceed();
     }
 
@@ -58,5 +64,29 @@ public class IdempotencyAspect {
             return servletRequestAttributes.getRequest();
         }
         return null;
+    }
+
+    private String buildScopeKey(HttpServletRequest request, String idempotencyKey) {
+        return request.getMethod()
+                + ":"
+                + request.getRequestURI()
+                + ":"
+                + resolveActor()
+                + ":"
+                + idempotencyKey;
+    }
+
+    private String resolveActor() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication != null
+                && authentication.isAuthenticated()
+                && authentication.getPrincipal() instanceof UUID userId) {
+
+            return "user:" + userId;
+        }
+
+        return "anonymous";
     }
 }
