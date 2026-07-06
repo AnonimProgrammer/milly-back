@@ -1,9 +1,6 @@
 package com.milly.common.web;
 
-import com.milly.common.exception.AccessDeniedException;
-import com.milly.common.exception.InvalidCredentialsException;
-import com.milly.common.exception.InvalidStateTransitionException;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -51,5 +48,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException exception) {
         return HttpErrorResponses.of(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, exception.getMessage());
+    }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIdempotencyConflict(IdempotencyConflictException ignored) {
+        return HttpErrorResponses.of(HttpStatus.CONFLICT, ErrorCode.CONFLICT, IdempotencyConflictException.MESSAGE);
     }
 }
