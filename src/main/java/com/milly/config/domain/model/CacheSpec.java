@@ -1,4 +1,4 @@
-package com.milly.config.cache;
+package com.milly.config.domain.model;
 
 import java.time.Duration;
 
