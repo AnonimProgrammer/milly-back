@@ -1,0 +1,19 @@
+sourceSets {
+    itest {
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
+    }
+}
+
+configurations {
+    itestImplementation.extendsFrom testImplementation
+    itestCompileOnly.extendsFrom testCompileOnly
+    itestRuntimeOnly.extendsFrom testRuntimeOnly
+    itestAnnotationProcessor.extendsFrom testAnnotationProcessor
+}
+
+dependencies {
+    itestImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    itestImplementation 'org.testcontainers:testcontainers-postgresql'
+    itestImplementation 'org.springframework.boot:spring-boot-resttestclient'
+}
