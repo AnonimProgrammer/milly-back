@@ -1,6 +1,7 @@
-package com.milly.config.websocket;
+package com.milly.config.infrastructure.adapter.inbound.websocket;
 
 import com.milly.common.exception.AccessDeniedException;
+import com.milly.config.domain.constant.WebSocketSessionAttributes;
 import com.milly.venue.application.service.VenueAuthorizationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
