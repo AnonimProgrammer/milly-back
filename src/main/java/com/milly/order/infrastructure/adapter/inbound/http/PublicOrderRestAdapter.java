@@ -1,5 +1,6 @@
 package com.milly.order.infrastructure.adapter.inbound.http;
 
+import com.milly.common.idempotency.Idempotent;
 import com.milly.common.web.ApiResponse;
 import com.milly.order.application.dto.AddOrderItemsRequest;
 import com.milly.order.application.dto.CreateOrderRequest;
@@ -32,6 +33,7 @@ public class PublicOrderRestAdapter {
     private final GetOrderUseCase getOrderUseCase;
     private final AddOrderItemsUseCase addOrderItemsUseCase;
 
+    @Idempotent
     @PostMapping
     public ResponseEntity<ApiResponse<OrderResponse>> createOrder(
             @PathVariable UUID tableId,
@@ -55,6 +57,7 @@ public class PublicOrderRestAdapter {
         return ResponseEntity.ok(ApiResponse.success(response, "Order retrieved successfully."));
     }
 
+    @Idempotent
     @PostMapping("/{orderId}/items")
     public ResponseEntity<ApiResponse<OrderResponse>> addItems(
             @PathVariable UUID tableId,
