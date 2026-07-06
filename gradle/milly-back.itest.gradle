@@ -1,0 +1,46 @@
+import java.time.Duration
+
+sourceSets {
+    itest {
+        compileClasspath += sourceSets.main.output + sourceSets.test.output
+        runtimeClasspath += sourceSets.main.output + sourceSets.test.output
+    }
+}
+
+configurations {
+    itestImplementation.extendsFrom testImplementation
+    itestCompileOnly.extendsFrom testCompileOnly
+    itestRuntimeOnly.extendsFrom testRuntimeOnly
+    itestAnnotationProcessor.extendsFrom testAnnotationProcessor
+}
+
+dependencies {
+    itestImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    itestImplementation 'org.testcontainers:testcontainers-postgresql'
+    itestImplementation 'org.springframework.boot:spring-boot-resttestclient'
+}
+
+tasks.register('itest', Test) {
+    description = 'Runs integration tests.'
+    group = 'verification'
+
+    testClassesDirs = sourceSets.itest.output.classesDirs
+    classpath = sourceSets.itest.runtimeClasspath
+
+    useJUnitPlatform()
+    shouldRunAfter test
+
+    testLogging {
+        events 'started', 'passed', 'skipped', 'failed', 'standardOut', 'standardError'
+        showStandardStreams = true
+        exceptionFormat 'full'
+    }
+
+    timeout = Duration.ofMinutes(25)
+    systemProperty 'junit.jupiter.execution.timeout.default', '2m'
+
+    // Reuse speeds up local runs; CI uses a fresh runner each time.
+    if (System.getenv('CI') == null) {
+        environment 'TESTCONTAINERS_REUSE_ENABLE', 'true'
+    }
+}
