@@ -1,4 +1,4 @@
-package com.milly.config.security;
+package com.milly.config.infrastructure.adapter.inbound.http;
 
 import com.milly.auth.infrastructure.adapter.outbound.security.AuthCookieWriter;
 import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;

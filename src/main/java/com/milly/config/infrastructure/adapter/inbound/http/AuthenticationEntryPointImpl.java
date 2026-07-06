@@ -1,4 +1,4 @@
-package com.milly.config.security;
+package com.milly.config.infrastructure.adapter.inbound.http;
 
 import org.jspecify.annotations.NonNull;
 import tools.jackson.databind.ObjectMapper;
