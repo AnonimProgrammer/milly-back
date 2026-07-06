@@ -1,4 +1,4 @@
-package com.milly.config.websocket;
+package com.milly.config.infrastructure.adapter.outbound.websocket;
 
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 
