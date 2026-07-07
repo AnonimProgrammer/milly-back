@@ -26,6 +26,14 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v6
 
+      - name: Cache Testcontainers
+        uses: actions/cache@v6
+        with:
+          path: ~/.testcontainers
+          key: testcontainers-${{ runner.os }}-${{ hashFiles('gradle/milly-back.itest.gradle', 'build.gradle', 'gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            testcontainers-${{ runner.os }}-
+
       - name: Run integration tests
         env:
           CI: true
