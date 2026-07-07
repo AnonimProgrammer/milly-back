@@ -1,4 +1,4 @@
-package com.milly.order.application.usecase;
+package com.milly.order.application.usecase.builder;
 
 import com.milly.common.domain.valueobject.Money;
 import com.milly.menu.domain.entity.MenuItemEntity;
@@ -6,7 +6,7 @@ import com.milly.menu.domain.valueobject.MenuItemStatus;
 
 import java.util.UUID;
 
-final class MenuItemTestBuilder {
+public final class MenuItemTestBuilder {
 
     private UUID id = UUID.randomUUID();
     private UUID venueId = UUID.randomUUID();
@@ -17,31 +17,31 @@ final class MenuItemTestBuilder {
     private MenuItemTestBuilder() {
     }
 
-    static MenuItemTestBuilder aMenuItem() {
+    public static MenuItemTestBuilder aMenuItem() {
         return new MenuItemTestBuilder();
     }
 
-    MenuItemTestBuilder withId(UUID id) {
+    public MenuItemTestBuilder withId(UUID id) {
         this.id = id;
         return this;
     }
 
-    MenuItemTestBuilder withVenueId(UUID venueId) {
+    public MenuItemTestBuilder withVenueId(UUID venueId) {
         this.venueId = venueId;
         return this;
     }
 
-    MenuItemTestBuilder withPrice(Money price) {
+    public MenuItemTestBuilder withPrice(Money price) {
         this.price = price;
         return this;
     }
 
-    MenuItemTestBuilder withStatus(MenuItemStatus status) {
+    public MenuItemTestBuilder withStatus(MenuItemStatus status) {
         this.status = status;
         return this;
     }
 
-    MenuItemEntity build() {
+    public MenuItemEntity build() {
         MenuItemEntity item = MenuItemEntity.create(venueId, name, null, price, status);
         item.setId(id);
         return item;
