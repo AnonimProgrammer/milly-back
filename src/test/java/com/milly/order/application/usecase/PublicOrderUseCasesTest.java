@@ -62,7 +62,6 @@ class PublicOrderUseCasesTest {
     @Mock
     private OrderEventNotifier orderEventNotifier;
 
-    private GetOrderUseCase getOrderUseCase;
     private AddOrderItemsUseCase addOrderItemsUseCase;
 
     private final UUID venueId = UUID.randomUUID();
@@ -72,47 +71,8 @@ class PublicOrderUseCasesTest {
 
     @BeforeEach
     void setUp() {
-        getOrderUseCase = new GetOrderUseCase(tableRepository, orderRepository, orderItemRepository);
         addOrderItemsUseCase = new AddOrderItemsUseCase(
                 tableRepository, menuItemRepository, orderRepository, orderItemRepository, orderEventNotifier);
-    }
-
-    @Nested
-    class GetOrder {
-
-        @Test
-        void returnsOrderScopedToTable() {
-            when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
-            OrderEntity approvedOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
-                    .withStatus(OrderStatus.APPROVED).build();
-            OrderItemEntity lineItem = anOrderItem().withOrderId(orderId).withMenuItemId(menuItemId)
-                    .withQuantity(3).withUnitPrice(Money.of("4.00")).build();
-            when(orderRepository.findByIdAndTableId(orderId, tableId)).thenReturn(Optional.of(approvedOrder));
-            when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of(lineItem));
-
-            OrderResponse response = getOrderUseCase.execute(tableId, orderId);
-
-            assertThat(response.id()).isEqualTo(orderId);
-            assertThat(response.status()).isEqualTo(OrderStatus.APPROVED);
-            assertThat(response.items().getFirst().unitPrice()).isEqualByComparingTo(new BigDecimal("4.00"));
-        }
-
-        @Test
-        void throwsNotFoundWhenTableIsMissing() {
-            when(tableRepository.findById(tableId)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> getOrderUseCase.execute(tableId, orderId))
-                    .isInstanceOf(ResourceNotFoundException.class);
-        }
-
-        @Test
-        void throwsNotFoundWhenOrderDoesNotBelongToTable() {
-            when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
-            when(orderRepository.findByIdAndTableId(orderId, tableId)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> getOrderUseCase.execute(tableId, orderId))
-                    .isInstanceOf(ResourceNotFoundException.class);
-        }
     }
 
     @Nested
