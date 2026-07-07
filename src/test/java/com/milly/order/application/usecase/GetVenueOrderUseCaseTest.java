@@ -11,7 +11,6 @@ import com.milly.order.infrastructure.adapter.outbound.persistence.OrderItemJpaR
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderJpaRepository;
 import com.milly.venue.application.service.VenueAuthorizationService;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -31,7 +30,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class StaffOrderQueryUseCasesTest {
+class GetVenueOrderUseCaseTest {
 
     @Mock
     private VenueAuthorizationService venueAuthorizationService;
@@ -55,41 +54,37 @@ class StaffOrderQueryUseCasesTest {
                 venueAuthorizationService, orderRepository, orderItemRepository);
     }
 
-    @Nested
-    class GetVenueOrder {
+    @Test
+    void returnsOrderScopedToVenue() {
+        OrderEntity pendingOrder = anOrderWithStatus(OrderStatus.PENDING);
+        OrderItemEntity lineItem = anOrderItem().withOrderId(orderId).withUnitPrice(Money.of("10.00")).build();
+        when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(pendingOrder));
+        when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of(lineItem));
 
-        @Test
-        void returnsOrderScopedToVenue() {
-            OrderEntity pendingOrder = anOrderWithStatus(OrderStatus.PENDING);
-            OrderItemEntity lineItem = anOrderItem().withOrderId(orderId).withUnitPrice(Money.of("10.00")).build();
-            when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(pendingOrder));
-            when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of(lineItem));
+        StaffOrderResponse response = getVenueOrderUseCase.execute(venueId, userId, orderId);
 
-            StaffOrderResponse response = getVenueOrderUseCase.execute(venueId, userId, orderId);
+        assertThat(response.id()).isEqualTo(orderId);
+        assertThat(response.tableId()).isEqualTo(tableId);
+        verify(venueAuthorizationService).requireMember(userId, venueId);
+    }
 
-            assertThat(response.id()).isEqualTo(orderId);
-            assertThat(response.tableId()).isEqualTo(tableId);
-            verify(venueAuthorizationService).requireMember(userId, venueId);
-        }
+    @Test
+    void throwsNotFoundWhenOrderBelongsToDifferentVenue() {
+        when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.empty());
 
-        @Test
-        void throwsNotFoundWhenOrderBelongsToDifferentVenue() {
-            when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> getVenueOrderUseCase.execute(venueId, userId, orderId))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 
-            assertThatThrownBy(() -> getVenueOrderUseCase.execute(venueId, userId, orderId))
-                    .isInstanceOf(ResourceNotFoundException.class);
-        }
+    @Test
+    void throwsAccessDeniedWhenUserIsNotVenueMember() {
+        doThrow(new AccessDeniedException())
+                .when(venueAuthorizationService).requireMember(userId, venueId);
 
-        @Test
-        void throwsAccessDeniedWhenUserIsNotVenueMember() {
-            doThrow(new AccessDeniedException())
-                    .when(venueAuthorizationService).requireMember(userId, venueId);
+        assertThatThrownBy(() -> getVenueOrderUseCase.execute(venueId, userId, orderId))
+                .isInstanceOf(AccessDeniedException.class);
 
-            assertThatThrownBy(() -> getVenueOrderUseCase.execute(venueId, userId, orderId))
-                    .isInstanceOf(AccessDeniedException.class);
-
-            verifyNoInteractions(orderRepository, orderItemRepository);
-        }
+        verifyNoInteractions(orderRepository, orderItemRepository);
     }
 
     private OrderEntity anOrderWithStatus(OrderStatus status) {
