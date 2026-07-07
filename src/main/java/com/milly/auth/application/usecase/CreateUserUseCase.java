@@ -52,8 +52,7 @@ public class CreateUserUseCase {
                 Preconditions.required(profile.lastName(), "Missing required field: lastName"),
                 Preconditions.required(
                         Preconditions.firstNonBlank(profile.email(), identity.email()),
-                        "Missing required field: email"),
-                Preconditions.required(profile.birthDate(), "Missing required field: birthDate"));
+                        "Missing required field: email"));
         UserEntity savedUser = userRepository.save(user);
 
         userRoleRepository.save(new UserRoleEntity(savedUser.getId(), defaultRole.getId()));
