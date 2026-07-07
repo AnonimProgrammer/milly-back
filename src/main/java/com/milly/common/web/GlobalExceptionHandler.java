@@ -25,6 +25,18 @@ public class GlobalExceptionHandler {
         return HttpErrorResponses.of(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, ResourceNotFoundException.MESSAGE);
     }
 
+    @ExceptionHandler(InvalidInvitationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidInvitation(InvalidInvitationException exception) {
+        return HttpErrorResponses.of(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, InvalidInvitationException.MESSAGE);
+    }
+
+    @ExceptionHandler(VenueMembershipAlreadyExistsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleVenueMembershipAlreadyExists(
+            VenueMembershipAlreadyExistsException exception) {
+        return HttpErrorResponses.of(
+                HttpStatus.CONFLICT, ErrorCode.CONFLICT, VenueMembershipAlreadyExistsException.MESSAGE);
+    }
+
     @ExceptionHandler(InvalidStateTransitionException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidStateTransition(InvalidStateTransitionException ignored) {
         return HttpErrorResponses.of(
