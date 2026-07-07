@@ -1,4 +1,4 @@
-package com.milly.table.application.usecase;
+﻿package com.milly.table.application.usecase;
 
 import com.milly.common.exception.AccessDeniedException;
 import com.milly.common.exception.ResourceNotFoundException;
@@ -16,7 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.milly.table.application.usecase.TableTestBuilder.aTable;
+import static com.milly.table.application.usecase.builder.TableTestBuilder.aTable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
