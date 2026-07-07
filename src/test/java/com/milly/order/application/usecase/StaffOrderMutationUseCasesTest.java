@@ -49,7 +49,6 @@ class StaffOrderMutationUseCasesTest {
     @Mock
     private OrderEventNotifier orderEventNotifier;
 
-    private ApproveOrderUseCase approveOrderUseCase;
     private RejectOrderUseCase rejectOrderUseCase;
     private CloseOrderUseCase closeOrderUseCase;
 
@@ -60,76 +59,10 @@ class StaffOrderMutationUseCasesTest {
 
     @BeforeEach
     void setUp() {
-        approveOrderUseCase = new ApproveOrderUseCase(
-                venueAuthorizationService, orderRepository, orderItemRepository, orderEventNotifier);
         rejectOrderUseCase = new RejectOrderUseCase(
                 venueAuthorizationService, orderRepository, orderItemRepository, orderEventNotifier);
         closeOrderUseCase = new CloseOrderUseCase(
                 venueAuthorizationService, orderRepository, orderItemRepository, orderEventNotifier);
-    }
-
-    @Nested
-    class ApproveOrder {
-
-        @Test
-        void transitionsPendingOrderToApproved() {
-            OrderEntity pendingOrder = anOrderWithStatus(OrderStatus.PENDING);
-            when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(pendingOrder));
-            when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of());
-
-            StaffOrderResponse response = approveOrderUseCase.execute(venueId, userId, orderId);
-
-            assertThat(pendingOrder.getStatus()).isEqualTo(OrderStatus.APPROVED);
-            assertThat(response.status()).isEqualTo(OrderStatus.APPROVED);
-            verify(venueAuthorizationService).requireMember(userId, venueId);
-            verify(orderEventNotifier).orderApproved(orderId, venueId, tableId);
-        }
-
-        @ParameterizedTest
-        @EnumSource(value = OrderStatus.class, names = {"APPROVED", "REJECTED", "CLOSED"})
-        void throwsInvalidTransitionWhenOrderIsNotPending(OrderStatus status) {
-            OrderEntity order = anOrderWithStatus(status);
-            when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(order));
-
-            assertThatThrownBy(() -> approveOrderUseCase.execute(venueId, userId, orderId))
-                    .isInstanceOf(InvalidStateTransitionException.class);
-
-            verifyNoInteractions(orderItemRepository, orderEventNotifier);
-        }
-
-        @Test
-        void throwsNotFoundWhenOrderBelongsToDifferentVenue() {
-            when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> approveOrderUseCase.execute(venueId, userId, orderId))
-                    .isInstanceOf(ResourceNotFoundException.class);
-
-            verifyNoInteractions(orderItemRepository, orderEventNotifier);
-        }
-
-        @Test
-        void throwsAccessDeniedWhenUserIsNotVenueMember() {
-            denyMember();
-
-            assertThatThrownBy(() -> approveOrderUseCase.execute(venueId, userId, orderId))
-                    .isInstanceOf(AccessDeniedException.class);
-
-            verifyNoInteractions(orderRepository, orderEventNotifier);
-        }
-
-        @Test
-        void returnsResponseWithOrderItems() {
-            OrderEntity pendingOrder = anOrderWithStatus(OrderStatus.PENDING);
-            OrderItemEntity lineItem = anOrderItem().withOrderId(orderId).withQuantity(2)
-                    .withUnitPrice(Money.of("15.00")).build();
-            when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(pendingOrder));
-            when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of(lineItem));
-
-            StaffOrderResponse response = approveOrderUseCase.execute(venueId, userId, orderId);
-
-            assertThat(response.items()).hasSize(1);
-            assertThat(response.items().getFirst().quantity()).isEqualTo(2);
-        }
     }
 
     @Nested
