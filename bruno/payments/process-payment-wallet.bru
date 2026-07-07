@@ -1,0 +1,30 @@
+meta {
+  name: Process payment (wallet, full)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/v1/public/tables/{{testTableId}}/orders/{{testOrderId}}/payments
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+  ~X-Idempotency-Key: test-key-2
+}
+
+body:json {
+  {
+    "amount": "100.00",
+    "paymentType": "FULL",
+    "provider": "APPLE"
+  }
+}
+
+docs {
+  No providerDetails required for APPLE/GOOGLE. Set `amount` to the order's full
+  remaining balance to see `bill.fullyPaid: true` in the response.
+}

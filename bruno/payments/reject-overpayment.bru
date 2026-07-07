@@ -1,0 +1,28 @@
+meta {
+  name: Reject - overpayment
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/public/tables/{{testTableId}}/orders/{{testOrderId}}/payments
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "amount": "999999.00",
+    "paymentType": "FULL",
+    "provider": "APPLE"
+  }
+}
+
+docs {
+  Expect 422 with errorCode UNPROCESSABLE_ENTITY - amount exceeds the order's remaining balance.
+}
