@@ -34,6 +34,25 @@ jobs:
           restore-keys: |
             testcontainers-${{ runner.os }}-
 
+      - name: Cache Docker image (postgres:16-alpine)
+        uses: actions/cache@v6
+        id: docker-cache
+        with:
+          path: /tmp/docker-postgres.tar
+          key: docker-postgres-16-alpine-${{ runner.os }}-${{ hashFiles('gradle/milly-back.itest.gradle') }}
+          restore-keys: |
+            docker-postgres-16-alpine-${{ runner.os }}-
+
+      - name: Load Docker image from cache
+        if: steps.docker-cache.outputs.cache-hit == 'true'
+        run: docker load -i /tmp/docker-postgres.tar
+
+      - name: Pull and save Docker image
+        if: steps.docker-cache.outputs.cache-hit != 'true'
+        run: |
+          docker pull postgres:16-alpine
+          docker save postgres:16-alpine -o /tmp/docker-postgres.tar
+
       - name: Run integration tests
         env:
           CI: true
