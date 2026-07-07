@@ -77,4 +77,27 @@ public class PaymentEntity {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt = OffsetDateTime.now();
+
+    /**
+     * Creates a mock-processed, already-{@link PaymentStatus#COMPLETED} payment. There is no
+     * real payment gateway in this flow: validation happens before this factory is called, so
+     * every persisted payment is a successful attempt.
+     */
+    public static PaymentEntity create(
+            UUID orderId,
+            Money amount,
+            PaymentProvider provider,
+            PaymentType paymentType,
+            String providerReference,
+            Map<String, Object> providerMetadata) {
+        PaymentEntity payment = new PaymentEntity();
+        payment.setOrderId(orderId);
+        payment.setAmount(amount);
+        payment.setStatus(PaymentStatus.COMPLETED);
+        payment.setProvider(provider);
+        payment.setPaymentType(paymentType);
+        payment.setProviderReference(providerReference);
+        payment.setProviderMetadata(providerMetadata);
+        return payment;
+    }
 }
