@@ -45,12 +45,15 @@ class ListTablesUseCaseTest {
 
     @Test
     void returnsAllVenueTablesIncludingInactiveOnes() {
+        // Arrange
         TableEntity activeTable = aTable().withVenueId(venueId).build();
         TableEntity inactiveTable = aTable().withVenueId(venueId).withStatus(TableStatus.INACTIVE).build();
         when(tableRepository.findByVenueIdOrderByLabelAsc(venueId)).thenReturn(List.of(activeTable, inactiveTable));
 
+        // Act
         List<TableResponse> response = listTablesUseCase.execute(userId, venueId);
 
+        // Assert
         assertThat(response).hasSize(2);
         assertThat(response).extracting(TableResponse::status)
                 .containsExactly(TableStatus.ACTIVE, TableStatus.INACTIVE);
@@ -59,19 +62,24 @@ class ListTablesUseCaseTest {
 
     @Test
     void returnsEmptyListWhenVenueHasNoTables() {
+        // Arrange
         when(tableRepository.findByVenueIdOrderByLabelAsc(venueId)).thenReturn(List.of());
 
+        // Act
         List<TableResponse> response = listTablesUseCase.execute(userId, venueId);
 
+        // Assert
         assertThat(response).isEmpty();
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
     }
 
     @Test
     void throwsAccessDeniedWhenUserIsNotManager() {
+        // Arrange
         doThrow(new AccessDeniedException())
                 .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
 
+        // Act & Assert
         assertThatThrownBy(() -> listTablesUseCase.execute(userId, venueId))
                 .isInstanceOf(AccessDeniedException.class);
 

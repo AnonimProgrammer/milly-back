@@ -51,14 +51,17 @@ class CreateTableUseCaseTest {
 
     @Test
     void persistsActiveTableForVenue() {
+        // Arrange
         when(tableRepository.save(any(TableEntity.class))).thenAnswer(invocation -> {
             TableEntity savedTable = invocation.getArgument(0);
             savedTable.setId(tableId);
             return savedTable;
         });
 
+        // Act
         TableResponse response = createTableUseCase.execute(userId, venueId, new CreateTableRequest("Patio 1"));
 
+        // Assert
         assertThat(response.id()).isEqualTo(tableId);
         assertThat(response.venueId()).isEqualTo(venueId);
         assertThat(response.label()).isEqualTo("Patio 1");
@@ -72,9 +75,11 @@ class CreateTableUseCaseTest {
 
     @Test
     void throwsAccessDeniedWhenUserIsNotManager() {
+        // Arrange
         doThrow(new AccessDeniedException())
                 .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
 
+        // Act & Assert
         assertThatThrownBy(() -> createTableUseCase.execute(userId, venueId, new CreateTableRequest("Patio 1")))
                 .isInstanceOf(AccessDeniedException.class);
 

@@ -50,13 +50,16 @@ class UpdateTableLabelUseCaseTest {
 
     @Test
     void updatesTableLabel() {
+        // Arrange
         TableEntity table = aTable().withId(tableId).withVenueId(venueId).build();
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.of(table));
         when(tableRepository.save(table)).thenReturn(table);
 
+        // Act
         TableResponse response = updateTableLabelUseCase.execute(
                 userId, venueId, tableId, new UpdateTableLabelRequest("Window 2"));
 
+        // Assert
         assertThat(response.label()).isEqualTo("Window 2");
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
         verify(tableRepository).save(table);
@@ -64,14 +67,17 @@ class UpdateTableLabelUseCaseTest {
 
     @Test
     void updatesLabelOnInactiveTable() {
+        // Arrange
         TableEntity inactiveTable = aTable().withId(tableId).withVenueId(venueId)
                 .withStatus(TableStatus.INACTIVE).build();
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.of(inactiveTable));
         when(tableRepository.save(inactiveTable)).thenReturn(inactiveTable);
 
+        // Act
         TableResponse response = updateTableLabelUseCase.execute(
                 userId, venueId, tableId, new UpdateTableLabelRequest("Archived 1"));
 
+        // Assert
         assertThat(response.label()).isEqualTo("Archived 1");
         assertThat(response.status()).isEqualTo(TableStatus.INACTIVE);
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
@@ -79,8 +85,10 @@ class UpdateTableLabelUseCaseTest {
 
     @Test
     void throwsNotFoundWhenTableDoesNotBelongToVenue() {
+        // Arrange
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> updateTableLabelUseCase.execute(
                 userId, venueId, tableId, new UpdateTableLabelRequest("Window 2")))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -90,9 +98,11 @@ class UpdateTableLabelUseCaseTest {
 
     @Test
     void throwsAccessDeniedWhenUserIsNotManager() {
+        // Arrange
         doThrow(new AccessDeniedException())
                 .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
 
+        // Act & Assert
         assertThatThrownBy(() -> updateTableLabelUseCase.execute(
                 userId, venueId, tableId, new UpdateTableLabelRequest("Window 2")))
                 .isInstanceOf(AccessDeniedException.class);

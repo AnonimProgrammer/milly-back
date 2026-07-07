@@ -48,11 +48,14 @@ class DeactivateTableUseCaseTest {
 
     @Test
     void deactivatesActiveTable() {
+        // Arrange
         TableEntity table = aTable().withId(tableId).withVenueId(venueId).build();
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.of(table));
 
+        // Act
         deactivateTableUseCase.execute(userId, venueId, tableId);
 
+        // Assert
         assertThat(table.getStatus()).isEqualTo(TableStatus.INACTIVE);
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
         verify(tableRepository).save(table);
@@ -60,12 +63,15 @@ class DeactivateTableUseCaseTest {
 
     @Test
     void deactivatesAlreadyInactiveTableWithoutError() {
+        // Arrange
         TableEntity inactiveTable = aTable().withId(tableId).withVenueId(venueId)
                 .withStatus(TableStatus.INACTIVE).build();
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.of(inactiveTable));
 
+        // Act
         deactivateTableUseCase.execute(userId, venueId, tableId);
 
+        // Assert
         assertThat(inactiveTable.getStatus()).isEqualTo(TableStatus.INACTIVE);
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
         verify(tableRepository).save(inactiveTable);
@@ -73,13 +79,16 @@ class DeactivateTableUseCaseTest {
 
     @Test
     void deactivatesTableThatHasExistingQrImageUrl() {
+        // Arrange
         String existingQrImageUrl = "https://storage.local/venues/%s/tables/%s/qr.png".formatted(venueId, tableId);
         TableEntity tableWithQr = aTable().withId(tableId).withVenueId(venueId).build();
         tableWithQr.setQrImageUrl(existingQrImageUrl);
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.of(tableWithQr));
 
+        // Act
         deactivateTableUseCase.execute(userId, venueId, tableId);
 
+        // Assert
         assertThat(tableWithQr.getStatus()).isEqualTo(TableStatus.INACTIVE);
         assertThat(tableWithQr.getQrImageUrl()).isEqualTo(existingQrImageUrl);
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
@@ -88,8 +97,10 @@ class DeactivateTableUseCaseTest {
 
     @Test
     void throwsNotFoundWhenTableDoesNotBelongToVenue() {
+        // Arrange
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> deactivateTableUseCase.execute(userId, venueId, tableId))
                 .isInstanceOf(ResourceNotFoundException.class);
 
@@ -98,9 +109,11 @@ class DeactivateTableUseCaseTest {
 
     @Test
     void throwsAccessDeniedWhenUserIsNotManager() {
+        // Arrange
         doThrow(new AccessDeniedException())
                 .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
 
+        // Act & Assert
         assertThatThrownBy(() -> deactivateTableUseCase.execute(userId, venueId, tableId))
                 .isInstanceOf(AccessDeniedException.class);
 

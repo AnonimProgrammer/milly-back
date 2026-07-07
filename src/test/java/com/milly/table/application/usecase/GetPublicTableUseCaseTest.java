@@ -37,11 +37,14 @@ class GetPublicTableUseCaseTest {
 
     @Test
     void returnsActiveTable() {
+        // Arrange
         TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(activeTable));
 
+        // Act
         PublicTableResponse response = getPublicTableUseCase.execute(tableId);
 
+        // Assert
         assertThat(response.id()).isEqualTo(tableId);
         assertThat(response.venueId()).isEqualTo(venueId);
         assertThat(response.status()).isEqualTo(TableStatus.ACTIVE);
@@ -49,18 +52,22 @@ class GetPublicTableUseCaseTest {
 
     @Test
     void throwsNotFoundWhenTableIsMissing() {
+        // Arrange
         when(tableRepository.findById(tableId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> getPublicTableUseCase.execute(tableId))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
     void throwsNotFoundWhenTableIsInactive() {
+        // Arrange
         TableEntity inactiveTable = aTable().withId(tableId).withVenueId(venueId)
                 .withStatus(TableStatus.INACTIVE).build();
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(inactiveTable));
 
+        // Act & Assert
         assertThatThrownBy(() -> getPublicTableUseCase.execute(tableId))
                 .isInstanceOf(ResourceNotFoundException.class);
     }

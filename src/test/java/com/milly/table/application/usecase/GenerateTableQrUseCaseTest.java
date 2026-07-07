@@ -73,6 +73,7 @@ class GenerateTableQrUseCaseTest {
 
     @Test
     void generatesQrUploadsToStorageAndPersistsUrlOnActiveTable() {
+        // Arrange
         TableEntity table = aTable().withId(tableId).withVenueId(venueId).build();
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.of(table));
         when(tableCustomerUrlBuilder.build(tableId)).thenReturn(customerUrl);
@@ -80,8 +81,10 @@ class GenerateTableQrUseCaseTest {
         when(blobStorage.upload(storageKey, qrImageBytes, QR_IMAGE_MIME_TYPE))
                 .thenReturn(BlobObject.forUpload(storageKey, qrImageBytes, QR_IMAGE_MIME_TYPE).withUrl(qrImageUrl));
 
+        // Act
         TableQrResponse response = generateTableQrUseCase.execute(userId, venueId, tableId);
 
+        // Assert
         assertThat(response.tableId()).isEqualTo(tableId);
         assertThat(response.customerUrl()).isEqualTo(customerUrl);
         assertThat(response.qrImageUrl()).isEqualTo(qrImageUrl);
@@ -95,6 +98,7 @@ class GenerateTableQrUseCaseTest {
 
     @Test
     void regeneratesQrEvenWhenTableAlreadyHasQrImageUrl() {
+        // Arrange
         TableEntity tableWithExistingQr = aTable().withId(tableId).withVenueId(venueId).build();
         tableWithExistingQr.setQrImageUrl("https://storage.local/old-qr.png");
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.of(tableWithExistingQr));
@@ -103,8 +107,10 @@ class GenerateTableQrUseCaseTest {
         when(blobStorage.upload(storageKey, qrImageBytes, QR_IMAGE_MIME_TYPE))
                 .thenReturn(BlobObject.forUpload(storageKey, qrImageBytes, QR_IMAGE_MIME_TYPE).withUrl(qrImageUrl));
 
+        // Act
         TableQrResponse response = generateTableQrUseCase.execute(userId, venueId, tableId);
 
+        // Assert
         assertThat(response.qrImageUrl()).isEqualTo(qrImageUrl);
         assertThat(tableWithExistingQr.getQrImageUrl()).isEqualTo(qrImageUrl);
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
@@ -115,10 +121,12 @@ class GenerateTableQrUseCaseTest {
 
     @Test
     void throwsNotFoundWhenTableIsInactiveBeforeGeneratingQr() {
+        // Arrange
         TableEntity inactiveTable = aTable().withId(tableId).withVenueId(venueId)
                 .withStatus(TableStatus.INACTIVE).build();
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.of(inactiveTable));
 
+        // Act & Assert
         assertThatThrownBy(() -> generateTableQrUseCase.execute(userId, venueId, tableId))
                 .isInstanceOf(ResourceNotFoundException.class);
 
@@ -128,8 +136,10 @@ class GenerateTableQrUseCaseTest {
 
     @Test
     void throwsNotFoundWhenTableDoesNotBelongToVenue() {
+        // Arrange
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> generateTableQrUseCase.execute(userId, venueId, tableId))
                 .isInstanceOf(ResourceNotFoundException.class);
 
@@ -139,9 +149,11 @@ class GenerateTableQrUseCaseTest {
 
     @Test
     void throwsAccessDeniedWhenUserIsNotManager() {
+        // Arrange
         doThrow(new AccessDeniedException())
                 .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
 
+        // Act & Assert
         assertThatThrownBy(() -> generateTableQrUseCase.execute(userId, venueId, tableId))
                 .isInstanceOf(AccessDeniedException.class);
 

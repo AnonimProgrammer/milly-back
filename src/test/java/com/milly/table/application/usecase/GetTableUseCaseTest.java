@@ -47,11 +47,14 @@ class GetTableUseCaseTest {
 
     @Test
     void returnsTableForVenue() {
+        // Arrange
         TableEntity table = aTable().withId(tableId).withVenueId(venueId).build();
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.of(table));
 
+        // Act
         TableResponse response = getTableUseCase.execute(userId, venueId, tableId);
 
+        // Assert
         assertThat(response.id()).isEqualTo(tableId);
         assertThat(response.venueId()).isEqualTo(venueId);
         assertThat(response.status()).isEqualTo(TableStatus.ACTIVE);
@@ -60,29 +63,36 @@ class GetTableUseCaseTest {
 
     @Test
     void returnsInactiveTableForManager() {
+        // Arrange
         TableEntity inactiveTable = aTable().withId(tableId).withVenueId(venueId)
                 .withStatus(TableStatus.INACTIVE).build();
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.of(inactiveTable));
 
+        // Act
         TableResponse response = getTableUseCase.execute(userId, venueId, tableId);
 
+        // Assert
         assertThat(response.status()).isEqualTo(TableStatus.INACTIVE);
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
     }
 
     @Test
     void throwsNotFoundWhenTableDoesNotBelongToVenue() {
+        // Arrange
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> getTableUseCase.execute(userId, venueId, tableId))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
     void throwsAccessDeniedWhenUserIsNotManager() {
+        // Arrange
         doThrow(new AccessDeniedException())
                 .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
 
+        // Act & Assert
         assertThatThrownBy(() -> getTableUseCase.execute(userId, venueId, tableId))
                 .isInstanceOf(AccessDeniedException.class);
 
