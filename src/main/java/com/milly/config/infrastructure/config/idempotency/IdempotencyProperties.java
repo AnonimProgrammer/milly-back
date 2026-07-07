@@ -1,4 +1,4 @@
-package com.milly.common.idempotency;
+package com.milly.config.infrastructure.config.idempotency;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
