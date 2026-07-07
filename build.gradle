@@ -54,7 +54,7 @@ dependencies {
     // ============================================================
     // AOP (idempotency aspect)
     // ============================================================
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'org.springframework.boot:spring-boot-starter-aspectj'
 
     // ============================================================
     // WebSocket
