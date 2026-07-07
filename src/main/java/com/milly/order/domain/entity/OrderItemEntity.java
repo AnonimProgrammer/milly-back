@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -58,5 +59,9 @@ public class OrderItemEntity {
         item.setQuantity(quantity);
         item.setUnitPrice(unitPrice);
         return item;
+    }
+
+    public BigDecimal lineTotal() {
+        return unitPrice.amount().multiply(BigDecimal.valueOf(quantity));
     }
 }
