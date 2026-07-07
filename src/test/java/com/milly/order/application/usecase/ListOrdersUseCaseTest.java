@@ -20,9 +20,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.milly.order.application.usecase.OrderItemTestBuilder.anOrderItem;
-import static com.milly.order.application.usecase.OrderTestBuilder.anOrder;
-import static com.milly.order.application.usecase.TableTestBuilder.aTable;
+import static com.milly.order.application.usecase.builder.OrderItemTestBuilder.anOrderItem;
+import static com.milly.order.application.usecase.builder.OrderTestBuilder.anOrder;
+import static com.milly.order.application.usecase.builder.TableTestBuilder.aTable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -54,6 +54,7 @@ class ListOrdersUseCaseTest {
 
     @Test
     void returnsOrdersWithGroupedItemsForActiveTable() {
+        // Arrange
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
         OrderEntity pendingOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
                 .withStatus(OrderStatus.PENDING).build();
@@ -62,8 +63,10 @@ class ListOrdersUseCaseTest {
         when(orderRepository.findAllByTableIdOrderByCreatedAtDesc(tableId)).thenReturn(List.of(pendingOrder));
         when(orderItemRepository.findAllByOrderIdIn(List.of(orderId))).thenReturn(List.of(lineItem));
 
+        // Act
         List<OrderResponse> response = listOrdersUseCase.execute(tableId);
 
+        // Assert
         assertThat(response).hasSize(1);
         assertThat(response.getFirst().id()).isEqualTo(orderId);
         assertThat(response.getFirst().items().getFirst().menuItemId()).isEqualTo(menuItemId);
@@ -71,19 +74,24 @@ class ListOrdersUseCaseTest {
 
     @Test
     void returnsEmptyListWhenTableHasNoOrders() {
+        // Arrange
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
         when(orderRepository.findAllByTableIdOrderByCreatedAtDesc(tableId)).thenReturn(List.of());
         when(orderItemRepository.findAllByOrderIdIn(List.of())).thenReturn(List.of());
 
+        // Act
         List<OrderResponse> response = listOrdersUseCase.execute(tableId);
 
+        // Assert
         assertThat(response).isEmpty();
     }
 
     @Test
     void throwsNotFoundWhenTableIsMissing() {
+        // Arrange
         when(tableRepository.findById(tableId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> listOrdersUseCase.execute(tableId))
                 .isInstanceOf(ResourceNotFoundException.class);
 

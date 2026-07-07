@@ -21,9 +21,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.milly.order.application.usecase.OrderItemTestBuilder.anOrderItem;
-import static com.milly.order.application.usecase.OrderTestBuilder.anOrder;
-import static com.milly.order.application.usecase.TableTestBuilder.aTable;
+import static com.milly.order.application.usecase.builder.OrderItemTestBuilder.anOrderItem;
+import static com.milly.order.application.usecase.builder.OrderTestBuilder.anOrder;
+import static com.milly.order.application.usecase.builder.TableTestBuilder.aTable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
@@ -54,6 +54,7 @@ class GetOrderUseCaseTest {
 
     @Test
     void returnsOrderScopedToTable() {
+        // Arrange
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
         OrderEntity approvedOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
                 .withStatus(OrderStatus.APPROVED).build();
@@ -62,8 +63,10 @@ class GetOrderUseCaseTest {
         when(orderRepository.findByIdAndTableId(orderId, tableId)).thenReturn(Optional.of(approvedOrder));
         when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of(lineItem));
 
+        // Act
         OrderResponse response = getOrderUseCase.execute(tableId, orderId);
 
+        // Assert
         assertThat(response.id()).isEqualTo(orderId);
         assertThat(response.status()).isEqualTo(OrderStatus.APPROVED);
         assertThat(response.items().getFirst().unitPrice()).isEqualByComparingTo(new BigDecimal("4.00"));
@@ -71,17 +74,21 @@ class GetOrderUseCaseTest {
 
     @Test
     void throwsNotFoundWhenTableIsMissing() {
+        // Arrange
         when(tableRepository.findById(tableId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> getOrderUseCase.execute(tableId, orderId))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
     void throwsNotFoundWhenOrderDoesNotBelongToTable() {
+        // Arrange
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
         when(orderRepository.findByIdAndTableId(orderId, tableId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> getOrderUseCase.execute(tableId, orderId))
                 .isInstanceOf(ResourceNotFoundException.class);
     }

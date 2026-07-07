@@ -20,8 +20,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.milly.order.application.usecase.OrderItemTestBuilder.anOrderItem;
-import static com.milly.order.application.usecase.OrderTestBuilder.anOrder;
+import static com.milly.order.application.usecase.builder.OrderItemTestBuilder.anOrderItem;
+import static com.milly.order.application.usecase.builder.OrderTestBuilder.anOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
@@ -56,13 +56,16 @@ class GetVenueOrderUseCaseTest {
 
     @Test
     void returnsOrderScopedToVenue() {
+        // Arrange
         OrderEntity pendingOrder = anOrderWithStatus(OrderStatus.PENDING);
         OrderItemEntity lineItem = anOrderItem().withOrderId(orderId).withUnitPrice(Money.of("10.00")).build();
         when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(pendingOrder));
         when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of(lineItem));
 
+        // Act
         StaffOrderResponse response = getVenueOrderUseCase.execute(venueId, userId, orderId);
 
+        // Assert
         assertThat(response.id()).isEqualTo(orderId);
         assertThat(response.tableId()).isEqualTo(tableId);
         verify(venueAuthorizationService).requireMember(userId, venueId);
@@ -70,17 +73,21 @@ class GetVenueOrderUseCaseTest {
 
     @Test
     void throwsNotFoundWhenOrderBelongsToDifferentVenue() {
+        // Arrange
         when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> getVenueOrderUseCase.execute(venueId, userId, orderId))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
     void throwsAccessDeniedWhenUserIsNotVenueMember() {
+        // Arrange
         doThrow(new AccessDeniedException())
                 .when(venueAuthorizationService).requireMember(userId, venueId);
 
+        // Act & Assert
         assertThatThrownBy(() -> getVenueOrderUseCase.execute(venueId, userId, orderId))
                 .isInstanceOf(AccessDeniedException.class);
 
