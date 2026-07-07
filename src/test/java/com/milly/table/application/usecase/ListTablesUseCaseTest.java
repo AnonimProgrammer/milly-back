@@ -1,4 +1,4 @@
-﻿package com.milly.table.application.usecase;
+package com.milly.table.application.usecase;
 
 import com.milly.common.exception.AccessDeniedException;
 import com.milly.table.application.dto.TableResponse;
