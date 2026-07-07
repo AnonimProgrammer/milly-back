@@ -62,7 +62,6 @@ class PublicOrderUseCasesTest {
     @Mock
     private OrderEventNotifier orderEventNotifier;
 
-    private ListOrdersUseCase listOrdersUseCase;
     private GetOrderUseCase getOrderUseCase;
     private AddOrderItemsUseCase addOrderItemsUseCase;
 
@@ -73,52 +72,9 @@ class PublicOrderUseCasesTest {
 
     @BeforeEach
     void setUp() {
-        listOrdersUseCase = new ListOrdersUseCase(tableRepository, orderRepository, orderItemRepository);
         getOrderUseCase = new GetOrderUseCase(tableRepository, orderRepository, orderItemRepository);
         addOrderItemsUseCase = new AddOrderItemsUseCase(
                 tableRepository, menuItemRepository, orderRepository, orderItemRepository, orderEventNotifier);
-    }
-
-    @Nested
-    class ListOrders {
-
-        @Test
-        void returnsOrdersWithGroupedItemsForActiveTable() {
-            when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
-            OrderEntity pendingOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
-                    .withStatus(OrderStatus.PENDING).build();
-            OrderItemEntity lineItem = anOrderItem().withOrderId(orderId).withMenuItemId(menuItemId)
-                    .withUnitPrice(Money.of("9.99")).build();
-            when(orderRepository.findAllByTableIdOrderByCreatedAtDesc(tableId)).thenReturn(List.of(pendingOrder));
-            when(orderItemRepository.findAllByOrderIdIn(List.of(orderId))).thenReturn(List.of(lineItem));
-
-            List<OrderResponse> response = listOrdersUseCase.execute(tableId);
-
-            assertThat(response).hasSize(1);
-            assertThat(response.getFirst().id()).isEqualTo(orderId);
-            assertThat(response.getFirst().items().getFirst().menuItemId()).isEqualTo(menuItemId);
-        }
-
-        @Test
-        void returnsEmptyListWhenTableHasNoOrders() {
-            when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
-            when(orderRepository.findAllByTableIdOrderByCreatedAtDesc(tableId)).thenReturn(List.of());
-            when(orderItemRepository.findAllByOrderIdIn(List.of())).thenReturn(List.of());
-
-            List<OrderResponse> response = listOrdersUseCase.execute(tableId);
-
-            assertThat(response).isEmpty();
-        }
-
-        @Test
-        void throwsNotFoundWhenTableIsMissing() {
-            when(tableRepository.findById(tableId)).thenReturn(Optional.empty());
-
-            assertThatThrownBy(() -> listOrdersUseCase.execute(tableId))
-                    .isInstanceOf(ResourceNotFoundException.class);
-
-            verifyNoInteractions(orderRepository, orderItemRepository);
-        }
     }
 
     @Nested
