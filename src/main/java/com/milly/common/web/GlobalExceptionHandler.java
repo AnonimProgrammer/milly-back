@@ -25,22 +25,20 @@ public class GlobalExceptionHandler {
         return HttpErrorResponses.of(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, ResourceNotFoundException.MESSAGE);
     }
 
-    @ExceptionHandler(InvalidInvitationException.class)
-    public ResponseEntity<ApiResponse<Void>> handleInvalidInvitation(InvalidInvitationException exception) {
-        return HttpErrorResponses.of(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, InvalidInvitationException.MESSAGE);
-    }
-
-    @ExceptionHandler(VenueMembershipAlreadyExistsException.class)
-    public ResponseEntity<ApiResponse<Void>> handleVenueMembershipAlreadyExists(
-            VenueMembershipAlreadyExistsException exception) {
-        return HttpErrorResponses.of(
-                HttpStatus.CONFLICT, ErrorCode.CONFLICT, VenueMembershipAlreadyExistsException.MESSAGE);
-    }
-
     @ExceptionHandler(InvalidStateTransitionException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidStateTransition(InvalidStateTransitionException ignored) {
         return HttpErrorResponses.of(
                 HttpStatus.CONFLICT, ErrorCode.CONFLICT, InvalidStateTransitionException.MESSAGE);
+    }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<ApiResponse<Void>> handleIdempotencyConflict(IdempotencyConflictException ignored) {
+        return HttpErrorResponses.of(HttpStatus.CONFLICT, ErrorCode.CONFLICT, IdempotencyConflictException.MESSAGE);
+    }
+
+    @ExceptionHandler(PaymentValidationException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePaymentValidation(PaymentValidationException exception) {
+        return HttpErrorResponses.of(HttpStatus.UNPROCESSABLE_ENTITY, ErrorCode.UNPROCESSABLE_ENTITY, exception.getMessage());
     }
 
     @ExceptionHandler(UnsupportedOperationException.class)
@@ -60,10 +58,5 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleIllegalArgument(IllegalArgumentException exception) {
         return HttpErrorResponses.of(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, exception.getMessage());
-    }
-
-    @ExceptionHandler(IdempotencyConflictException.class)
-    public ResponseEntity<ApiResponse<Void>> handleIdempotencyConflict(IdempotencyConflictException ignored) {
-        return HttpErrorResponses.of(HttpStatus.CONFLICT, ErrorCode.CONFLICT, IdempotencyConflictException.MESSAGE);
     }
 }
