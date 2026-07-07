@@ -1,5 +1,6 @@
 package com.milly.billing.infrastructure.adapter.inbound.http;
 
+import com.milly.billing.application.dto.BillSummaryResponse;
 import com.milly.billing.application.dto.CreatePaymentRequest;
 import com.milly.billing.application.dto.ProcessPaymentResponse;
 import com.milly.billing.application.usecase.GetBillUseCase;
@@ -10,11 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
 
@@ -35,5 +32,12 @@ public class PublicPaymentRestAdapter {
         ProcessPaymentResponse response = processPaymentUseCase.execute(tableId, orderId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.created(response, "Payment processed successfully."));
+    }
+    @GetMapping("/bill")
+    public ResponseEntity<ApiResponse<BillSummaryResponse>> getBill(
+            @PathVariable UUID tableId,
+            @PathVariable UUID orderId) {
+        BillSummaryResponse response = getBillUseCase.execute(tableId, orderId);
+        return ResponseEntity.ok(ApiResponse.success(response, "Bill retrieved successfully."));
     }
 }
