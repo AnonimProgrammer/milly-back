@@ -26,8 +26,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.milly.order.application.usecase.MenuItemTestBuilder.aMenuItem;
-import static com.milly.order.application.usecase.TableTestBuilder.aTable;
+import static com.milly.order.application.usecase.builder.MenuItemTestBuilder.aMenuItem;
+import static com.milly.order.application.usecase.builder.TableTestBuilder.aTable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -68,6 +68,7 @@ class CreateOrderUseCaseTest {
 
     @Test
     void persistsPendingOrderWithSnapshottedPrices() {
+        // Arrange
         TableEntity table = aTable().withId(tableId).withVenueId(venueId).build();
         MenuItemEntity burger = aMenuItem().withId(menuItemId).withVenueId(venueId).withPrice(Money.of("12.50")).build();
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(table));
@@ -79,9 +80,11 @@ class CreateOrderUseCaseTest {
         });
         when(orderItemRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
+        // Act
         OrderResponse response = createOrderUseCase.execute(
                 tableId, new CreateOrderRequest(List.of(new CreateOrderRequest.ItemDto(menuItemId, 2))));
 
+        // Assert
         assertThat(response.id()).isEqualTo(orderId);
         assertThat(response.tableId()).isEqualTo(tableId);
         assertThat(response.status()).isEqualTo(OrderStatus.PENDING);
@@ -94,8 +97,10 @@ class CreateOrderUseCaseTest {
 
     @Test
     void throwsNotFoundWhenTableIsMissing() {
+        // Arrange
         when(tableRepository.findById(tableId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> createOrderUseCase.execute(
                 tableId, new CreateOrderRequest(List.of(new CreateOrderRequest.ItemDto(menuItemId, 1)))))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -105,10 +110,12 @@ class CreateOrderUseCaseTest {
 
     @Test
     void throwsNotFoundWhenTableIsInactive() {
+        // Arrange
         TableEntity inactiveTable = aTable().withId(tableId).withVenueId(venueId)
                 .withStatus(TableStatus.INACTIVE).build();
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(inactiveTable));
 
+        // Act & Assert
         assertThatThrownBy(() -> createOrderUseCase.execute(
                 tableId, new CreateOrderRequest(List.of(new CreateOrderRequest.ItemDto(menuItemId, 1)))))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -118,10 +125,12 @@ class CreateOrderUseCaseTest {
 
     @Test
     void throwsNotFoundWhenMenuItemIsMissing() {
+        // Arrange
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
         when(menuItemRepository.findAllById(List.of(menuItemId))).thenReturn(List.of());
         when(orderRepository.save(any(OrderEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+        // Act & Assert
         assertThatThrownBy(() -> createOrderUseCase.execute(
                 tableId, new CreateOrderRequest(List.of(new CreateOrderRequest.ItemDto(menuItemId, 1)))))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -132,12 +141,14 @@ class CreateOrderUseCaseTest {
 
     @Test
     void throwsNotFoundWhenMenuItemIsDeleted() {
+        // Arrange
         MenuItemEntity deletedItem = aMenuItem().withId(menuItemId).withVenueId(venueId)
                 .withPrice(Money.of("5.00")).withStatus(MenuItemStatus.DELETED).build();
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
         when(menuItemRepository.findAllById(List.of(menuItemId))).thenReturn(List.of(deletedItem));
         when(orderRepository.save(any(OrderEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+        // Act & Assert
         assertThatThrownBy(() -> createOrderUseCase.execute(
                 tableId, new CreateOrderRequest(List.of(new CreateOrderRequest.ItemDto(menuItemId, 1)))))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -148,12 +159,14 @@ class CreateOrderUseCaseTest {
 
     @Test
     void throwsNotFoundWhenMenuItemBelongsToDifferentVenue() {
+        // Arrange
         MenuItemEntity otherVenueItem = aMenuItem().withId(menuItemId).withVenueId(UUID.randomUUID())
                 .withPrice(Money.of("5.00")).build();
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
         when(menuItemRepository.findAllById(List.of(menuItemId))).thenReturn(List.of(otherVenueItem));
         when(orderRepository.save(any(OrderEntity.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+        // Act & Assert
         assertThatThrownBy(() -> createOrderUseCase.execute(
                 tableId, new CreateOrderRequest(List.of(new CreateOrderRequest.ItemDto(menuItemId, 1)))))
                 .isInstanceOf(ResourceNotFoundException.class);

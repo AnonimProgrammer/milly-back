@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.milly.order.application.usecase.OrderTestBuilder.anOrder;
+import static com.milly.order.application.usecase.builder.OrderTestBuilder.anOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
@@ -60,12 +60,15 @@ class RejectOrderUseCaseTest {
 
     @Test
     void transitionsPendingOrderToRejected() {
+        // Arrange
         OrderEntity pendingOrder = anOrderWithStatus(OrderStatus.PENDING);
         when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(pendingOrder));
         when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of());
 
+        // Act
         StaffOrderResponse response = rejectOrderUseCase.execute(venueId, userId, orderId);
 
+        // Assert
         assertThat(pendingOrder.getStatus()).isEqualTo(OrderStatus.REJECTED);
         assertThat(response.status()).isEqualTo(OrderStatus.REJECTED);
         verify(venueAuthorizationService).requireMember(userId, venueId);
@@ -75,9 +78,11 @@ class RejectOrderUseCaseTest {
     @ParameterizedTest
     @EnumSource(value = OrderStatus.class, names = {"APPROVED", "REJECTED", "CLOSED"})
     void throwsInvalidTransitionWhenOrderIsNotPending(OrderStatus status) {
+        // Arrange
         OrderEntity order = anOrderWithStatus(status);
         when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(order));
 
+        // Act & Assert
         assertThatThrownBy(() -> rejectOrderUseCase.execute(venueId, userId, orderId))
                 .isInstanceOf(InvalidStateTransitionException.class);
 
@@ -86,8 +91,10 @@ class RejectOrderUseCaseTest {
 
     @Test
     void throwsNotFoundWhenOrderBelongsToDifferentVenue() {
+        // Arrange
         when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> rejectOrderUseCase.execute(venueId, userId, orderId))
                 .isInstanceOf(ResourceNotFoundException.class);
 
@@ -96,9 +103,11 @@ class RejectOrderUseCaseTest {
 
     @Test
     void throwsAccessDeniedWhenUserIsNotVenueMember() {
+        // Arrange
         doThrow(new AccessDeniedException())
                 .when(venueAuthorizationService).requireMember(userId, venueId);
 
+        // Act & Assert
         assertThatThrownBy(() -> rejectOrderUseCase.execute(venueId, userId, orderId))
                 .isInstanceOf(AccessDeniedException.class);
 

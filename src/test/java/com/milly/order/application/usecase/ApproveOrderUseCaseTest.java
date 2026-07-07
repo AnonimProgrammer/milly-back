@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.milly.order.application.usecase.OrderItemTestBuilder.anOrderItem;
-import static com.milly.order.application.usecase.OrderTestBuilder.anOrder;
+import static com.milly.order.application.usecase.builder.OrderItemTestBuilder.anOrderItem;
+import static com.milly.order.application.usecase.builder.OrderTestBuilder.anOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
@@ -63,12 +63,15 @@ class ApproveOrderUseCaseTest {
 
     @Test
     void transitionsPendingOrderToApproved() {
+        // Arrange
         OrderEntity pendingOrder = anOrderWithStatus(OrderStatus.PENDING);
         when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(pendingOrder));
         when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of());
 
+        // Act
         StaffOrderResponse response = approveOrderUseCase.execute(venueId, userId, orderId);
 
+        // Assert
         assertThat(pendingOrder.getStatus()).isEqualTo(OrderStatus.APPROVED);
         assertThat(response.status()).isEqualTo(OrderStatus.APPROVED);
         verify(venueAuthorizationService).requireMember(userId, venueId);
@@ -78,9 +81,11 @@ class ApproveOrderUseCaseTest {
     @ParameterizedTest
     @EnumSource(value = OrderStatus.class, names = {"APPROVED", "REJECTED", "CLOSED"})
     void throwsInvalidTransitionWhenOrderIsNotPending(OrderStatus status) {
+        // Arrange
         OrderEntity order = anOrderWithStatus(status);
         when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(order));
 
+        // Act & Assert
         assertThatThrownBy(() -> approveOrderUseCase.execute(venueId, userId, orderId))
                 .isInstanceOf(InvalidStateTransitionException.class);
 
@@ -89,8 +94,10 @@ class ApproveOrderUseCaseTest {
 
     @Test
     void throwsNotFoundWhenOrderBelongsToDifferentVenue() {
+        // Arrange
         when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> approveOrderUseCase.execute(venueId, userId, orderId))
                 .isInstanceOf(ResourceNotFoundException.class);
 
@@ -99,9 +106,11 @@ class ApproveOrderUseCaseTest {
 
     @Test
     void throwsAccessDeniedWhenUserIsNotVenueMember() {
+        // Arrange
         doThrow(new AccessDeniedException())
                 .when(venueAuthorizationService).requireMember(userId, venueId);
 
+        // Act & Assert
         assertThatThrownBy(() -> approveOrderUseCase.execute(venueId, userId, orderId))
                 .isInstanceOf(AccessDeniedException.class);
 
@@ -110,14 +119,17 @@ class ApproveOrderUseCaseTest {
 
     @Test
     void returnsResponseWithOrderItems() {
+        // Arrange
         OrderEntity pendingOrder = anOrderWithStatus(OrderStatus.PENDING);
         OrderItemEntity lineItem = anOrderItem().withOrderId(orderId).withQuantity(2)
                 .withUnitPrice(Money.of("15.00")).build();
         when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(pendingOrder));
         when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of(lineItem));
 
+        // Act
         StaffOrderResponse response = approveOrderUseCase.execute(venueId, userId, orderId);
 
+        // Assert
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().getFirst().quantity()).isEqualTo(2);
     }

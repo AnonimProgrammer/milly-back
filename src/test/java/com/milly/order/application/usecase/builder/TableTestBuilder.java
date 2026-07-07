@@ -1,11 +1,11 @@
-package com.milly.order.application.usecase;
+package com.milly.order.application.usecase.builder;
 
 import com.milly.table.domain.entity.TableEntity;
 import com.milly.table.domain.valueobject.TableStatus;
 
 import java.util.UUID;
 
-final class TableTestBuilder {
+public final class TableTestBuilder {
 
     private UUID id = UUID.randomUUID();
     private UUID venueId = UUID.randomUUID();
@@ -15,26 +15,26 @@ final class TableTestBuilder {
     private TableTestBuilder() {
     }
 
-    static TableTestBuilder aTable() {
+    public static TableTestBuilder aTable() {
         return new TableTestBuilder();
     }
 
-    TableTestBuilder withId(UUID id) {
+    public TableTestBuilder withId(UUID id) {
         this.id = id;
         return this;
     }
 
-    TableTestBuilder withVenueId(UUID venueId) {
+    public TableTestBuilder withVenueId(UUID venueId) {
         this.venueId = venueId;
         return this;
     }
 
-    TableTestBuilder withStatus(TableStatus status) {
+    public TableTestBuilder withStatus(TableStatus status) {
         this.status = status;
         return this;
     }
 
-    TableEntity build() {
+    public TableEntity build() {
         TableEntity table = TableEntity.create(venueId, label, status);
         table.setId(id);
         return table;

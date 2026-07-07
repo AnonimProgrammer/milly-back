@@ -1,11 +1,11 @@
-package com.milly.order.application.usecase;
+package com.milly.order.application.usecase.builder;
 
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
 
 import java.util.UUID;
 
-final class OrderTestBuilder {
+public final class OrderTestBuilder {
 
     private UUID id = UUID.randomUUID();
     private UUID venueId = UUID.randomUUID();
@@ -15,31 +15,31 @@ final class OrderTestBuilder {
     private OrderTestBuilder() {
     }
 
-    static OrderTestBuilder anOrder() {
+    public static OrderTestBuilder anOrder() {
         return new OrderTestBuilder();
     }
 
-    OrderTestBuilder withId(UUID id) {
+    public OrderTestBuilder withId(UUID id) {
         this.id = id;
         return this;
     }
 
-    OrderTestBuilder withVenueId(UUID venueId) {
+    public OrderTestBuilder withVenueId(UUID venueId) {
         this.venueId = venueId;
         return this;
     }
 
-    OrderTestBuilder withTableId(UUID tableId) {
+    public OrderTestBuilder withTableId(UUID tableId) {
         this.tableId = tableId;
         return this;
     }
 
-    OrderTestBuilder withStatus(OrderStatus status) {
+    public OrderTestBuilder withStatus(OrderStatus status) {
         this.status = status;
         return this;
     }
 
-    OrderEntity build() {
+    public OrderEntity build() {
         OrderEntity order = OrderEntity.create(venueId, tableId, status);
         order.setId(id);
         return order;

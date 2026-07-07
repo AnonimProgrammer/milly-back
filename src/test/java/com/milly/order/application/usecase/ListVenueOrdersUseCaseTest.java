@@ -18,8 +18,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.UUID;
 
-import static com.milly.order.application.usecase.OrderItemTestBuilder.anOrderItem;
-import static com.milly.order.application.usecase.OrderTestBuilder.anOrder;
+import static com.milly.order.application.usecase.builder.OrderItemTestBuilder.anOrderItem;
+import static com.milly.order.application.usecase.builder.OrderTestBuilder.anOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
@@ -54,13 +54,16 @@ class ListVenueOrdersUseCaseTest {
 
     @Test
     void returnsAllVenueOrdersWhenStatusFilterIsNull() {
+        // Arrange
         OrderEntity pendingOrder = anOrderWithStatus(OrderStatus.PENDING);
         OrderItemEntity lineItem = anOrderItem().withOrderId(orderId).withUnitPrice(Money.of("10.00")).build();
         when(orderRepository.findAllByVenueIdOrderByCreatedAtDesc(venueId)).thenReturn(List.of(pendingOrder));
         when(orderItemRepository.findAllByOrderIdIn(List.of(orderId))).thenReturn(List.of(lineItem));
 
+        // Act
         List<StaffOrderResponse> response = listVenueOrdersUseCase.execute(venueId, userId, null);
 
+        // Assert
         assertThat(response).hasSize(1);
         assertThat(response.getFirst().id()).isEqualTo(orderId);
         assertThat(response.getFirst().items()).hasSize(1);
@@ -69,22 +72,27 @@ class ListVenueOrdersUseCaseTest {
 
     @Test
     void filtersOrdersByStatusWhenFilterIsProvided() {
+        // Arrange
         OrderEntity approvedOrder = anOrderWithStatus(OrderStatus.APPROVED);
         when(orderRepository.findAllByVenueIdAndStatusOrderByCreatedAtDesc(venueId, OrderStatus.APPROVED))
                 .thenReturn(List.of(approvedOrder));
         when(orderItemRepository.findAllByOrderIdIn(List.of(orderId))).thenReturn(List.of());
 
+        // Act
         List<StaffOrderResponse> response = listVenueOrdersUseCase.execute(venueId, userId, OrderStatus.APPROVED);
 
+        // Assert
         assertThat(response.getFirst().status()).isEqualTo(OrderStatus.APPROVED);
         verify(venueAuthorizationService).requireMember(userId, venueId);
     }
 
     @Test
     void throwsAccessDeniedWhenUserIsNotVenueMember() {
+        // Arrange
         doThrow(new AccessDeniedException())
                 .when(venueAuthorizationService).requireMember(userId, venueId);
 
+        // Act & Assert
         assertThatThrownBy(() -> listVenueOrdersUseCase.execute(venueId, userId, null))
                 .isInstanceOf(AccessDeniedException.class);
 
