@@ -10,7 +10,6 @@ import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.util.UUID;
 
 @Component
@@ -30,7 +29,7 @@ public class AuthSessionPolluter {
     public AuthSession registerPasswordUser(String email, String password) {
         UserEntity user = createUserUseCase.execute(
                 new ExternalIdentity(AuthProviderType.PASSWORD, email, email),
-                new ContinueAuthRequest.UserProfileDto("Test", "User", email, LocalDate.of(1990, 1, 1)),
+                new ContinueAuthRequest.UserProfileDto("Test", "User", email),
                 password);
         String accessToken = jwtTokenService.issueAccessToken(loadAuthUserUseCase.execute(user));
         return new AuthSession(user.getId(), email, password, accessToken);
