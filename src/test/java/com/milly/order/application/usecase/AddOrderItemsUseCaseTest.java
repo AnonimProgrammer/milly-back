@@ -30,10 +30,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.milly.order.application.usecase.MenuItemTestBuilder.aMenuItem;
-import static com.milly.order.application.usecase.OrderItemTestBuilder.anOrderItem;
-import static com.milly.order.application.usecase.OrderTestBuilder.anOrder;
-import static com.milly.order.application.usecase.TableTestBuilder.aTable;
+import static com.milly.order.application.usecase.builder.MenuItemTestBuilder.aMenuItem;
+import static com.milly.order.application.usecase.builder.OrderItemTestBuilder.anOrderItem;
+import static com.milly.order.application.usecase.builder.OrderTestBuilder.anOrder;
+import static com.milly.order.application.usecase.builder.TableTestBuilder.aTable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -74,6 +74,7 @@ class AddOrderItemsUseCaseTest {
 
     @Test
     void appendsItemsToApprovedOrderWithSnapshottedPrice() {
+        // Arrange
         TableEntity table = anActiveTable();
         OrderEntity approvedOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
                 .withStatus(OrderStatus.APPROVED).build();
@@ -89,9 +90,11 @@ class AddOrderItemsUseCaseTest {
         when(orderItemRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of(existingItem, newItem));
 
+        // Act
         OrderResponse response = addOrderItemsUseCase.execute(
                 tableId, orderId, new AddOrderItemsRequest(List.of(new CreateOrderRequest.ItemDto(menuItemId, 2))));
 
+        // Assert
         assertThat(response.items()).hasSize(2);
         assertThat(response.items().get(1).unitPrice()).isEqualByComparingTo(new BigDecimal("7.25"));
         ArgumentCaptor<List<OrderItemEntity>> captor = ArgumentCaptor.forClass(List.class);
@@ -105,11 +108,13 @@ class AddOrderItemsUseCaseTest {
     @ParameterizedTest
     @EnumSource(value = OrderStatus.class, names = {"PENDING", "REJECTED", "CLOSED"})
     void throwsInvalidTransitionWhenOrderIsNotApproved(OrderStatus status) {
+        // Arrange
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
         when(orderRepository.findByIdAndTableId(orderId, tableId))
                 .thenReturn(Optional.of(anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
                         .withStatus(status).build()));
 
+        // Act & Assert
         assertThatThrownBy(() -> addOrderItemsUseCase.execute(
                 tableId, orderId, new AddOrderItemsRequest(List.of(new CreateOrderRequest.ItemDto(menuItemId, 1)))))
                 .isInstanceOf(InvalidStateTransitionException.class);
@@ -119,9 +124,11 @@ class AddOrderItemsUseCaseTest {
 
     @Test
     void throwsNotFoundWhenOrderDoesNotBelongToTable() {
+        // Arrange
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
         when(orderRepository.findByIdAndTableId(orderId, tableId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> addOrderItemsUseCase.execute(
                 tableId, orderId, new AddOrderItemsRequest(List.of(new CreateOrderRequest.ItemDto(menuItemId, 1)))))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -129,12 +136,14 @@ class AddOrderItemsUseCaseTest {
 
     @Test
     void throwsNotFoundWhenMenuItemIsInvalid() {
+        // Arrange
         OrderEntity approvedOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
                 .withStatus(OrderStatus.APPROVED).build();
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
         when(orderRepository.findByIdAndTableId(orderId, tableId)).thenReturn(Optional.of(approvedOrder));
         when(menuItemRepository.findAllById(List.of(menuItemId))).thenReturn(List.of());
 
+        // Act & Assert
         assertThatThrownBy(() -> addOrderItemsUseCase.execute(
                 tableId, orderId, new AddOrderItemsRequest(List.of(new CreateOrderRequest.ItemDto(menuItemId, 1)))))
                 .isInstanceOf(ResourceNotFoundException.class);
