@@ -4,9 +4,14 @@ import com.milly.auth.application.polluter.AuthSession;
 import com.milly.auth.application.polluter.AuthSessionPolluter;
 import com.milly.config.domain.AbstractITest;
 import com.milly.config.infrastructure.adapter.RestTestClientAuth;
+import com.milly.venue.application.polluter.ManagedVenue;
+import com.milly.venue.application.polluter.VenuePolluter;
+import com.milly.venue.application.dto.VenueMembershipResponse;
 import com.milly.venue.domain.valueobject.VenueRole;
 import com.milly.venue.domain.valueobject.VenueStatus;
 import com.milly.venue.infrastructure.adapter.inbound.http.dto.CreateVenueApiResponse;
+import com.milly.venue.infrastructure.adapter.inbound.http.dto.VenueMembershipApiResponse;
+import com.milly.venue.infrastructure.adapter.inbound.http.dto.VenueMembershipListApiResponse;
 import com.milly.venue.infrastructure.adapter.outbound.persistence.VenueJpaRepository;
 import com.milly.venue.infrastructure.adapter.outbound.persistence.VenueMembershipJpaRepository;
 import org.junit.jupiter.api.Test;
@@ -14,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.client.RestTestClient;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,6 +31,9 @@ class VenueRestIntegrationTest extends AbstractITest {
 
     @Autowired
     private AuthSessionPolluter authSessionPolluter;
+
+    @Autowired
+    private VenuePolluter venuePolluter;
 
     @Autowired
     private VenueJpaRepository venueRepository;
@@ -168,5 +177,94 @@ class VenueRestIntegrationTest extends AbstractITest {
                 .jsonPath("$.errorCode").isEqualTo("BAD_REQUEST");
 
         assertThat(venueRepository.count()).isEqualTo(venueCount);
+    }
+
+    @Test
+    void managerGetsOwnVenueMembership() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = RestTestClientAuth.withSession(restClient, venue.manager());
+
+        // Act
+        VenueMembershipApiResponse response = managerClient.get()
+                .uri("/api/v1/venues/{venueId}/me", venue.venueId())
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(VenueMembershipApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getMessage()).isEqualTo("Venue membership retrieved successfully.");
+        assertThat(response.getTimestamp()).isNotNull();
+        assertThat(response.getData().venueId()).isEqualTo(venue.venueId());
+        assertThat(response.getData().venueName()).isEqualTo("Integration Test Venue");
+        assertThat(response.getData().location()).isEqualTo("Test City");
+        assertThat(response.getData().role()).isEqualTo(VenueRole.MANAGER);
+        assertThat(venueMembershipRepository.findByUserIdAndVenueId(venue.manager().userId(), venue.venueId()))
+                .hasValueSatisfying(membership -> assertThat(membership.getRole()).isEqualTo(VenueRole.MANAGER));
+    }
+
+    @Test
+    void waiterGetsOwnVenueMembership() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.WAITER);
+        RestTestClient waiterClient = RestTestClientAuth.withSession(restClient, waiter);
+
+        // Act
+        VenueMembershipApiResponse response = waiterClient.get()
+                .uri("/api/v1/venues/{venueId}/me", venue.venueId())
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(VenueMembershipApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getData().venueId()).isEqualTo(venue.venueId());
+        assertThat(response.getData().venueName()).isEqualTo("Integration Test Venue");
+        assertThat(response.getData().location()).isEqualTo("Test City");
+        assertThat(response.getData().role()).isEqualTo(VenueRole.WAITER);
+        assertThat(venueMembershipRepository.findByUserIdAndVenueId(waiter.userId(), venue.venueId()))
+                .hasValueSatisfying(membership -> assertThat(membership.getRole()).isEqualTo(VenueRole.WAITER));
+    }
+
+    @Test
+    void authenticatedUserListsOwnVenues() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = RestTestClientAuth.withSession(restClient, venue.manager());
+
+        // Act
+        VenueMembershipListApiResponse response = managerClient.get()
+                .uri("/api/v1/venues")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(VenueMembershipListApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getMessage()).isEqualTo("Venues retrieved successfully.");
+        assertThat(response.getTimestamp()).isNotNull();
+        List<VenueMembershipResponse> memberships = response.getData();
+        assertThat(memberships)
+                .filteredOn(membership -> membership.venueId().equals(venue.venueId()))
+                .singleElement()
+                .satisfies(membership -> {
+                    assertThat(membership.venueName()).isEqualTo("Integration Test Venue");
+                    assertThat(membership.location()).isEqualTo("Test City");
+                    assertThat(membership.role()).isEqualTo(VenueRole.MANAGER);
+                });
     }
 }
