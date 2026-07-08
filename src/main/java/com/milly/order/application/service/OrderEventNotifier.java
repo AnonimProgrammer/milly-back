@@ -53,6 +53,16 @@ public class OrderEventNotifier {
         publish(OrderEventType.ORDER_UPDATED, orderId, venueId, tableId, StompTopics.venueStaffTopic(venueId));
     }
 
+    public void paymentReceived(UUID orderId, UUID venueId, UUID tableId) {
+        publish(
+                OrderEventType.PAYMENT_RECEIVED,
+                orderId,
+                venueId,
+                tableId,
+                StompTopics.tableTopic(tableId),
+                StompTopics.venueStaffTopic(venueId));
+    }
+
     private void publish(OrderEventType type, UUID orderId, UUID venueId, UUID tableId, String... destinations) {
         OrderEvent event = new OrderEvent(type, orderId, venueId, tableId);
         for (String destination : destinations) {
