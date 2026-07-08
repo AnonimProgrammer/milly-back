@@ -12,7 +12,9 @@ import com.milly.menu.domain.entity.MenuItemEntity;
 import com.milly.menu.domain.valueobject.MenuItemStatus;
 import com.milly.menu.infrastructure.adapter.outbound.persistence.MenuItemJpaRepository;
 import com.milly.order.domain.entity.OrderEntity;
+import com.milly.order.domain.entity.OrderItemEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
+import com.milly.order.infrastructure.adapter.outbound.persistence.OrderItemJpaRepository;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderJpaRepository;
 import com.milly.table.domain.entity.TableEntity;
 import com.milly.table.domain.valueobject.TableStatus;
@@ -72,6 +74,9 @@ class OrderWsEventIntegrationTest {
 
     @Autowired
     private OrderJpaRepository orderRepository;
+
+    @Autowired
+    private OrderItemJpaRepository orderItemRepository;
 
     @Autowired
     private VenueMembershipJpaRepository venueMembershipRepository;
@@ -137,6 +142,38 @@ class OrderWsEventIntegrationTest {
     }
 
     @Test
+    void processPaymentPublishesToTableAndVenueStaffTopics() throws Exception {
+        UUID ticketId = UUID.randomUUID();
+        registerTicket(ticketId, managerId);
+
+        OrderEntity order = orderRepository.save(OrderEntity.create(venueId, tableId, OrderStatus.APPROVED));
+        orderItemRepository.save(OrderItemEntity.create(order.getId(), menuItemId, 1, Money.of("12.50")));
+
+        StompSession tableSession = connect(null).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        StompSession staffSession = connect("?ticket=" + ticketId).get(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        CapturingStompFrameHandler tableHandler = new CapturingStompFrameHandler(objectMapper);
+        CapturingStompFrameHandler staffHandler = new CapturingStompFrameHandler(objectMapper);
+        tableSession.subscribe(StompTopics.tableTopic(tableId), tableHandler);
+        staffSession.subscribe(StompTopics.venueStaffTopic(venueId), staffHandler);
+
+        mockMvc.perform(post("/api/v1/public/tables/" + tableId + "/orders/" + order.getId() + "/payments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(paymentBody()))
+                .andExpect(status().isCreated());
+
+        JsonNode tableEvent = tableHandler.awaitPayload(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        JsonNode staffEvent = staffHandler.awaitPayload(TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+        assertThat(tableEvent.get("type").asText()).isEqualTo("PAYMENT_RECEIVED");
+        assertThat(tableEvent.get("orderId").asText()).isEqualTo(order.getId().toString());
+        assertThat(staffEvent.get("type").asText()).isEqualTo("PAYMENT_RECEIVED");
+        assertThat(staffEvent.get("venueId").asText()).isEqualTo(venueId.toString());
+
+        tableSession.disconnect();
+        staffSession.disconnect();
+    }
+
+    @Test
     void failedPlaceOrderDoesNotPublish() throws Exception {
         UUID ticketId = UUID.randomUUID();
         registerTicket(ticketId, managerId);
@@ -160,6 +197,22 @@ class OrderWsEventIntegrationTest {
         return """
                 {"items":[{"menuItemId":"%s","quantity":1}]}
                 """.formatted(itemId);
+    }
+
+    private String paymentBody() {
+        return """
+                {
+                  "amount": 5.00,
+                  "paymentType": "FULL",
+                  "provider": "CARD",
+                  "providerDetails": {
+                    "last4": "4242",
+                    "brand": "visa",
+                    "expiryMonth": 12,
+                    "expiryYear": 2029
+                  }
+                }
+                """;
     }
 
     private void registerTicket(UUID ticketId, UUID userId) {
