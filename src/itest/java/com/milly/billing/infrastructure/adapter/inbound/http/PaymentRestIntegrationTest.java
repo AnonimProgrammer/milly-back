@@ -6,6 +6,7 @@ import com.milly.billing.application.polluter.UnpayableOrder;
 import com.milly.billing.domain.valueobject.PaymentStatus;
 import com.milly.billing.infrastructure.adapter.inbound.http.dto.ProcessPaymentApiResponse;
 import com.milly.billing.infrastructure.adapter.outbound.persistence.PaymentJpaRepository;
+import com.milly.common.idempotency.IdempotencyAspect;
 import com.milly.config.domain.AbstractITest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -197,7 +198,76 @@ class PaymentRestIntegrationTest extends AbstractITest {
                 .expectBody()
                 .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
     }
+    @Test
+    void retryingPaymentWithSameIdempotencyKeyAndBodyDoesNotChargeTwice() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+        String idempotencyKey = UUID.randomUUID().toString();
+        Map<String, Object> body = Map.of("amount", "25.00", "paymentType", "FULL", "provider", "APPLE");
 
+        // Act
+        ProcessPaymentApiResponse first = restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .header(IdempotencyAspect.IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody(ProcessPaymentApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        ProcessPaymentApiResponse second = restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .header(IdempotencyAspect.IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody(ProcessPaymentApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(first).isNotNull();
+        assertThat(second).isNotNull();
+        assertThat(second.getData().payment().id()).isEqualTo(first.getData().payment().id());
+        assertThat(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(order.orderId(), PaymentStatus.COMPLETED))
+                .singleElement();
+    }
+
+    @Test
+    void reusingIdempotencyKeyWithDifferentBodyReturnsConflict() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+        String idempotencyKey = UUID.randomUUID().toString();
+
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .header(IdempotencyAspect.IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("amount", "25.00", "paymentType", "FULL", "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isCreated();
+
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .header(IdempotencyAspect.IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("amount", "30.00", "paymentType", "FULL", "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(409)
+                .expectBody()
+                .jsonPath("$.errorCode").isEqualTo("CONFLICT");
+
+        assertThat(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(order.orderId(), PaymentStatus.COMPLETED))
+                .singleElement();
+    }
     private void payFull(PayableOrder order, String amount) {
         restClient.post()
                 .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
