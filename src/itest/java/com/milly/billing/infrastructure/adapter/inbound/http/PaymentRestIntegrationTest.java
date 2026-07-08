@@ -268,6 +268,46 @@ class PaymentRestIntegrationTest extends AbstractITest {
         assertThat(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(order.orderId(), PaymentStatus.COMPLETED))
                 .singleElement();
     }
+    @Test
+    void getBillReturnsSummaryWithPaymentHistory() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+        payFull(order, "42.50");
+
+        // Act
+        BillSummaryApiResponse response = restClient.get()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/bill", order.tableId(), order.orderId())
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(BillSummaryApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getMessage()).isEqualTo("Bill retrieved successfully.");
+        assertThat(response.getData().orderTotal()).isEqualByComparingTo(order.orderTotal());
+        assertThat(response.getData().paidAmount()).isEqualByComparingTo("42.50");
+        assertThat(response.getData().remaining()).isEqualByComparingTo("57.50");
+        assertThat(response.getData().payments()).hasSize(1);
+    }
+
+    @Test
+    void getBillReturnsNotFoundWhenOrderDoesNotExist() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+        UUID missingOrderId = UUID.randomUUID();
+
+        // Act & Assert
+        restClient.get()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/bill", order.tableId(), missingOrderId)
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
+    }
     private void payFull(PayableOrder order, String amount) {
         restClient.post()
                 .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
