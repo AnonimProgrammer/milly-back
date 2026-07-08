@@ -19,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -60,7 +61,8 @@ public class CreateOrderUseCase {
 
         orderEventNotifier.orderPlaced(savedOrder.getId(), savedOrder.getVenueId(), savedOrder.getTableId());
 
-        return OrderResponse.of(savedOrder, savedItems);
+        // A brand-new order can't have any payments against it yet.
+        return OrderResponse.of(savedOrder, savedItems, BigDecimal.ZERO);
     }
 
     private OrderItemEntity toOrderItem(

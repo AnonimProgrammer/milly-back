@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
@@ -39,6 +40,8 @@ public class ApproveOrderUseCase {
 
         orderEventNotifier.orderApproved(order.getId(), order.getVenueId(), order.getTableId());
 
-        return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()));
+        // Payments can only be made against an APPROVED order, so before this transition
+        // there's no way one could already exist.
+        return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()), BigDecimal.ZERO);
     }
 }
