@@ -326,8 +326,136 @@ class MenuItemRestIntegrationTest extends AbstractITest {
         assertThat(menuItemRepository.count()).isEqualTo(itemCount);
     }
 
+    @Test
+    void managerGetsMenuItemFromVenue() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        MenuItemEntity item = menuItemPolluter.createItem(
+                venue.venueId(), "Pizza", "Cheese", "12.50", MenuItemStatus.ACTIVE);
+        RestTestClient managerClient = managerClientFor(venue);
+
+        // Act
+        MenuItemApiResponse response = managerClient.get()
+                .uri(menuItemPath(venue.venueId(), item.getId()))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(MenuItemApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getMessage()).isEqualTo("Menu item retrieved successfully.");
+        assertThat(response.getTimestamp()).isNotNull();
+        assertThat(response.getData().id()).isEqualTo(item.getId());
+        assertThat(response.getData().venueId()).isEqualTo(venue.venueId());
+        assertThat(response.getData().name()).isEqualTo("Pizza");
+        assertThat(response.getData().description()).isEqualTo("Cheese");
+        assertThat(response.getData().price()).isEqualByComparingTo("12.50");
+        assertThat(response.getData().status()).isEqualTo(MenuItemStatus.ACTIVE);
+    }
+
+    @Test
+    void unauthenticatedGetMenuItemReturnsUnauthorized() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        MenuItemEntity item = menuItemPolluter.createActiveItem(venue.venueId(), "Pizza");
+
+        // Act & Assert
+        restClient.get()
+                .uri(menuItemPath(venue.venueId(), item.getId()))
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(401)
+                .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED");
+    }
+
+    @Test
+    void nonMemberGetMenuItemReturnsForbidden() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        ManagedVenue otherVenue = venuePolluter.createManagedVenue();
+        AuthSession nonMember = venuePolluter.addMember(otherVenue.venueId(), VenueRole.MANAGER);
+        MenuItemEntity item = menuItemPolluter.createActiveItem(venue.venueId(), "Pizza");
+        RestTestClient nonMemberClient = RestTestClientAuth.withSession(restClient, nonMember);
+
+        // Act & Assert
+        nonMemberClient.get()
+                .uri(menuItemPath(venue.venueId(), item.getId()))
+                .exchange()
+                .expectStatus()
+                .isForbidden()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(403)
+                .jsonPath("$.errorCode").isEqualTo("FORBIDDEN");
+    }
+
+    @Test
+    void waiterGetMenuItemReturnsForbidden() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.WAITER);
+        MenuItemEntity item = menuItemPolluter.createActiveItem(venue.venueId(), "Pizza");
+        RestTestClient waiterClient = RestTestClientAuth.withSession(restClient, waiter);
+
+        // Act & Assert
+        waiterClient.get()
+                .uri(menuItemPath(venue.venueId(), item.getId()))
+                .exchange()
+                .expectStatus()
+                .isForbidden()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(403)
+                .jsonPath("$.errorCode").isEqualTo("FORBIDDEN");
+    }
+
+    @Test
+    void getMenuItemReturnsNotFoundWhenItemDoesNotExist() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = managerClientFor(venue);
+        UUID missingItemId = UUID.randomUUID();
+
+        // Act & Assert
+        managerClient.get()
+                .uri(menuItemPath(venue.venueId(), missingItemId))
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void getMenuItemReturnsNotFoundWhenItemBelongsToAnotherVenue() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        ManagedVenue otherVenue = venuePolluter.createManagedVenue();
+        MenuItemEntity otherItem = menuItemPolluter.createActiveItem(otherVenue.venueId(), "Pizza");
+        RestTestClient managerClient = managerClientFor(venue);
+
+        // Act & Assert
+        managerClient.get()
+                .uri(menuItemPath(venue.venueId(), otherItem.getId()))
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
+    }
+
     private String menuItemsPath(UUID venueId) {
         return "/api/v1/venues/" + venueId + "/menu/items";
+    }
+
+    private String menuItemPath(UUID venueId, UUID itemId) {
+        return menuItemsPath(venueId) + "/" + itemId;
     }
 
     private RestTestClient managerClientFor(ManagedVenue venue) {
