@@ -14,6 +14,7 @@ import com.milly.venue.domain.valueobject.VenueRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -186,30 +187,46 @@ class MenuItemMutationUseCasesTest {
 
     @Test
     void deleteMarksItemDeletedWithoutRemovingIt() {
+        // Arrange
         MenuItemEntity item = menuItem();
         when(menuItemRepository.findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE))
                 .thenReturn(Optional.of(item));
         when(menuItemRepository.save(item)).thenReturn(item);
 
+        // Act
         deleteMenuItemUseCase.execute(userId, venueId, itemId);
 
-        assertEquals(MenuItemStatus.DELETED, item.getStatus());
-        verify(menuItemRepository).save(item);
+        // Assert
+        ArgumentCaptor<MenuItemEntity> itemCaptor = ArgumentCaptor.forClass(MenuItemEntity.class);
+        assertThat(item.getStatus()).isEqualTo(MenuItemStatus.DELETED);
+        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
+        verify(menuItemRepository).save(itemCaptor.capture());
+        assertThat(itemCaptor.getValue().getId()).isEqualTo(itemId);
+        assertThat(itemCaptor.getValue().getStatus()).isEqualTo(MenuItemStatus.DELETED);
     }
 
     @Test
     void deleteReturnsNotFoundForMissingCrossVenueOrDeletedItem() {
+        // Arrange
         when(menuItemRepository.findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE))
                 .thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThrows(ResourceNotFoundException.class,
                 () -> deleteMenuItemUseCase.execute(userId, venueId, itemId));
+
+        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
+        verify(menuItemRepository, never()).save(any(MenuItemEntity.class));
     }
 
     @Test
     void deleteStopsWhenManagerAuthorizationFails() {
+        // Arrange
         denyManager();
 
+        // Act & Assert
         assertThrows(AccessDeniedException.class,
                 () -> deleteMenuItemUseCase.execute(userId, venueId, itemId));
 
