@@ -15,6 +15,19 @@ public class GlobalExceptionHandler {
         return HttpErrorResponses.of(HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED, exception.getMessage());
     }
 
+    @ExceptionHandler(InvalidInvitationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidInvitation(InvalidInvitationException exception) {
+        return HttpErrorResponses.of(
+                HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, InvalidInvitationException.MESSAGE);
+    }
+
+    @ExceptionHandler(VenueMembershipAlreadyExistsException.class)
+    public ResponseEntity<ApiResponse<Void>> handleVenueMembershipAlreadyExists(
+            VenueMembershipAlreadyExistsException exception) {
+        return HttpErrorResponses.of(
+                HttpStatus.CONFLICT, ErrorCode.CONFLICT, VenueMembershipAlreadyExistsException.MESSAGE);
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException exception) {
         return HttpErrorResponses.of(HttpStatus.FORBIDDEN, ErrorCode.FORBIDDEN, AccessDeniedException.MESSAGE);
