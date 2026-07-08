@@ -8,6 +8,7 @@ import com.milly.menu.infrastructure.adapter.outbound.persistence.MenuItemJpaRep
 import com.milly.order.application.dto.AddOrderItemsRequest;
 import com.milly.order.application.dto.CreateOrderRequest;
 import com.milly.order.application.dto.OrderResponse;
+import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.application.service.OrderEventNotifier;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
@@ -59,6 +60,9 @@ class AddOrderItemsUseCaseTest {
     @Mock
     private OrderEventNotifier orderEventNotifier;
 
+    @Mock
+    private PaymentSummaryPort paymentSummaryPort;
+
     private AddOrderItemsUseCase addOrderItemsUseCase;
 
     private final UUID venueId = UUID.randomUUID();
@@ -69,7 +73,8 @@ class AddOrderItemsUseCaseTest {
     @BeforeEach
     void setUp() {
         addOrderItemsUseCase = new AddOrderItemsUseCase(
-                tableRepository, menuItemRepository, orderRepository, orderItemRepository, orderEventNotifier);
+                tableRepository, menuItemRepository, orderRepository, orderItemRepository, orderEventNotifier,
+                paymentSummaryPort);
     }
 
     @Test
@@ -89,6 +94,7 @@ class AddOrderItemsUseCaseTest {
         when(menuItemRepository.findAllById(List.of(menuItemId))).thenReturn(List.of(burger));
         when(orderItemRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of(existingItem, newItem));
+        when(paymentSummaryPort.paidAmountFor(orderId)).thenReturn(BigDecimal.ZERO);
 
         // Act
         OrderResponse response = addOrderItemsUseCase.execute(

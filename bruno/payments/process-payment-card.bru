@@ -1,0 +1,42 @@
+meta {
+  name: Process payment (card, split)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/api/v1/public/tables/{{testTableId}}/orders/{{testOrderId}}/payments
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+  ~X-Idempotency-Key: test-key-1
+}
+
+body:json {
+  {
+    "amount": "42.50",
+    "paymentType": "SPLIT",
+    "provider": "CARD",
+    "providerDetails": {
+      "last4": "4242",
+      "brand": "visa",
+      "expiryMonth": 12,
+      "expiryYear": 2028
+    },
+    "splitPeople": 4
+  }
+}
+
+docs {
+  Requires an order in APPROVED status. Run staff-orders/Approve order first and set
+  `testOrderId` to that order's id, and `testTableId` to its table.
+
+  Idempotency test:
+  1. Enable the X-Idempotency-Key header above (remove the ~).
+  2. Send twice unchanged -> same response both times, no second payment row.
+  3. Change the body (e.g. amount) with the same key -> 409 Conflict.
+}

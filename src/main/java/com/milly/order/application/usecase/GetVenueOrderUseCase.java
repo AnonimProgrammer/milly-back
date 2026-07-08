@@ -2,6 +2,7 @@ package com.milly.order.application.usecase;
 
 import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.StaffOrderResponse;
+import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderItemJpaRepository;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderJpaRepository;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
@@ -19,6 +21,7 @@ public class GetVenueOrderUseCase {
     private final VenueAuthorizationService venueAuthorizationService;
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
+    private final PaymentSummaryPort paymentSummaryPort;
 
     @Transactional(readOnly = true)
     public StaffOrderResponse execute(UUID venueId, UUID userId, UUID orderId) {
@@ -27,6 +30,7 @@ public class GetVenueOrderUseCase {
         OrderEntity order = orderRepository.findByIdAndVenueId(orderId, venueId)
                 .orElseThrow(ResourceNotFoundException::new);
 
-        return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()));
+        BigDecimal paidAmount = paymentSummaryPort.paidAmountFor(order.getId());
+        return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()), paidAmount);
     }
 }
