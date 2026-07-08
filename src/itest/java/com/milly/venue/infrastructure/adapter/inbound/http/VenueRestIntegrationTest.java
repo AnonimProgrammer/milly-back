@@ -75,4 +75,98 @@ class VenueRestIntegrationTest extends AbstractITest {
                     assertThat(membership.getRole()).isEqualTo(VenueRole.MANAGER);
                 });
     }
+
+    @Test
+    void unauthenticatedCreateVenueReturnsUnauthorized() {
+        // Arrange
+        long venueCount = venueRepository.count();
+
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/venues")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "name", "Integration Venue",
+                        "location", "Test City"))
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(401)
+                .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED");
+
+        assertThat(venueRepository.count()).isEqualTo(venueCount);
+    }
+
+    @Test
+    void createVenueReturnsBadRequestWhenNameIsBlank() {
+        // Arrange
+        AuthSession manager = authSessionPolluter.registerPasswordUser();
+        RestTestClient managerClient = RestTestClientAuth.withSession(restClient, manager);
+        long venueCount = venueRepository.count();
+
+        // Act & Assert
+        managerClient.post()
+                .uri("/api/v1/venues")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "name", " ",
+                        "location", "Test City"))
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(400)
+                .jsonPath("$.message").isEqualTo("Name is required.")
+                .jsonPath("$.errorCode").isEqualTo("BAD_REQUEST");
+
+        assertThat(venueRepository.count()).isEqualTo(venueCount);
+    }
+
+    @Test
+    void createVenueReturnsBadRequestWhenLocationIsBlank() {
+        // Arrange
+        AuthSession manager = authSessionPolluter.registerPasswordUser();
+        RestTestClient managerClient = RestTestClientAuth.withSession(restClient, manager);
+        long venueCount = venueRepository.count();
+
+        // Act & Assert
+        managerClient.post()
+                .uri("/api/v1/venues")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "name", "Integration Venue",
+                        "location", " "))
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(400)
+                .jsonPath("$.message").isEqualTo("Location is required.")
+                .jsonPath("$.errorCode").isEqualTo("BAD_REQUEST");
+
+        assertThat(venueRepository.count()).isEqualTo(venueCount);
+    }
+
+    @Test
+    void createVenueReturnsBadRequestWhenRequiredFieldsAreMissing() {
+        // Arrange
+        AuthSession manager = authSessionPolluter.registerPasswordUser();
+        RestTestClient managerClient = RestTestClientAuth.withSession(restClient, manager);
+        long venueCount = venueRepository.count();
+
+        // Act & Assert
+        managerClient.post()
+                .uri("/api/v1/venues")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of())
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(400)
+                .jsonPath("$.errorCode").isEqualTo("BAD_REQUEST");
+
+        assertThat(venueRepository.count()).isEqualTo(venueCount);
+    }
 }
