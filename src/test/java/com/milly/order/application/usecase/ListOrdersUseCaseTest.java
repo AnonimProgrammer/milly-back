@@ -3,6 +3,7 @@ package com.milly.order.application.usecase;
 import com.milly.common.domain.valueobject.Money;
 import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.OrderResponse;
+import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
@@ -16,7 +17,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -40,6 +43,9 @@ class ListOrdersUseCaseTest {
     @Mock
     private OrderItemJpaRepository orderItemRepository;
 
+    @Mock
+    private PaymentSummaryPort paymentSummaryPort;
+
     private ListOrdersUseCase listOrdersUseCase;
 
     private final UUID venueId = UUID.randomUUID();
@@ -49,7 +55,8 @@ class ListOrdersUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        listOrdersUseCase = new ListOrdersUseCase(tableRepository, orderRepository, orderItemRepository);
+        listOrdersUseCase = new ListOrdersUseCase(
+                tableRepository, orderRepository, orderItemRepository, paymentSummaryPort);
     }
 
     @Test
@@ -62,6 +69,7 @@ class ListOrdersUseCaseTest {
                 .withUnitPrice(Money.of("9.99")).build();
         when(orderRepository.findAllByTableIdOrderByCreatedAtDesc(tableId)).thenReturn(List.of(pendingOrder));
         when(orderItemRepository.findAllByOrderIdIn(List.of(orderId))).thenReturn(List.of(lineItem));
+        when(paymentSummaryPort.paidAmountsFor(List.of(orderId))).thenReturn(Map.of(orderId, BigDecimal.ZERO));
 
         // Act
         List<OrderResponse> response = listOrdersUseCase.execute(tableId);
@@ -78,6 +86,7 @@ class ListOrdersUseCaseTest {
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(anActiveTable()));
         when(orderRepository.findAllByTableIdOrderByCreatedAtDesc(tableId)).thenReturn(List.of());
         when(orderItemRepository.findAllByOrderIdIn(List.of())).thenReturn(List.of());
+        when(paymentSummaryPort.paidAmountsFor(List.of())).thenReturn(Map.of());
 
         // Act
         List<OrderResponse> response = listOrdersUseCase.execute(tableId);

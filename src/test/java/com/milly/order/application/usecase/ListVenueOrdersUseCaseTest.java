@@ -3,6 +3,7 @@ package com.milly.order.application.usecase;
 import com.milly.common.domain.valueobject.Money;
 import com.milly.common.exception.AccessDeniedException;
 import com.milly.order.application.dto.StaffOrderResponse;
+import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
@@ -15,7 +16,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static com.milly.order.application.usecase.builder.OrderItemTestBuilder.anOrderItem;
@@ -39,6 +42,9 @@ class ListVenueOrdersUseCaseTest {
     @Mock
     private OrderItemJpaRepository orderItemRepository;
 
+    @Mock
+    private PaymentSummaryPort paymentSummaryPort;
+
     private ListVenueOrdersUseCase listVenueOrdersUseCase;
 
     private final UUID userId = UUID.randomUUID();
@@ -49,7 +55,7 @@ class ListVenueOrdersUseCaseTest {
     @BeforeEach
     void setUp() {
         listVenueOrdersUseCase = new ListVenueOrdersUseCase(
-                venueAuthorizationService, orderRepository, orderItemRepository);
+                venueAuthorizationService, orderRepository, orderItemRepository, paymentSummaryPort);
     }
 
     @Test
@@ -59,6 +65,7 @@ class ListVenueOrdersUseCaseTest {
         OrderItemEntity lineItem = anOrderItem().withOrderId(orderId).withUnitPrice(Money.of("10.00")).build();
         when(orderRepository.findAllByVenueIdOrderByCreatedAtDesc(venueId)).thenReturn(List.of(pendingOrder));
         when(orderItemRepository.findAllByOrderIdIn(List.of(orderId))).thenReturn(List.of(lineItem));
+        when(paymentSummaryPort.paidAmountsFor(List.of(orderId))).thenReturn(Map.of(orderId, BigDecimal.ZERO));
 
         // Act
         List<StaffOrderResponse> response = listVenueOrdersUseCase.execute(venueId, userId, null);
@@ -77,6 +84,7 @@ class ListVenueOrdersUseCaseTest {
         when(orderRepository.findAllByVenueIdAndStatusOrderByCreatedAtDesc(venueId, OrderStatus.APPROVED))
                 .thenReturn(List.of(approvedOrder));
         when(orderItemRepository.findAllByOrderIdIn(List.of(orderId))).thenReturn(List.of());
+        when(paymentSummaryPort.paidAmountsFor(List.of(orderId))).thenReturn(Map.of(orderId, BigDecimal.ZERO));
 
         // Act
         List<StaffOrderResponse> response = listVenueOrdersUseCase.execute(venueId, userId, OrderStatus.APPROVED);
