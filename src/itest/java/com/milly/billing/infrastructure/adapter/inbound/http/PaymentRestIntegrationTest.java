@@ -94,4 +94,40 @@ class PaymentRestIntegrationTest extends AbstractITest {
         assertThat(response.getData().bill().remaining()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(response.getData().bill().fullyPaid()).isTrue();
     }
+
+    @Test
+    void partialPaymentsAccumulateUntilFullyPaid() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+        payFull(order, "60.00");
+
+        // Act
+        ProcessPaymentApiResponse response = restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("amount", "40.00", "paymentType", "FULL", "provider", "GOOGLE"))
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody(ProcessPaymentApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getData().bill().paidAmount()).isEqualByComparingTo("100.00");
+        assertThat(response.getData().bill().remaining()).isEqualByComparingTo("0.00");
+        assertThat(response.getData().bill().fullyPaid()).isTrue();
+        assertThat(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(order.orderId(), PaymentStatus.COMPLETED))
+                .hasSize(2);
+    }
+    private void payFull(PayableOrder order, String amount) {
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("amount", amount, "paymentType", "CUSTOM", "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isCreated();
+    }
 }
