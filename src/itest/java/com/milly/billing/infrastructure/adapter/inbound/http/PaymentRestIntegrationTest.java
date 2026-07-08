@@ -2,6 +2,7 @@ package com.milly.billing.infrastructure.adapter.inbound.http;
 
 import com.milly.billing.application.polluter.BillingPolluter;
 import com.milly.billing.application.polluter.PayableOrder;
+import com.milly.billing.application.polluter.UnpayableOrder;
 import com.milly.billing.domain.valueobject.PaymentStatus;
 import com.milly.billing.infrastructure.adapter.inbound.http.dto.ProcessPaymentApiResponse;
 import com.milly.billing.infrastructure.adapter.outbound.persistence.PaymentJpaRepository;
@@ -13,6 +14,7 @@ import org.springframework.test.web.servlet.client.RestTestClient;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -121,6 +123,81 @@ class PaymentRestIntegrationTest extends AbstractITest {
         assertThat(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(order.orderId(), PaymentStatus.COMPLETED))
                 .hasSize(2);
     }
+    @Test
+    void processPaymentRejectsWhenOrderIsNotApproved() {
+        // Arrange
+        UnpayableOrder order = billingPolluter.createPendingOrder();
+
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("amount", "10.00", "paymentType", "FULL", "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(422)
+                .expectBody()
+                .jsonPath("$.errorCode").isEqualTo("UNPROCESSABLE_ENTITY");
+
+        assertThat(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(order.orderId(), PaymentStatus.COMPLETED))
+                .isEmpty();
+    }
+
+    @Test
+    void processPaymentRejectsOverpayment() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("amount", "999999.00", "paymentType", "FULL", "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(422)
+                .expectBody()
+                .jsonPath("$.errorCode").isEqualTo("UNPROCESSABLE_ENTITY");
+
+        assertThat(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(order.orderId(), PaymentStatus.COMPLETED))
+                .isEmpty();
+    }
+
+    @Test
+    void processPaymentRejectsCardPaymentMissingCardDetails() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("amount", "10.00", "paymentType", "FULL", "provider", "CARD"))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(422)
+                .expectBody()
+                .jsonPath("$.errorCode").isEqualTo("UNPROCESSABLE_ENTITY");
+    }
+
+    @Test
+    void processPaymentReturnsNotFoundWhenOrderBelongsToDifferentTable() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+        UUID otherTableId = billingPolluter.createApprovedOrder().tableId();
+
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", otherTableId, order.orderId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("amount", "10.00", "paymentType", "FULL", "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
+    }
+
     private void payFull(PayableOrder order, String amount) {
         restClient.post()
                 .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
