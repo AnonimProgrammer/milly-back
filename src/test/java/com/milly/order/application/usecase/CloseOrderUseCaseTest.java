@@ -4,6 +4,7 @@ import com.milly.common.exception.AccessDeniedException;
 import com.milly.common.exception.InvalidStateTransitionException;
 import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.StaffOrderResponse;
+import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.application.service.OrderEventNotifier;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
@@ -18,6 +19,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,6 +47,9 @@ class CloseOrderUseCaseTest {
     @Mock
     private OrderEventNotifier orderEventNotifier;
 
+    @Mock
+    private PaymentSummaryPort paymentSummaryPort;
+
     private CloseOrderUseCase closeOrderUseCase;
 
     private final UUID userId = UUID.randomUUID();
@@ -55,7 +60,8 @@ class CloseOrderUseCaseTest {
     @BeforeEach
     void setUp() {
         closeOrderUseCase = new CloseOrderUseCase(
-                venueAuthorizationService, orderRepository, orderItemRepository, orderEventNotifier);
+                venueAuthorizationService, orderRepository, orderItemRepository, orderEventNotifier,
+                paymentSummaryPort);
     }
 
     @Test
@@ -64,6 +70,7 @@ class CloseOrderUseCaseTest {
         OrderEntity approvedOrder = anOrderWithStatus(OrderStatus.APPROVED);
         when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(approvedOrder));
         when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of());
+        when(paymentSummaryPort.paidAmountFor(orderId)).thenReturn(BigDecimal.ZERO);
 
         // Act
         StaffOrderResponse response = closeOrderUseCase.execute(venueId, userId, orderId);
