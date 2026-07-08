@@ -2,6 +2,7 @@ package com.milly.venue.infrastructure.adapter.inbound.http;
 
 import com.milly.auth.application.polluter.AuthSession;
 import com.milly.auth.application.polluter.AuthSessionPolluter;
+import com.milly.auth.infrastructure.adapter.outbound.security.AuthCookieWriter;
 import com.milly.config.domain.AbstractITest;
 import com.milly.config.infrastructure.adapter.RestTestClientAuth;
 import com.milly.venue.application.polluter.ManagedVenue;
@@ -266,5 +267,105 @@ class VenueRestIntegrationTest extends AbstractITest {
                     assertThat(membership.location()).isEqualTo("Test City");
                     assertThat(membership.role()).isEqualTo(VenueRole.MANAGER);
                 });
+    }
+
+    @Test
+    void unauthenticatedListVenuesReturnsUnauthorized() {
+        // Act & Assert
+        restClient.get()
+                .uri("/api/v1/venues")
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(401)
+                .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED");
+    }
+
+    @Test
+    void unauthenticatedGetMembershipReturnsUnauthorized() {
+        // Act & Assert
+        restClient.get()
+                .uri("/api/v1/venues/{venueId}/me", java.util.UUID.randomUUID())
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(401)
+                .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED");
+    }
+
+    @Test
+    void invalidSessionGetMembershipReturnsUnauthorized() {
+        // Arrange
+        RestTestClient invalidClient = restClient.mutate()
+                .defaultCookie(AuthCookieWriter.ACCESS_TOKEN_COOKIE, "not-a-valid-token")
+                .build();
+
+        // Act & Assert
+        invalidClient.get()
+                .uri("/api/v1/venues/{venueId}/me", java.util.UUID.randomUUID())
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(401)
+                .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED");
+    }
+
+    @Test
+    void getMembershipReturnsForbiddenWhenUserIsNotVenueMember() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        AuthSession nonMember = authSessionPolluter.registerPasswordUser();
+        RestTestClient nonMemberClient = RestTestClientAuth.withSession(restClient, nonMember);
+
+        // Act & Assert
+        nonMemberClient.get()
+                .uri("/api/v1/venues/{venueId}/me", venue.venueId())
+                .exchange()
+                .expectStatus()
+                .isForbidden()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(403)
+                .jsonPath("$.message").isEqualTo("Access denied.")
+                .jsonPath("$.errorCode").isEqualTo("FORBIDDEN");
+
+        assertThat(venueMembershipRepository.findByUserIdAndVenueId(nonMember.userId(), venue.venueId()))
+                .isEmpty();
+    }
+
+    @Test
+    void getMembershipReturnsNotFoundWhenVenueDoesNotExist() {
+        // Arrange
+        AuthSession user = authSessionPolluter.registerPasswordUser();
+        RestTestClient userClient = RestTestClientAuth.withSession(restClient, user);
+        java.util.UUID missingVenueId = java.util.UUID.randomUUID();
+
+        // Act & Assert
+        userClient.get()
+                .uri("/api/v1/venues/{venueId}/me", missingVenueId)
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
+
+        assertThat(venueRepository.findById(missingVenueId)).isEmpty();
+    }
+
+    @Test
+    void getMembershipReturnsBadRequestWhenVenueIdIsMalformed() {
+        // Arrange
+        AuthSession user = authSessionPolluter.registerPasswordUser();
+        RestTestClient userClient = RestTestClientAuth.withSession(restClient, user);
+
+        // Act & Assert
+        userClient.get()
+                .uri("/api/v1/venues/not-a-uuid/me")
+                .exchange()
+                .expectStatus()
+                .isBadRequest();
     }
 }
