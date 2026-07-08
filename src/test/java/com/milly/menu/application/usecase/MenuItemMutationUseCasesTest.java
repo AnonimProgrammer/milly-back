@@ -21,9 +21,11 @@ import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -55,26 +57,56 @@ class MenuItemMutationUseCasesTest {
 
     @Test
     void createPersistsTrimmedActiveItem() {
+        // Arrange
         when(menuItemRepository.save(any(MenuItemEntity.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation -> {
+                    MenuItemEntity savedItem = invocation.getArgument(0);
+                    savedItem.setId(itemId);
+                    return savedItem;
+                });
 
+        // Act
         MenuItemResponse response = createMenuItemUseCase.execute(
                 userId, venueId, new CreateMenuItemRequest(" Pizza ", " Cheese ", new BigDecimal("12.50")));
 
-        assertEquals("Pizza", response.name());
-        assertEquals("Cheese", response.description());
-        assertEquals(MenuItemStatus.ACTIVE, response.status());
+        // Assert
+        assertThat(response.id()).isEqualTo(itemId);
+        assertThat(response.venueId()).isEqualTo(venueId);
+        assertThat(response.name()).isEqualTo("Pizza");
+        assertThat(response.description()).isEqualTo("Cheese");
+        assertThat(response.price()).isEqualByComparingTo("12.50");
+        assertThat(response.status()).isEqualTo(MenuItemStatus.ACTIVE);
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(menuItemRepository).save(any(MenuItemEntity.class));
+    }
+
+    @Test
+    void createPersistsNullDescriptionWhenDescriptionIsMissing() {
+        // Arrange
+        when(menuItemRepository.save(any(MenuItemEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        MenuItemResponse response = createMenuItemUseCase.execute(
+                userId, venueId, new CreateMenuItemRequest("Pizza", null, new BigDecimal("12.50")));
+
+        // Assert
+        assertThat(response.description()).isNull();
+        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(menuItemRepository).save(any(MenuItemEntity.class));
     }
 
     @Test
     void createStopsWhenManagerAuthorizationFails() {
+        // Arrange
         denyManager();
 
+        // Act & Assert
         assertThrows(AccessDeniedException.class, () -> createMenuItemUseCase.execute(
                 userId, venueId, new CreateMenuItemRequest("Pizza", null, BigDecimal.ONE)));
 
         verifyNoInteractions(menuItemRepository);
+        verify(menuItemRepository, never()).save(any(MenuItemEntity.class));
     }
 
     @Test
