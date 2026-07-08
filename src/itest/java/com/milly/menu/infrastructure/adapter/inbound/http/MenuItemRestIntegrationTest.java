@@ -10,6 +10,9 @@ import com.milly.menu.domain.valueobject.MenuItemStatus;
 import com.milly.menu.infrastructure.adapter.inbound.http.dto.MenuItemListApiResponse;
 import com.milly.menu.infrastructure.adapter.inbound.http.dto.MenuItemApiResponse;
 import com.milly.menu.infrastructure.adapter.outbound.persistence.MenuItemJpaRepository;
+import com.milly.table.domain.entity.TableEntity;
+import com.milly.table.domain.valueobject.TableStatus;
+import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
 import com.milly.venue.application.polluter.ManagedVenue;
 import com.milly.venue.application.polluter.VenuePolluter;
 import com.milly.venue.domain.valueobject.VenueRole;
@@ -35,6 +38,9 @@ class MenuItemRestIntegrationTest extends AbstractITest {
 
     @Autowired
     private MenuItemJpaRepository menuItemRepository;
+
+    @Autowired
+    private TableJpaRepository tableRepository;
 
     @Test
     void managerListsOnlyActiveMenuItemsForVenue() {
@@ -787,12 +793,96 @@ class MenuItemRestIntegrationTest extends AbstractITest {
                 .hasValueSatisfying(stored -> assertThat(stored.getStatus()).isEqualTo(MenuItemStatus.ACTIVE));
     }
 
+    @Test
+    void publicMenuListsOnlyActiveMenuItemsForActiveTableVenue() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        ManagedVenue otherVenue = venuePolluter.createManagedVenue();
+        TableEntity table = tableRepository.save(TableEntity.create(venue.venueId(), "Patio 1", TableStatus.ACTIVE));
+        MenuItemEntity burger = menuItemPolluter.createItem(
+                venue.venueId(), "Burger", "Beef", "15.00", MenuItemStatus.ACTIVE);
+        MenuItemEntity pasta = menuItemPolluter.createItem(
+                venue.venueId(), "Pasta", "Tomato", "11.50", MenuItemStatus.ACTIVE);
+        menuItemPolluter.createDeletedItem(venue.venueId(), "Deleted");
+        menuItemPolluter.createActiveItem(otherVenue.venueId(), "Other venue");
+
+        // Act
+        MenuItemListApiResponse response = restClient.get()
+                .uri(publicMenuPath(table.getId()))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(MenuItemListApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getMessage()).isEqualTo("Menu items retrieved successfully.");
+        assertThat(response.getTimestamp()).isNotNull();
+        assertThat(response.getData()).hasSize(2);
+        assertThat(response.getData()).extracting(item -> item.id()).containsExactly(burger.getId(), pasta.getId());
+        assertThat(response.getData()).extracting(item -> item.venueId())
+                .containsExactly(venue.venueId(), venue.venueId());
+        assertThat(response.getData()).extracting(item -> item.status())
+                .containsExactly(MenuItemStatus.ACTIVE, MenuItemStatus.ACTIVE);
+    }
+
+    @Test
+    void publicMenuReturnsNotFoundWhenTableDoesNotExist() {
+        // Act & Assert
+        restClient.get()
+                .uri(publicMenuPath(UUID.randomUUID()))
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void publicMenuReturnsNotFoundWhenTableIsInactive() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        TableEntity table = tableRepository.save(TableEntity.create(venue.venueId(), "Patio 1", TableStatus.INACTIVE));
+        menuItemPolluter.createActiveItem(venue.venueId(), "Pizza");
+
+        // Act & Assert
+        restClient.get()
+                .uri(publicMenuPath(table.getId()))
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void publicMenuReturnsBadRequestWhenTableIdIsMalformed() {
+        // Act & Assert
+        restClient.get()
+                .uri("/api/v1/public/tables/not-a-uuid/menu")
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(400)
+                .jsonPath("$.errorCode").isEqualTo("BAD_REQUEST");
+    }
+
     private String menuItemsPath(UUID venueId) {
         return "/api/v1/venues/" + venueId + "/menu/items";
     }
 
     private String menuItemPath(UUID venueId, UUID itemId) {
         return menuItemsPath(venueId) + "/" + itemId;
+    }
+
+    private String publicMenuPath(UUID tableId) {
+        return "/api/v1/public/tables/" + tableId + "/menu";
     }
 
     private RestTestClient managerClientFor(ManagedVenue venue) {
