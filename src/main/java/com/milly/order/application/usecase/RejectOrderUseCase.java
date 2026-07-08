@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 @Service
@@ -39,6 +40,7 @@ public class RejectOrderUseCase {
 
         orderEventNotifier.orderRejected(order.getId(), order.getVenueId(), order.getTableId());
 
-        return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()));
+        // Only reachable from PENDING, where payments can't exist yet.
+        return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()), BigDecimal.ZERO);
     }
 }

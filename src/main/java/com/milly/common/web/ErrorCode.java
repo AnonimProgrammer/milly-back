@@ -5,5 +5,6 @@ public enum ErrorCode {
     FORBIDDEN,
     NOT_FOUND,
     BAD_REQUEST,
-    CONFLICT
+    CONFLICT,
+    UNPROCESSABLE_ENTITY
 }

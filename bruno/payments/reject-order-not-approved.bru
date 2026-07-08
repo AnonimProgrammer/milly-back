@@ -1,0 +1,30 @@
+meta {
+  name: Reject - order not approved
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/public/tables/{{testTableId}}/orders/{{testPendingOrderId}}/payments
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "amount": "10.00",
+    "paymentType": "FULL",
+    "provider": "APPLE"
+  }
+}
+
+docs {
+  Uses testPendingOrderId (a PENDING or otherwise non-APPROVED order - place one via
+  public-orders/Place order and don't approve it).
+  Expect 422 with errorCode UNPROCESSABLE_ENTITY - order is not open for payment.
+}

@@ -4,6 +4,7 @@ import com.milly.common.domain.valueobject.Money;
 import com.milly.common.exception.AccessDeniedException;
 import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.StaffOrderResponse;
+import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,6 +43,9 @@ class GetVenueOrderUseCaseTest {
     @Mock
     private OrderItemJpaRepository orderItemRepository;
 
+    @Mock
+    private PaymentSummaryPort paymentSummaryPort;
+
     private GetVenueOrderUseCase getVenueOrderUseCase;
 
     private final UUID userId = UUID.randomUUID();
@@ -51,7 +56,7 @@ class GetVenueOrderUseCaseTest {
     @BeforeEach
     void setUp() {
         getVenueOrderUseCase = new GetVenueOrderUseCase(
-                venueAuthorizationService, orderRepository, orderItemRepository);
+                venueAuthorizationService, orderRepository, orderItemRepository, paymentSummaryPort);
     }
 
     @Test
@@ -61,6 +66,7 @@ class GetVenueOrderUseCaseTest {
         OrderItemEntity lineItem = anOrderItem().withOrderId(orderId).withUnitPrice(Money.of("10.00")).build();
         when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(pendingOrder));
         when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of(lineItem));
+        when(paymentSummaryPort.paidAmountFor(orderId)).thenReturn(BigDecimal.ZERO);
 
         // Act
         StaffOrderResponse response = getVenueOrderUseCase.execute(venueId, userId, orderId);

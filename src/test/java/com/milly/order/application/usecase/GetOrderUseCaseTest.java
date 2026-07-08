@@ -3,6 +3,7 @@ package com.milly.order.application.usecase;
 import com.milly.common.domain.valueobject.Money;
 import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.OrderResponse;
+import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
@@ -40,6 +41,9 @@ class GetOrderUseCaseTest {
     @Mock
     private OrderItemJpaRepository orderItemRepository;
 
+    @Mock
+    private PaymentSummaryPort paymentSummaryPort;
+
     private GetOrderUseCase getOrderUseCase;
 
     private final UUID venueId = UUID.randomUUID();
@@ -49,7 +53,8 @@ class GetOrderUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        getOrderUseCase = new GetOrderUseCase(tableRepository, orderRepository, orderItemRepository);
+        getOrderUseCase = new GetOrderUseCase(
+                tableRepository, orderRepository, orderItemRepository, paymentSummaryPort);
     }
 
     @Test
@@ -62,6 +67,7 @@ class GetOrderUseCaseTest {
                 .withQuantity(3).withUnitPrice(Money.of("4.00")).build();
         when(orderRepository.findByIdAndTableId(orderId, tableId)).thenReturn(Optional.of(approvedOrder));
         when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of(lineItem));
+        when(paymentSummaryPort.paidAmountFor(orderId)).thenReturn(BigDecimal.ZERO);
 
         // Act
         OrderResponse response = getOrderUseCase.execute(tableId, orderId);
