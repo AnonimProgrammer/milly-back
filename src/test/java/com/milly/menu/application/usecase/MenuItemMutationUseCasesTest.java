@@ -111,32 +111,73 @@ class MenuItemMutationUseCasesTest {
 
     @Test
     void updateChangesOnlyProvidedFields() {
+        // Arrange
         MenuItemEntity item = menuItem();
         when(menuItemRepository.findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE))
                 .thenReturn(Optional.of(item));
         when(menuItemRepository.save(item)).thenReturn(item);
 
+        // Act
         MenuItemResponse response = updateMenuItemUseCase.execute(
                 userId, venueId, itemId, new UpdateMenuItemRequest(" Pasta ", null, null));
 
-        assertEquals("Pasta", response.name());
-        assertEquals("Cheese", response.description());
-        assertEquals(new BigDecimal("12.50"), response.price());
+        // Assert
+        assertThat(response.name()).isEqualTo("Pasta");
+        assertThat(response.description()).isEqualTo("Cheese");
+        assertThat(response.price()).isEqualByComparingTo("12.50");
+        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
+        verify(menuItemRepository).save(item);
+    }
+
+    @Test
+    void updateChangesAllProvidedFields() {
+        // Arrange
+        MenuItemEntity item = menuItem();
+        when(menuItemRepository.findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE))
+                .thenReturn(Optional.of(item));
+        when(menuItemRepository.save(item)).thenReturn(item);
+
+        // Act
+        MenuItemResponse response = updateMenuItemUseCase.execute(
+                userId,
+                venueId,
+                itemId,
+                new UpdateMenuItemRequest(" Pasta ", " Tomato ", new BigDecimal("14.25")));
+
+        // Assert
+        assertThat(response.id()).isEqualTo(itemId);
+        assertThat(response.venueId()).isEqualTo(venueId);
+        assertThat(response.name()).isEqualTo("Pasta");
+        assertThat(response.description()).isEqualTo("Tomato");
+        assertThat(response.price()).isEqualByComparingTo("14.25");
+        assertThat(response.status()).isEqualTo(MenuItemStatus.ACTIVE);
+        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
+        verify(menuItemRepository).save(item);
     }
 
     @Test
     void updateReturnsNotFoundForMissingCrossVenueOrDeletedItem() {
+        // Arrange
         when(menuItemRepository.findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE))
                 .thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThrows(ResourceNotFoundException.class, () -> updateMenuItemUseCase.execute(
                 userId, venueId, itemId, new UpdateMenuItemRequest("Pasta", null, null)));
+
+        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
+        verify(menuItemRepository, never()).save(any(MenuItemEntity.class));
     }
 
     @Test
     void updateStopsWhenManagerAuthorizationFails() {
+        // Arrange
         denyManager();
 
+        // Act & Assert
         assertThrows(AccessDeniedException.class, () -> updateMenuItemUseCase.execute(
                 userId, venueId, itemId, new UpdateMenuItemRequest("Pasta", null, null)));
 
