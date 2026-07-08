@@ -9,6 +9,7 @@ import com.milly.order.application.dto.AddOrderItemsRequest;
 import com.milly.order.application.dto.CreateOrderRequest;
 import com.milly.order.application.dto.OrderResponse;
 import com.milly.order.application.service.OrderEventNotifier;
+import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,6 +37,7 @@ public class AddOrderItemsUseCase {
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
     private final OrderEventNotifier orderEventNotifier;
+    private final PaymentSummaryPort paymentSummaryPort;
 
     @Transactional
     public OrderResponse execute(UUID tableId, UUID orderId, AddOrderItemsRequest request) {
@@ -63,7 +66,8 @@ public class AddOrderItemsUseCase {
 
         orderEventNotifier.orderUpdated(order.getId(), order.getVenueId(), order.getTableId());
 
-        return OrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()));
+        BigDecimal paidAmount = paymentSummaryPort.paidAmountFor(order.getId());
+        return OrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()), paidAmount);
     }
 
     private OrderItemEntity toOrderItem(

@@ -2,6 +2,7 @@ package com.milly.order.application.usecase;
 
 import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.OrderResponse;
+import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderItemJpaRepository;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -24,6 +26,7 @@ public class ListOrdersUseCase {
     private final TableJpaRepository tableRepository;
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
+    private final PaymentSummaryPort paymentSummaryPort;
 
     @Transactional(readOnly = true)
     public List<OrderResponse> execute(UUID tableId) {
@@ -35,9 +38,13 @@ public class ListOrdersUseCase {
         List<UUID> orderIds = orders.stream().map(OrderEntity::getId).toList();
         Map<UUID, List<OrderItemEntity>> itemsByOrder = orderItemRepository.findAllByOrderIdIn(orderIds).stream()
                 .collect(Collectors.groupingBy(OrderItemEntity::getOrderId));
+        Map<UUID, BigDecimal> paidAmountsByOrder = paymentSummaryPort.paidAmountsFor(orderIds);
 
         return orders.stream()
-                .map(order -> OrderResponse.of(order, itemsByOrder.getOrDefault(order.getId(), List.of())))
+                .map(order -> OrderResponse.of(
+                        order,
+                        itemsByOrder.getOrDefault(order.getId(), List.of()),
+                        paidAmountsByOrder.getOrDefault(order.getId(), BigDecimal.ZERO)))
                 .toList();
     }
 }
