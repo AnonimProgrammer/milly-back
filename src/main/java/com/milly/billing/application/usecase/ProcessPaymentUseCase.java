@@ -13,12 +13,14 @@ import com.milly.billing.infrastructure.adapter.outbound.persistence.PaymentJpaR
 import com.milly.common.domain.valueobject.Money;
 import com.milly.common.exception.PaymentValidationException;
 import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.order.application.service.OrderEventNotifier;
 import com.milly.order.application.service.OrderTotalCalculator;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderItemJpaRepository;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderJpaRepository;
+import com.milly.table.domain.entity.TableEntity;
 import com.milly.table.domain.valueobject.TableStatus;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,10 +42,11 @@ public class ProcessPaymentUseCase {
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
     private final PaymentJpaRepository paymentRepository;
+    private final OrderEventNotifier orderEventNotifier;
 
     @Transactional
     public ProcessPaymentResponse execute(UUID tableId, UUID orderId, CreatePaymentRequest request) {
-        tableRepository.findById(tableId)
+        TableEntity table = tableRepository.findById(tableId)
                 .filter(t -> t.getStatus() == TableStatus.ACTIVE)
                 .orElseThrow(ResourceNotFoundException::new);
 
@@ -83,6 +86,7 @@ public class ProcessPaymentUseCase {
                 generateProviderReference(),
                 buildProviderMetadata(request));
         PaymentEntity savedPayment = paymentRepository.save(payment);
+        orderEventNotifier.paymentReceived(order.getId(), table.getVenueId(), table.getId());
 
         List<PaymentEntity> allPayments = new ArrayList<>(existingPayments);
         allPayments.add(savedPayment);
