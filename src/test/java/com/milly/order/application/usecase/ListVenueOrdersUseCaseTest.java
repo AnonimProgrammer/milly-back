@@ -2,6 +2,7 @@ package com.milly.order.application.usecase;
 
 import com.milly.common.domain.valueobject.Money;
 import com.milly.common.exception.AccessDeniedException;
+import com.milly.common.web.PageResponse;
 import com.milly.order.application.dto.StaffOrderResponse;
 import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.domain.entity.OrderEntity;
@@ -15,8 +16,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -25,6 +34,8 @@ import static com.milly.order.application.usecase.builder.OrderItemTestBuilder.a
 import static com.milly.order.application.usecase.builder.OrderTestBuilder.anOrder;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -63,34 +74,51 @@ class ListVenueOrdersUseCaseTest {
         // Arrange
         OrderEntity pendingOrder = anOrderWithStatus(OrderStatus.PENDING);
         OrderItemEntity lineItem = anOrderItem().withOrderId(orderId).withUnitPrice(Money.of("10.00")).build();
-        when(orderRepository.findAllByVenueIdOrderByCreatedAtDesc(venueId)).thenReturn(List.of(pendingOrder));
+        when(orderRepository.findAllByVenueIdAndCreatedAtBetweenOrderByCreatedAtAsc(
+                eq(venueId), any(OffsetDateTime.class), any(OffsetDateTime.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(pendingOrder), PageRequest.of(0, 1), 2));
         when(orderItemRepository.findAllByOrderIdIn(List.of(orderId))).thenReturn(List.of(lineItem));
         when(paymentSummaryPort.paidAmountsFor(List.of(orderId))).thenReturn(Map.of(orderId, BigDecimal.ZERO));
 
         // Act
-        List<StaffOrderResponse> response = listVenueOrdersUseCase.execute(venueId, userId, null);
+        PageResponse<StaffOrderResponse> response = listVenueOrdersUseCase.execute(venueId, userId, null, null, 1);
 
         // Assert
-        assertThat(response).hasSize(1);
-        assertThat(response.getFirst().id()).isEqualTo(orderId);
-        assertThat(response.getFirst().items()).hasSize(1);
+        assertThat(response.data()).hasSize(1);
+        assertThat(response.data().getFirst().id()).isEqualTo(orderId);
+        assertThat(response.data().getFirst().items()).hasSize(1);
+        assertThat(response.pagination().limit()).isEqualTo(1);
+        assertThat(response.pagination().hasNext()).isTrue();
+        assertThat(response.pagination().nextCursor()).isEqualTo("1");
         verify(venueAuthorizationService).requireMember(userId, venueId);
+
+        ArgumentCaptor<OffsetDateTime> fromCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
+        ArgumentCaptor<OffsetDateTime> toCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
+        verify(orderRepository).findAllByVenueIdAndCreatedAtBetweenOrderByCreatedAtAsc(
+                eq(venueId), fromCaptor.capture(), toCaptor.capture(), any(Pageable.class));
+
+        ZoneId zone = ZoneId.systemDefault();
+        assertThat(fromCaptor.getValue()).isEqualTo(LocalDate.now(zone).atStartOfDay(zone).toOffsetDateTime());
+        assertThat(toCaptor.getValue()).isEqualTo(LocalDate.now(zone).atTime(LocalTime.MAX).atZone(zone).toOffsetDateTime());
     }
 
     @Test
     void filtersOrdersByStatusWhenFilterIsProvided() {
         // Arrange
         OrderEntity approvedOrder = anOrderWithStatus(OrderStatus.APPROVED);
-        when(orderRepository.findAllByVenueIdAndStatusOrderByCreatedAtDesc(venueId, OrderStatus.APPROVED))
-                .thenReturn(List.of(approvedOrder));
+        OffsetDateTime from = OffsetDateTime.parse("2026-07-01T00:00:00Z");
+        OffsetDateTime to = OffsetDateTime.parse("2026-07-31T23:59:59Z");
+        when(orderRepository.findAllByVenueIdAndStatusAndCreatedAtBetweenOrderByCreatedAtAsc(
+                eq(venueId), eq(OrderStatus.APPROVED), eq(from), eq(to), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(approvedOrder), PageRequest.of(0, 10), 1));
         when(orderItemRepository.findAllByOrderIdIn(List.of(orderId))).thenReturn(List.of());
         when(paymentSummaryPort.paidAmountsFor(List.of(orderId))).thenReturn(Map.of(orderId, BigDecimal.ZERO));
 
         // Act
-        List<StaffOrderResponse> response = listVenueOrdersUseCase.execute(venueId, userId, OrderStatus.APPROVED);
+        PageResponse<StaffOrderResponse> response = listVenueOrdersUseCase.execute(venueId, userId, OrderStatus.APPROVED, from, to, null, 10);
 
         // Assert
-        assertThat(response.getFirst().status()).isEqualTo(OrderStatus.APPROVED);
+        assertThat(response.data().getFirst().status()).isEqualTo(OrderStatus.APPROVED);
         verify(venueAuthorizationService).requireMember(userId, venueId);
     }
 
@@ -101,7 +129,7 @@ class ListVenueOrdersUseCaseTest {
                 .when(venueAuthorizationService).requireMember(userId, venueId);
 
         // Act & Assert
-        assertThatThrownBy(() -> listVenueOrdersUseCase.execute(venueId, userId, null))
+        assertThatThrownBy(() -> listVenueOrdersUseCase.execute(venueId, userId, null, null, null, null, 20))
                 .isInstanceOf(AccessDeniedException.class);
 
         verifyNoInteractions(orderRepository, orderItemRepository);
