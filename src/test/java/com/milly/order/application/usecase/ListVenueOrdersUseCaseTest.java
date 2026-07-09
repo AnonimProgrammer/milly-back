@@ -81,7 +81,9 @@ class ListVenueOrdersUseCaseTest {
         when(paymentSummaryPort.paidAmountsFor(List.of(orderId))).thenReturn(Map.of(orderId, BigDecimal.ZERO));
 
         // Act
-        PageResponse<StaffOrderResponse> response = listVenueOrdersUseCase.execute(venueId, userId, null, null, 1);
+        // signature: execute(UUID venueId, UUID userId, OrderStatus status,
+        //                    OffsetDateTime from, OffsetDateTime to, String cursor, int limit)
+        PageResponse<StaffOrderResponse> response = listVenueOrdersUseCase.execute(venueId, userId, null, null, null, null, 1);
 
         // Assert
         assertThat(response.data()).hasSize(1);

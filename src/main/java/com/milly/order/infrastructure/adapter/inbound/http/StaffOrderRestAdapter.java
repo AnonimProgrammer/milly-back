@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.format.annotation.DateTimeFormat.ISO;
-
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -51,6 +50,7 @@ public class StaffOrderRestAdapter {
                 listVenueOrdersUseCase.execute(venueId, userId, status, from, to, cursor, limit),
                 "Orders retrieved successfully."));
     }
+
 
     @GetMapping("/{orderId}")
     public ResponseEntity<ApiResponse<StaffOrderResponse>> getOrder(

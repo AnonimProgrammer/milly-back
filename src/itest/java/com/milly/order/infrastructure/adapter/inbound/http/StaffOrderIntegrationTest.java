@@ -68,7 +68,7 @@ class StaffOrderIntegrationTest extends AbstractITest {
         OrderTestFixture fixture = orderPolluter.createOrderableTable();
         placeOrder(fixture);
         placeOrder(fixture);
-        ZoneId zone = ZoneId.systemDefault();
+        ZoneId zone = ZoneId.of("UTC");
         OffsetDateTime from = LocalDate.now(zone).atStartOfDay(zone).toOffsetDateTime();
         OffsetDateTime to = LocalDate.now(zone).atTime(LocalTime.MAX).atZone(zone).toOffsetDateTime();
         // Act
