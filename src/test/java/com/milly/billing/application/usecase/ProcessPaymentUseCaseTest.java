@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.milly.billing.application.usecase.builder.PaymentTestBuilder.aPayment;
 import static com.milly.order.application.usecase.builder.OrderItemTestBuilder.anOrderItem;
 import static com.milly.order.application.usecase.builder.OrderTestBuilder.anOrder;
 import static com.milly.order.application.usecase.builder.TableTestBuilder.aTable;
@@ -77,7 +78,7 @@ class ProcessPaymentUseCaseTest {
         givenApprovedOrderWithTotal();
         givenNoExistingPayments();
         givenPaymentCanBeSaved();
-        CreatePaymentRequest request = walletPaymentRequest();
+        CreatePaymentRequest request = walletPaymentRequest("50.00");
 
         // Act
         ProcessPaymentResponse response = processPaymentUseCase.execute(tableId, orderId, request);
@@ -98,7 +99,39 @@ class ProcessPaymentUseCaseTest {
         verify(orderEventNotifier).paymentReceived(orderId, venueId, tableId);
     }
 
+    @Test
+    void processesPartialPaymentOnTopOfExistingPayments() {
+        // Arrange
+        givenApprovedOrderWithTotal();
+        givenExistingPayments(aPayment().withOrderId(orderId).withAmount(Money.of("25.00")).build());
+        givenPaymentCanBeSaved();
+        CreatePaymentRequest request = walletPaymentRequest("50.00");
 
+        // Act
+        ProcessPaymentResponse response = processPaymentUseCase.execute(tableId, orderId, request);
+
+        // Assert
+        assertThat(response.payment().amount()).isEqualByComparingTo("50.00");
+        assertThat(response.bill().paidAmount()).isEqualByComparingTo("75.00"); // 25 + 50
+        assertThat(response.bill().payments()).hasSize(2);
+        verify(orderEventNotifier).paymentReceived(orderId, venueId, tableId);
+    }
+
+    @Test
+    void processesPaymentThatFullyPaysOffRemainingBalance() {
+        // Arrange
+        givenApprovedOrderWithTotal();
+        givenExistingPayments(aPayment().withOrderId(orderId).withAmount(Money.of("25.00")).build());
+        givenPaymentCanBeSaved();
+        CreatePaymentRequest request = walletPaymentRequest("75.00"); // Remaining 75.00
+
+        // Act
+        ProcessPaymentResponse response = processPaymentUseCase.execute(tableId, orderId, request);
+
+        // Assert
+        assertThat(response.bill().paidAmount()).isEqualByComparingTo("100.00"); // 25 + 75
+        assertThat(response.bill().payments()).hasSize(2);
+    }
     private void givenApprovedOrderWithTotal() {
         TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
         OrderEntity approvedOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
@@ -126,7 +159,7 @@ class ProcessPaymentUseCaseTest {
         });
     }
 
-    private static CreatePaymentRequest walletPaymentRequest() {
-        return new CreatePaymentRequest(new BigDecimal("50.00"), PaymentType.FULL, PaymentProvider.APPLE, null, null);
+    private static CreatePaymentRequest walletPaymentRequest(String amount) {
+        return new CreatePaymentRequest(new BigDecimal(amount), PaymentType.FULL, PaymentProvider.APPLE, null, null);
     }
 }
