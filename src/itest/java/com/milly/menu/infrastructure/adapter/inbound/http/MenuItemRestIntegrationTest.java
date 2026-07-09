@@ -296,7 +296,7 @@ class MenuItemRestIntegrationTest extends AbstractITest {
                 .uri(menuItemsPath(venue.venueId()))
                 .contentType(MediaType.APPLICATION_JSON)
                 .body("""
-                        {"name":"Pizza","description":"Cheese"}
+                        {"name":"Pizza","description":"Cheese","approximatePreparationMinutes":15}
                         """)
                 .exchange()
                 .expectStatus()
@@ -304,6 +304,31 @@ class MenuItemRestIntegrationTest extends AbstractITest {
                 .expectBody()
                 .jsonPath("$.status").isEqualTo(400)
                 .jsonPath("$.message").isEqualTo("Price is required.")
+                .jsonPath("$.errorCode").isEqualTo("BAD_REQUEST");
+
+        assertThat(menuItemRepository.count()).isEqualTo(itemCount);
+    }
+
+    @Test
+    void createMenuItemReturnsBadRequestForMissingApproximatePreparationMinutes() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = managerClientFor(venue);
+        long itemCount = menuItemRepository.count();
+
+        // Act & Assert
+        managerClient.post()
+                .uri(menuItemsPath(venue.venueId()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {"name":"Pizza","description":"Cheese","price":12.50}
+                        """)
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(400)
+                .jsonPath("$.message").isEqualTo("Approximate preparation time is required.")
                 .jsonPath("$.errorCode").isEqualTo("BAD_REQUEST");
 
         assertThat(menuItemRepository.count()).isEqualTo(itemCount);
