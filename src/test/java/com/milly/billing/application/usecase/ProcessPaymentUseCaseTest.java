@@ -157,6 +157,22 @@ class ProcessPaymentUseCaseTest {
                 .containsEntry("expiryYear", 2025);
     }
 
+    @Test
+    void savesSplitPeopleInProviderMetadata() {
+        // Arrange
+        givenApprovedOrderWithTotal();
+        givenNoExistingPayments();
+        givenPaymentCanBeSaved();
+        CreatePaymentRequest request = new CreatePaymentRequest(
+                BigDecimal.valueOf(50.00), PaymentType.SPLIT, PaymentProvider.APPLE, null, 3);
+
+        // Act
+        processPaymentUseCase.execute(tableId, orderId, request);
+
+        // Assert
+        verify(paymentRepository).save(paymentCaptor.capture());
+        assertThat(paymentCaptor.getValue().getProviderMetadata()).containsEntry("splitPeople", 3);
+    }
     private void givenApprovedOrderWithTotal() {
         TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
         OrderEntity approvedOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
