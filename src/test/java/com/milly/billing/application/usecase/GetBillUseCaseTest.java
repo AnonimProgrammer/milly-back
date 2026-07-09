@@ -116,6 +116,39 @@ class GetBillUseCaseTest {
         assertThat(response.payments()).extracting("id").containsExactly(payment.getId());
     }
 
+    @Test
+    void throwsResourceNotFoundWhenTableNotFound() {
+        // Arrange
+        when(tableRepository.findById(tableId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> getBillUseCase.execute(tableId, orderId))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void throwsResourceNotFoundWhenTableIsNotActive() {
+        // Arrange
+        TableEntity inactiveTable = aTable().withId(tableId).withVenueId(venueId).withStatus(TableStatus.INACTIVE).build();
+        when(tableRepository.findById(tableId)).thenReturn(Optional.of(inactiveTable));
+
+        // Act & Assert
+        assertThatThrownBy(() -> getBillUseCase.execute(tableId, orderId))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void throwsResourceNotFoundWhenOrderNotFoundForTable() {
+        // Arrange
+        TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
+        when(tableRepository.findById(tableId)).thenReturn(Optional.of(activeTable));
+        when(orderRepository.findByIdAndTableId(orderId, tableId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThatThrownBy(() -> getBillUseCase.execute(tableId, orderId))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
     private void givenActiveTableWithOrder() {
         TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
         OrderEntity order = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId).build();
