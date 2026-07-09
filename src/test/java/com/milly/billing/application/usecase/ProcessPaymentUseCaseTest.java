@@ -22,6 +22,8 @@ import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepos
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
@@ -31,6 +33,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.milly.billing.application.usecase.builder.PaymentTestBuilder.aPayment;
 import static com.milly.order.application.usecase.builder.OrderItemTestBuilder.anOrderItem;
@@ -228,6 +231,25 @@ class ProcessPaymentUseCaseTest {
                 .isInstanceOf(PaymentValidationException.class)
                 .hasMessage("Order is not open for payment.");
         verifyNoInteractions(paymentRepository, orderEventNotifier);
+    }
+    @ParameterizedTest
+    @MethodSource("invalidAmounts")
+    void throwsPaymentValidationExceptionForNonPositiveAmount(BigDecimal amount) {
+        // Arrange
+        givenApprovedOrderWithTotal();
+        givenNoExistingPayments();
+        CreatePaymentRequest request = new CreatePaymentRequest(amount, PaymentType.FULL, PaymentProvider.APPLE, null, null);
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(PaymentValidationException.class)
+                .hasMessage("Amount must be greater than zero.");
+        verify(paymentRepository, never()).save(any());
+        verify(orderEventNotifier, never()).paymentReceived(any(), any(), any());
+    }
+
+    private static Stream<BigDecimal> invalidAmounts() {
+        return Stream.of(BigDecimal.ZERO, BigDecimal.valueOf(-10.00));
     }
     private void givenApprovedOrderWithTotal() {
         TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
