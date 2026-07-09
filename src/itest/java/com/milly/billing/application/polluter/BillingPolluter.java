@@ -46,7 +46,7 @@ public class BillingPolluter {
         ManagedVenue venue = venuePolluter.createManagedVenue();
         var table = tableRepository.save(TableEntity.create(venue.venueId(), "Table 1", TableStatus.ACTIVE));
         var menuItem = menuItemRepository.save(MenuItemEntity.create(
-                venue.venueId(), "Burger", "Tasty", UNIT_PRICE, MenuItemStatus.ACTIVE));
+                venue.venueId(), "Burger", "Tasty", UNIT_PRICE, 15, MenuItemStatus.ACTIVE));
         var order = orderRepository.save(OrderEntity.create(venue.venueId(), table.getId(), OrderStatus.APPROVED));
         orderItemRepository.save(OrderItemEntity.create(order.getId(), menuItem.getId(), QUANTITY, UNIT_PRICE));
 

@@ -30,7 +30,7 @@ public class OrderPolluter {
         var menuItem = createMenuItemUseCase.execute(
                 venue.manager().userId(),
                 venue.venueId(),
-                new CreateMenuItemRequest("Burger", "Tasty burger", new BigDecimal("12.50")));
+                new CreateMenuItemRequest("Burger", "Tasty burger", new BigDecimal("12.50"), 15));
         return new OrderTestFixture(venue, table.id(), menuItem.id());
     }
 
@@ -47,7 +47,7 @@ public class OrderPolluter {
         var menuItem = createMenuItemUseCase.execute(
                 venue.manager().userId(),
                 venue.venueId(),
-                new CreateMenuItemRequest("Burger", "Tasty burger", new BigDecimal("12.50")));
+                new CreateMenuItemRequest("Burger", "Tasty burger", new BigDecimal("12.50"), 15));
         return new OrderTestFixture(venue, table.id(), menuItem.id());
     }
 }
