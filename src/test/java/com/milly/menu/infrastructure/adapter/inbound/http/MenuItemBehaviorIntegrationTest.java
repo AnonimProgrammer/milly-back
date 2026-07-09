@@ -73,7 +73,7 @@ class MenuItemBehaviorIntegrationTest {
         mockMvc.perform(authenticated(post(basePath())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":" Pizza ","description":" Cheese ","price":12.50}
+                                {"name":" Pizza ","description":" Cheese ","price":12.50,"approximatePreparationMinutes":15}
                                 """)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("Pizza"))
@@ -87,14 +87,14 @@ class MenuItemBehaviorIntegrationTest {
         mockMvc.perform(authenticated(post(basePath())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":"  ","price":0}
+                                {"name":"  ","price":0,"approximatePreparationMinutes":15}
                                 """)))
                 .andExpect(status().isBadRequest());
 
         mockMvc.perform(authenticated(post(basePath())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"name":"Pizza","price":-1}
+                                {"name":"Pizza","price":-1,"approximatePreparationMinutes":15}
                                 """)))
                 .andExpect(status().isBadRequest());
     }
@@ -163,7 +163,7 @@ class MenuItemBehaviorIntegrationTest {
 
     private MenuItemEntity saveItem(UUID targetVenueId, String name, MenuItemStatus status) {
         return menuItemRepository.save(MenuItemEntity.create(
-                targetVenueId, name, "Description", Money.of("12.50"), status));
+                targetVenueId, name, "Description", Money.of("12.50"), 15, status));
     }
 
     private MockHttpServletRequestBuilder authenticated(MockHttpServletRequestBuilder request) {

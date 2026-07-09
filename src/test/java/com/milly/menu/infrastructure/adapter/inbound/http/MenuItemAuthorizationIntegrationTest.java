@@ -37,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class MenuItemAuthorizationIntegrationTest {
 
     private static final String VALID_BODY = """
-            {"name":"Pizza","description":"Cheese","price":12.50}
+            {"name":"Pizza","description":"Cheese","price":12.50,"approximatePreparationMinutes":15}
             """;
     private static final String PATCH_BODY = """
             {"name":"Pasta"}
@@ -59,7 +59,7 @@ class MenuItemAuthorizationIntegrationTest {
     void setUp() {
         venueId = UUID.randomUUID();
         itemId = menuItemRepository.save(MenuItemEntity.create(
-                venueId, "Pizza", "Cheese", Money.of("12.50"), MenuItemStatus.ACTIVE)).getId();
+                venueId, "Pizza", "Cheese", Money.of("12.50"), 15, MenuItemStatus.ACTIVE)).getId();
     }
 
     @ParameterizedTest

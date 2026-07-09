@@ -46,6 +46,9 @@ public class MenuItemEntity {
     })
     private Money price;
 
+    @Column(name = "approximate_preparation_minutes", nullable = false)
+    private int approximatePreparationMinutes;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MenuItemStatus status;
@@ -63,12 +66,14 @@ public class MenuItemEntity {
             String name,
             String description,
             Money price,
+            int approximatePreparationMinutes,
             MenuItemStatus status) {
         MenuItemEntity menuItem = new MenuItemEntity();
         menuItem.setVenueId(venueId);
         menuItem.setName(name.trim());
         menuItem.setDescription(normalizeDescription(description));
         menuItem.setPrice(price);
+        menuItem.setApproximatePreparationMinutes(approximatePreparationMinutes);
         menuItem.setStatus(status);
         return menuItem;
     }
@@ -83,6 +88,10 @@ public class MenuItemEntity {
 
     public void updatePrice(Money price) {
         this.price = price;
+    }
+
+    public void updateApproximatePreparationMinutes(int approximatePreparationMinutes) {
+        this.approximatePreparationMinutes = approximatePreparationMinutes;
     }
 
     public void delete() {

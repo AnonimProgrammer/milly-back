@@ -68,7 +68,7 @@ class MenuItemMutationUseCasesTest {
 
         // Act
         MenuItemResponse response = createMenuItemUseCase.execute(
-                userId, venueId, new CreateMenuItemRequest(" Pizza ", " Cheese ", new BigDecimal("12.50")));
+                userId, venueId, new CreateMenuItemRequest(" Pizza ", " Cheese ", new BigDecimal("12.50"), 20));
 
         // Assert
         assertThat(response.id()).isEqualTo(itemId);
@@ -76,6 +76,7 @@ class MenuItemMutationUseCasesTest {
         assertThat(response.name()).isEqualTo("Pizza");
         assertThat(response.description()).isEqualTo("Cheese");
         assertThat(response.price()).isEqualByComparingTo("12.50");
+        assertThat(response.approximatePreparationMinutes()).isEqualTo(20);
         assertThat(response.status()).isEqualTo(MenuItemStatus.ACTIVE);
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
         verify(menuItemRepository).save(any(MenuItemEntity.class));
@@ -89,7 +90,7 @@ class MenuItemMutationUseCasesTest {
 
         // Act
         MenuItemResponse response = createMenuItemUseCase.execute(
-                userId, venueId, new CreateMenuItemRequest("Pizza", null, new BigDecimal("12.50")));
+                userId, venueId, new CreateMenuItemRequest("Pizza", null, new BigDecimal("12.50"), 15));
 
         // Assert
         assertThat(response.description()).isNull();
@@ -104,7 +105,7 @@ class MenuItemMutationUseCasesTest {
 
         // Act & Assert
         assertThrows(AccessDeniedException.class, () -> createMenuItemUseCase.execute(
-                userId, venueId, new CreateMenuItemRequest("Pizza", null, BigDecimal.ONE)));
+                userId, venueId, new CreateMenuItemRequest("Pizza", null, BigDecimal.ONE, 15)));
 
         verifyNoInteractions(menuItemRepository);
         verify(menuItemRepository, never()).save(any(MenuItemEntity.class));
@@ -120,7 +121,7 @@ class MenuItemMutationUseCasesTest {
 
         // Act
         MenuItemResponse response = updateMenuItemUseCase.execute(
-                userId, venueId, itemId, new UpdateMenuItemRequest(" Pasta ", null, null));
+                userId, venueId, itemId, new UpdateMenuItemRequest(" Pasta ", null, null, null));
 
         // Assert
         assertThat(response.name()).isEqualTo("Pasta");
@@ -144,7 +145,7 @@ class MenuItemMutationUseCasesTest {
                 userId,
                 venueId,
                 itemId,
-                new UpdateMenuItemRequest(" Pasta ", " Tomato ", new BigDecimal("14.25")));
+                new UpdateMenuItemRequest(" Pasta ", " Tomato ", new BigDecimal("14.25"), null));
 
         // Assert
         assertThat(response.id()).isEqualTo(itemId);
@@ -166,7 +167,7 @@ class MenuItemMutationUseCasesTest {
 
         // Act & Assert
         assertThrows(ResourceNotFoundException.class, () -> updateMenuItemUseCase.execute(
-                userId, venueId, itemId, new UpdateMenuItemRequest("Pasta", null, null)));
+                userId, venueId, itemId, new UpdateMenuItemRequest("Pasta", null, null, null)));
 
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
         verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
@@ -180,7 +181,7 @@ class MenuItemMutationUseCasesTest {
 
         // Act & Assert
         assertThrows(AccessDeniedException.class, () -> updateMenuItemUseCase.execute(
-                userId, venueId, itemId, new UpdateMenuItemRequest("Pasta", null, null)));
+                userId, venueId, itemId, new UpdateMenuItemRequest("Pasta", null, null, null)));
 
         verifyNoInteractions(menuItemRepository);
     }
@@ -240,7 +241,7 @@ class MenuItemMutationUseCasesTest {
 
     private MenuItemEntity menuItem() {
         MenuItemEntity item = MenuItemEntity.create(
-                venueId, "Pizza", "Cheese", Money.of("12.50"), MenuItemStatus.ACTIVE);
+                venueId, "Pizza", "Cheese", Money.of("12.50"), 15, MenuItemStatus.ACTIVE);
         item.setId(itemId);
         return item;
     }

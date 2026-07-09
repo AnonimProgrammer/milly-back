@@ -42,7 +42,7 @@ public final class MenuItemTestBuilder {
     }
 
     public MenuItemEntity build() {
-        MenuItemEntity item = MenuItemEntity.create(venueId, name, null, price, status);
+        MenuItemEntity item = MenuItemEntity.create(venueId, name, null, price, 15, status);
         item.setId(id);
         return item;
     }

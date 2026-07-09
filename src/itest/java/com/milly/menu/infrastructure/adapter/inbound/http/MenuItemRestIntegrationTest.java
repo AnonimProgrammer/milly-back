@@ -159,7 +159,7 @@ class MenuItemRestIntegrationTest extends AbstractITest {
                 .uri(menuItemsPath(venue.venueId()))
                 .contentType(MediaType.APPLICATION_JSON)
                 .body("""
-                        {"name":" Pizza ","description":" Cheese ","price":12.50}
+                        {"name":" Pizza ","description":" Cheese ","price":12.50,"approximatePreparationMinutes":20}
                         """)
                 .exchange()
                 .expectStatus()
@@ -178,6 +178,7 @@ class MenuItemRestIntegrationTest extends AbstractITest {
         assertThat(response.getData().name()).isEqualTo("Pizza");
         assertThat(response.getData().description()).isEqualTo("Cheese");
         assertThat(response.getData().price()).isEqualByComparingTo("12.50");
+        assertThat(response.getData().approximatePreparationMinutes()).isEqualTo(20);
         assertThat(response.getData().status()).isEqualTo(MenuItemStatus.ACTIVE);
         assertThat(menuItemRepository.findById(response.getData().id()))
                 .hasValueSatisfying(item -> {
@@ -185,6 +186,7 @@ class MenuItemRestIntegrationTest extends AbstractITest {
                     assertThat(item.getName()).isEqualTo("Pizza");
                     assertThat(item.getDescription()).isEqualTo("Cheese");
                     assertThat(item.getPrice().amount()).isEqualByComparingTo("12.50");
+                    assertThat(item.getApproximatePreparationMinutes()).isEqualTo(20);
                     assertThat(item.getStatus()).isEqualTo(MenuItemStatus.ACTIVE);
                 });
     }
@@ -269,7 +271,7 @@ class MenuItemRestIntegrationTest extends AbstractITest {
                 .uri(menuItemsPath(venue.venueId()))
                 .contentType(MediaType.APPLICATION_JSON)
                 .body("""
-                        {"name":" ","description":"Cheese","price":12.50}
+                        {"name":" ","description":"Cheese","price":12.50,"approximatePreparationMinutes":15}
                         """)
                 .exchange()
                 .expectStatus()
@@ -319,7 +321,7 @@ class MenuItemRestIntegrationTest extends AbstractITest {
                 .uri(menuItemsPath(venue.venueId()))
                 .contentType(MediaType.APPLICATION_JSON)
                 .body("""
-                        {"name":"Pizza","description":"Cheese","price":-1}
+                        {"name":"Pizza","description":"Cheese","price":-1,"approximatePreparationMinutes":15}
                         """)
                 .exchange()
                 .expectStatus()
@@ -891,7 +893,7 @@ class MenuItemRestIntegrationTest extends AbstractITest {
 
     private String validCreateBody() {
         return """
-                {"name":"Pizza","description":"Cheese","price":12.50}
+                {"name":"Pizza","description":"Cheese","price":12.50,"approximatePreparationMinutes":15}
                 """;
     }
 }

@@ -10,6 +10,7 @@ import com.milly.order.application.dto.CreateOrderRequest;
 import com.milly.order.application.dto.OrderResponse;
 import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.application.service.OrderEventNotifier;
+import com.milly.order.application.service.OrderPreparationEstimator;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
@@ -61,6 +62,9 @@ class AddOrderItemsUseCaseTest {
     private OrderEventNotifier orderEventNotifier;
 
     @Mock
+    private OrderPreparationEstimator orderPreparationEstimator;
+
+    @Mock
     private PaymentSummaryPort paymentSummaryPort;
 
     private AddOrderItemsUseCase addOrderItemsUseCase;
@@ -74,7 +78,7 @@ class AddOrderItemsUseCaseTest {
     void setUp() {
         addOrderItemsUseCase = new AddOrderItemsUseCase(
                 tableRepository, menuItemRepository, orderRepository, orderItemRepository, orderEventNotifier,
-                paymentSummaryPort);
+                orderPreparationEstimator, paymentSummaryPort);
     }
 
     @Test
@@ -108,6 +112,7 @@ class AddOrderItemsUseCaseTest {
         assertThat(captor.getValue())
                 .extracting(OrderItemEntity::getMenuItemId)
                 .contains(menuItemId);
+        verify(orderPreparationEstimator).tryEstimate(venueId, orderId, List.of(existingItem, newItem));
         verify(orderEventNotifier).orderUpdated(orderId, venueId, tableId);
     }
 
@@ -125,7 +130,7 @@ class AddOrderItemsUseCaseTest {
                 tableId, orderId, new AddOrderItemsRequest(List.of(new CreateOrderRequest.ItemDto(menuItemId, 1)))))
                 .isInstanceOf(InvalidStateTransitionException.class);
 
-        verifyNoInteractions(menuItemRepository, orderItemRepository, orderEventNotifier);
+        verifyNoInteractions(menuItemRepository, orderItemRepository, orderEventNotifier, orderPreparationEstimator);
     }
 
     @Test

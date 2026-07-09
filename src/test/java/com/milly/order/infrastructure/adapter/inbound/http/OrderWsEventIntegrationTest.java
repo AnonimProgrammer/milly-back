@@ -94,7 +94,7 @@ class OrderWsEventIntegrationTest {
         venueId = UUID.randomUUID();
         tableId = tableRepository.save(TableEntity.create(venueId, "Table 1", TableStatus.ACTIVE)).getId();
         menuItemId = menuItemRepository.save(MenuItemEntity.create(
-                venueId, "Burger", "Tasty", Money.of("12.50"), MenuItemStatus.ACTIVE)).getId();
+                venueId, "Burger", "Tasty", Money.of("12.50"), 15, MenuItemStatus.ACTIVE)).getId();
         managerId = UUID.randomUUID();
         venueMembershipRepository.save(VenueMembershipEntity.create(venueId, managerId, VenueRole.MANAGER));
     }

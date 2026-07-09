@@ -128,7 +128,7 @@ class ListPublicMenuItemsUseCaseTest {
 
     private MenuItemEntity menuItem(UUID id, String name, String description) {
         MenuItemEntity item = MenuItemEntity.create(
-                venueId, name, description, Money.of("12.50"), MenuItemStatus.ACTIVE);
+                venueId, name, description, Money.of("12.50"), 15, MenuItemStatus.ACTIVE);
         item.setId(id);
         return item;
     }
