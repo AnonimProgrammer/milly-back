@@ -251,6 +251,22 @@ class ProcessPaymentUseCaseTest {
     private static Stream<BigDecimal> invalidAmounts() {
         return Stream.of(BigDecimal.ZERO, BigDecimal.valueOf(-10.00));
     }
+
+    @Test
+    void throwsPaymentValidationExceptionWhenAmountExceedsRemainingBalance() {
+        // Arrange
+        givenApprovedOrderWithTotal();
+        givenNoExistingPayments();
+        CreatePaymentRequest request = walletPaymentRequest("101.00");
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(PaymentValidationException.class)
+                .hasMessage("Amount exceeds the remaining balance.");
+        verify(paymentRepository, never()).save(any());
+        verify(orderEventNotifier, never()).paymentReceived(any(), any(), any());
+    }
+
     private void givenApprovedOrderWithTotal() {
         TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
         OrderEntity approvedOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
