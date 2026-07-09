@@ -38,6 +38,7 @@ public class MenuItemPolluter {
                 name,
                 description,
                 Money.of(price),
+                15,
                 status));
     }
 
