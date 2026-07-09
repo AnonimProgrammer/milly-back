@@ -17,7 +17,10 @@ public record OrderResponse(
         List<OrderItemResponse> items,
         BigDecimal paidAmount,
         BigDecimal remaining,
-        OffsetDateTime createdAt
+        OffsetDateTime createdAt,
+        OffsetDateTime approvedAt,
+        Integer estimatedPreparationMinutes,
+        String estimatedPreparationDisplay
 ) {
 
     public static OrderResponse of(OrderEntity order, List<OrderItemEntity> items, BigDecimal paidAmount) {
@@ -30,7 +33,10 @@ public record OrderResponse(
                 items.stream().map(OrderItemResponse::of).toList(),
                 paidAmount,
                 remaining,
-                order.getCreatedAt()
+                order.getCreatedAt(),
+                order.getApprovedAt(),
+                order.getEstimatedPreparationMinutes(),
+                order.getEstimatedPreparationDisplay()
         );
     }
 

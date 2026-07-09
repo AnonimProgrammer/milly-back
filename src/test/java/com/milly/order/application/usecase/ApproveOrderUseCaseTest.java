@@ -6,6 +6,7 @@ import com.milly.common.exception.InvalidStateTransitionException;
 import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.StaffOrderResponse;
 import com.milly.order.application.service.OrderEventNotifier;
+import com.milly.order.application.service.OrderPreparationEstimator;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
@@ -48,6 +49,9 @@ class ApproveOrderUseCaseTest {
     @Mock
     private OrderEventNotifier orderEventNotifier;
 
+    @Mock
+    private OrderPreparationEstimator orderPreparationEstimator;
+
     private ApproveOrderUseCase approveOrderUseCase;
 
     private final UUID userId = UUID.randomUUID();
@@ -58,7 +62,11 @@ class ApproveOrderUseCaseTest {
     @BeforeEach
     void setUp() {
         approveOrderUseCase = new ApproveOrderUseCase(
-                venueAuthorizationService, orderRepository, orderItemRepository, orderEventNotifier);
+                venueAuthorizationService,
+                orderRepository,
+                orderItemRepository,
+                orderEventNotifier,
+                orderPreparationEstimator);
     }
 
     @Test
@@ -73,8 +81,10 @@ class ApproveOrderUseCaseTest {
 
         // Assert
         assertThat(pendingOrder.getStatus()).isEqualTo(OrderStatus.APPROVED);
+        assertThat(pendingOrder.getApprovedAt()).isNotNull();
         assertThat(response.status()).isEqualTo(OrderStatus.APPROVED);
         verify(venueAuthorizationService).requireMember(userId, venueId);
+        verify(orderPreparationEstimator).tryEstimate(venueId, orderId, List.of());
         verify(orderEventNotifier).orderApproved(orderId, venueId, tableId);
     }
 
@@ -89,7 +99,7 @@ class ApproveOrderUseCaseTest {
         assertThatThrownBy(() -> approveOrderUseCase.execute(venueId, userId, orderId))
                 .isInstanceOf(InvalidStateTransitionException.class);
 
-        verifyNoInteractions(orderItemRepository, orderEventNotifier);
+        verifyNoInteractions(orderItemRepository, orderEventNotifier, orderPreparationEstimator);
     }
 
     @Test
@@ -101,7 +111,7 @@ class ApproveOrderUseCaseTest {
         assertThatThrownBy(() -> approveOrderUseCase.execute(venueId, userId, orderId))
                 .isInstanceOf(ResourceNotFoundException.class);
 
-        verifyNoInteractions(orderItemRepository, orderEventNotifier);
+        verifyNoInteractions(orderItemRepository, orderEventNotifier, orderPreparationEstimator);
     }
 
     @Test

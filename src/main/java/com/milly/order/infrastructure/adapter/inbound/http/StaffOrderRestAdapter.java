@@ -2,8 +2,10 @@ package com.milly.order.infrastructure.adapter.inbound.http;
 
 import com.milly.common.web.ApiResponse;
 import com.milly.order.application.dto.StaffOrderResponse;
+import com.milly.order.application.dto.OrderPreparationEstimateResponse;
 import com.milly.order.application.usecase.ApproveOrderUseCase;
 import com.milly.order.application.usecase.CloseOrderUseCase;
+import com.milly.order.application.usecase.EstimateOrderPreparationTimeUseCase;
 import com.milly.order.application.usecase.GetVenueOrderUseCase;
 import com.milly.order.application.usecase.ListVenueOrdersUseCase;
 import com.milly.order.application.usecase.RejectOrderUseCase;
@@ -31,6 +33,7 @@ public class StaffOrderRestAdapter {
     private final ApproveOrderUseCase approveOrderUseCase;
     private final RejectOrderUseCase rejectOrderUseCase;
     private final CloseOrderUseCase closeOrderUseCase;
+    private final EstimateOrderPreparationTimeUseCase estimateOrderPreparationTimeUseCase;
 
     @GetMapping
     public ResponseEntity<ApiResponse<List<StaffOrderResponse>>> listOrders(
@@ -80,5 +83,15 @@ public class StaffOrderRestAdapter {
         return ResponseEntity.ok(ApiResponse.success(
                 closeOrderUseCase.execute(venueId, userId, orderId),
                 "Order closed successfully."));
+    }
+
+    @PostMapping("/{orderId}/preparation-time/estimate")
+    public ResponseEntity<ApiResponse<OrderPreparationEstimateResponse>> estimatePreparationTime(
+            @PathVariable UUID venueId,
+            @PathVariable UUID orderId,
+            @AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                estimateOrderPreparationTimeUseCase.execute(venueId, userId, orderId),
+                "Order preparation time estimated successfully."));
     }
 }

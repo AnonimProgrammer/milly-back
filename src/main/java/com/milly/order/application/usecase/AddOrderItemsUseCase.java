@@ -9,6 +9,7 @@ import com.milly.order.application.dto.AddOrderItemsRequest;
 import com.milly.order.application.dto.CreateOrderRequest;
 import com.milly.order.application.dto.OrderResponse;
 import com.milly.order.application.service.OrderEventNotifier;
+import com.milly.order.application.service.OrderPreparationEstimator;
 import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
@@ -37,6 +38,7 @@ public class AddOrderItemsUseCase {
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
     private final OrderEventNotifier orderEventNotifier;
+    private final OrderPreparationEstimator orderPreparationEstimator;
     private final PaymentSummaryPort paymentSummaryPort;
 
     @Transactional
@@ -64,10 +66,14 @@ public class AddOrderItemsUseCase {
                 .toList();
         orderItemRepository.saveAll(newItems);
 
+        List<OrderItemEntity> orderItems = orderItemRepository.findAllByOrderId(order.getId());
+        orderPreparationEstimator.tryEstimate(order.getVenueId(), order.getId(), orderItems)
+                .ifPresent(result -> order.applyPreparationEstimate(result.minutes(), result.value()));
+
         orderEventNotifier.orderUpdated(order.getId(), order.getVenueId(), order.getTableId());
 
         BigDecimal paidAmount = paymentSummaryPort.paidAmountFor(order.getId());
-        return OrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()), paidAmount);
+        return OrderResponse.of(order, orderItems, paidAmount);
     }
 
     private OrderItemEntity toOrderItem(
