@@ -132,6 +132,31 @@ class ProcessPaymentUseCaseTest {
         assertThat(response.bill().paidAmount()).isEqualByComparingTo("100.00"); // 25 + 75
         assertThat(response.bill().payments()).hasSize(2);
     }
+    @Test
+    void savesCardPaymentDetailsInProviderMetadata() {
+        // Arrange
+        givenApprovedOrderWithTotal();
+        givenNoExistingPayments();
+        givenPaymentCanBeSaved();
+        CreatePaymentRequest request = new CreatePaymentRequest(
+                BigDecimal.valueOf(50.00),
+                PaymentType.FULL,
+                PaymentProvider.CARD,
+                new CreatePaymentRequest.ProviderDetails("4242", "Visa", 12, 2025),
+                null);
+
+        // Act
+        processPaymentUseCase.execute(tableId, orderId, request);
+
+        // Assert
+        verify(paymentRepository).save(paymentCaptor.capture());
+        assertThat(paymentCaptor.getValue().getProviderMetadata())
+                .containsEntry("last4", "4242")
+                .containsEntry("brand", "Visa")
+                .containsEntry("expiryMonth", 12)
+                .containsEntry("expiryYear", 2025);
+    }
+
     private void givenApprovedOrderWithTotal() {
         TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
         OrderEntity approvedOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
