@@ -8,6 +8,7 @@ import com.milly.billing.domain.valueobject.PaymentStatus;
 import com.milly.billing.domain.valueobject.PaymentType;
 import com.milly.billing.infrastructure.adapter.outbound.persistence.PaymentJpaRepository;
 import com.milly.common.domain.valueobject.Money;
+import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.order.application.service.OrderEventNotifier;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
@@ -15,6 +16,7 @@ import com.milly.order.domain.valueobject.OrderStatus;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderItemJpaRepository;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderJpaRepository;
 import com.milly.table.domain.entity.TableEntity;
+import com.milly.table.domain.valueobject.TableStatus;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,8 +38,7 @@ import static com.milly.order.application.usecase.builder.TableTestBuilder.aTabl
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ProcessPaymentUseCaseTest {
@@ -172,6 +173,44 @@ class ProcessPaymentUseCaseTest {
         // Assert
         verify(paymentRepository).save(paymentCaptor.capture());
         assertThat(paymentCaptor.getValue().getProviderMetadata()).containsEntry("splitPeople", 3);
+    }
+    @Test
+    void throwsResourceNotFoundWhenTableNotFound() {
+        // Arrange
+        when(tableRepository.findById(tableId)).thenReturn(Optional.empty());
+        CreatePaymentRequest request = walletPaymentRequest("50.00");
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verifyNoInteractions(paymentRepository, orderEventNotifier);
+    }
+
+    @Test
+    void throwsResourceNotFoundWhenTableIsNotActive() {
+        // Arrange
+        TableEntity inactiveTable = aTable().withId(tableId).withVenueId(venueId).withStatus(TableStatus.INACTIVE).build();
+        when(tableRepository.findById(tableId)).thenReturn(Optional.of(inactiveTable));
+        CreatePaymentRequest request = walletPaymentRequest("50.00");
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verifyNoInteractions(paymentRepository, orderEventNotifier);
+    }
+
+    @Test
+    void throwsResourceNotFoundWhenOrderNotFound() {
+        // Arrange
+        TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
+        when(tableRepository.findById(tableId)).thenReturn(Optional.of(activeTable));
+        when(orderRepository.findByIdAndTableIdForUpdate(orderId, tableId)).thenReturn(Optional.empty());
+        CreatePaymentRequest request = walletPaymentRequest("50.00");
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verifyNoInteractions(paymentRepository, orderEventNotifier);
     }
     private void givenApprovedOrderWithTotal() {
         TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
