@@ -267,6 +267,31 @@ class ProcessPaymentUseCaseTest {
         verify(orderEventNotifier, never()).paymentReceived(any(), any(), any());
     }
 
+    @ParameterizedTest
+    @MethodSource("invalidCardDetails")
+    void throwsPaymentValidationExceptionForInvalidCardDetails(CreatePaymentRequest.ProviderDetails details) {
+        // Arrange
+        givenApprovedOrderWithTotal();
+        givenNoExistingPayments();
+        CreatePaymentRequest request = new CreatePaymentRequest(
+                BigDecimal.valueOf(50.00), PaymentType.FULL, PaymentProvider.CARD, details, null);
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(PaymentValidationException.class)
+                .hasMessage("Card payments require a 4-digit last4 and a brand.");
+        verify(paymentRepository, never()).save(any());
+        verify(orderEventNotifier, never()).paymentReceived(any(), any(), any());
+    }
+
+    private static Stream<CreatePaymentRequest.ProviderDetails> invalidCardDetails() {
+        return Stream.of(
+                null,
+                new CreatePaymentRequest.ProviderDetails(null, "Visa", null, null),
+                new CreatePaymentRequest.ProviderDetails("123", "Visa", null, null),
+                new CreatePaymentRequest.ProviderDetails("1234", null, null, null));
+    }
+
     private void givenApprovedOrderWithTotal() {
         TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
         OrderEntity approvedOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
