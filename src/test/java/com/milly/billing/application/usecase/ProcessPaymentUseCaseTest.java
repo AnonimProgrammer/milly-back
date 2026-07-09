@@ -292,6 +292,27 @@ class ProcessPaymentUseCaseTest {
                 new CreatePaymentRequest.ProviderDetails("1234", null, null, null));
     }
 
+    @ParameterizedTest
+    @MethodSource("invalidSplitPeople")
+    void throwsPaymentValidationExceptionForInvalidSplitPeople(Integer splitPeople) {
+        // Arrange
+        givenApprovedOrderWithTotal();
+        givenNoExistingPayments();
+        CreatePaymentRequest request = new CreatePaymentRequest(
+                BigDecimal.valueOf(50.00), PaymentType.SPLIT, PaymentProvider.APPLE, null, splitPeople);
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(PaymentValidationException.class)
+                .hasMessage("splitPeople is required and must be at least 2 for split payments.");
+        verify(paymentRepository, never()).save(any());
+        verify(orderEventNotifier, never()).paymentReceived(any(), any(), any());
+    }
+
+    private static Stream<Integer> invalidSplitPeople() {
+        return Stream.of(null, 1);
+    }
+
     private void givenApprovedOrderWithTotal() {
         TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
         OrderEntity approvedOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
