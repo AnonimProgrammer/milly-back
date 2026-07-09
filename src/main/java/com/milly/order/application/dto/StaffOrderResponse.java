@@ -17,6 +17,9 @@ public record StaffOrderResponse(
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
         OffsetDateTime closedAt,
+        OffsetDateTime approvedAt,
+        Integer estimatedPreparationMinutes,
+        String estimatedPreparationDisplay,
         List<OrderItemResponse> items,
         BigDecimal paidAmount,
         BigDecimal remaining
@@ -32,6 +35,9 @@ public record StaffOrderResponse(
                 order.getCreatedAt(),
                 order.getUpdatedAt(),
                 order.getClosedAt(),
+                order.getApprovedAt(),
+                order.getEstimatedPreparationMinutes(),
+                order.getEstimatedPreparationDisplay(),
                 items.stream().map(OrderItemResponse::of).toList(),
                 paidAmount,
                 remaining
