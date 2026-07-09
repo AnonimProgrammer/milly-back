@@ -8,6 +8,7 @@ import com.milly.billing.domain.valueobject.PaymentStatus;
 import com.milly.billing.domain.valueobject.PaymentType;
 import com.milly.billing.infrastructure.adapter.outbound.persistence.PaymentJpaRepository;
 import com.milly.common.domain.valueobject.Money;
+import com.milly.common.exception.PaymentValidationException;
 import com.milly.common.exception.ResourceNotFoundException;
 import com.milly.order.application.service.OrderEventNotifier;
 import com.milly.order.domain.entity.OrderEntity;
@@ -210,6 +211,22 @@ class ProcessPaymentUseCaseTest {
         // Act & Assert
         assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
                 .isInstanceOf(ResourceNotFoundException.class);
+        verifyNoInteractions(paymentRepository, orderEventNotifier);
+    }
+    @Test
+    void throwsPaymentValidationExceptionWhenOrderIsNotApproved() {
+        // Arrange
+        TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
+        OrderEntity pendingOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
+                .withStatus(OrderStatus.PENDING).build();
+        when(tableRepository.findById(tableId)).thenReturn(Optional.of(activeTable));
+        when(orderRepository.findByIdAndTableIdForUpdate(orderId, tableId)).thenReturn(Optional.of(pendingOrder));
+        CreatePaymentRequest request = walletPaymentRequest("50.00");
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(PaymentValidationException.class)
+                .hasMessage("Order is not open for payment.");
         verifyNoInteractions(paymentRepository, orderEventNotifier);
     }
     private void givenApprovedOrderWithTotal() {
