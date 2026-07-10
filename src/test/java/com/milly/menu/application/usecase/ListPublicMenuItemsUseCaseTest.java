@@ -1,7 +1,7 @@
 package com.milly.menu.application.usecase;
 
 import com.milly.common.domain.valueobject.Money;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.menu.application.dto.MenuItemResponse;
 import com.milly.menu.domain.entity.MenuItemEntity;
 import com.milly.menu.domain.valueobject.MenuItemStatus;
