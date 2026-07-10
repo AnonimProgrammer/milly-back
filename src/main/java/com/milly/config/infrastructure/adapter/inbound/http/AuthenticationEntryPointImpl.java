@@ -2,8 +2,8 @@ package com.milly.config.infrastructure.adapter.inbound.http;
 
 import org.jspecify.annotations.NonNull;
 import tools.jackson.databind.ObjectMapper;
-import com.milly.common.web.ApiResponse;
-import com.milly.common.web.ErrorCode;
+import com.milly.common.application.dto.ApiResponse;
+import com.milly.common.infrastructure.adapter.inbound.http.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
