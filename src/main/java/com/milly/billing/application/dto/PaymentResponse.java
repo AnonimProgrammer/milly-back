@@ -13,6 +13,7 @@ import java.util.UUID;
 public record PaymentResponse(
         UUID id,
         BigDecimal amount,
+        BigDecimal tipAmount,
         PaymentStatus status,
         PaymentProvider provider,
         PaymentType paymentType,
@@ -25,6 +26,7 @@ public record PaymentResponse(
         return new PaymentResponse(
                 payment.getId(),
                 payment.getAmount().amount(),
+                payment.getTipAmount().amount(),
                 payment.getStatus(),
                 payment.getProvider(),
                 payment.getPaymentType(),
