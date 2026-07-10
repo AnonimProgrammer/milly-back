@@ -27,12 +27,18 @@ public class TopicSubscriptionInterceptor implements ChannelInterceptor {
     @Override
     public Message<?> preSend(@NonNull Message<?> message, @NonNull MessageChannel channel) {
         StompHeaderAccessor accessor = StompHeaderAccessor.wrap(message);
-        if (accessor.getCommand() != StompCommand.SUBSCRIBE) {
+        StompCommand command = accessor.getCommand();
+        if (command == StompCommand.SUBSCRIBE) {
+            if (!isSubscriptionAllowed(accessor.getDestination(), accessor.getSessionAttributes())) {
+                throw new AccessDeniedException();
+            }
             return message;
         }
 
-        if (!isSubscriptionAllowed(accessor.getDestination(), accessor.getSessionAttributes())) {
-            throw new AccessDeniedException();
+        if (command == StompCommand.SEND) {
+            if (!isSendAllowed(accessor.getDestination(), accessor.getSessionAttributes())) {
+                throw new AccessDeniedException();
+            }
         }
 
         return message;
@@ -64,18 +70,40 @@ public class TopicSubscriptionInterceptor implements ChannelInterceptor {
     }
 
     private boolean isAnonymousSubscriptionAllowed(String destination, Map<String, Object> sessionAttributes) {
-        Optional<UUID> tableId = StompTopics.parseTableTopic(destination);
+        Optional<UUID> tableId = StompTopics.parseTableTopic(destination)
+                .or(() -> StompTopics.parseTableChatTopic(destination));
         if (tableId.isEmpty()) {
             return false;
         }
 
+        return isAnonymousTableBound(tableId.get(), sessionAttributes);
+    }
+
+    private boolean isSendAllowed(@Nullable String destination, @Nullable Map<String, Object> sessionAttributes) {
+        if (destination == null || sessionAttributes == null) {
+            return false;
+        }
+
+        if (readUserId(sessionAttributes).isPresent()) {
+            return false;
+        }
+
+        Optional<UUID> tableId = StompTopics.parseTableChatSendDestination(destination);
+        if (tableId.isEmpty()) {
+            return false;
+        }
+
+        return isAnonymousTableBound(tableId.get(), sessionAttributes);
+    }
+
+    private boolean isAnonymousTableBound(UUID tableId, Map<String, Object> sessionAttributes) {
         Object boundTable = sessionAttributes.get(WebSocketSessionAttributes.BOUND_TABLE_ID);
         if (boundTable == null) {
-            sessionAttributes.put(WebSocketSessionAttributes.BOUND_TABLE_ID, tableId.get());
+            sessionAttributes.put(WebSocketSessionAttributes.BOUND_TABLE_ID, tableId);
             return true;
         }
 
-        return tableId.get().equals(boundTable);
+        return tableId.equals(boundTable);
     }
 
     private Optional<UUID> readUserId(Map<String, Object> sessionAttributes) {
