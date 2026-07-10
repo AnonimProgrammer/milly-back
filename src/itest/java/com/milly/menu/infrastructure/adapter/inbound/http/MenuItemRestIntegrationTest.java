@@ -460,3 +460,234 @@ class MenuItemRestIntegrationTest extends AbstractITest {
                 .expectStatus()
                 .isNotFound()
                 .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void getMenuItemReturnsNotFoundWhenItemBelongsToAnotherVenue() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        ManagedVenue otherVenue = venuePolluter.createManagedVenue();
+        MenuItemEntity otherItem = menuItemPolluter.createActiveItem(otherVenue.venueId(), "Pizza");
+        RestTestClient managerClient = managerClientFor(venue);
+
+        // Act & Assert
+        managerClient.get()
+                .uri(menuItemPath(venue.venueId(), otherItem.getId()))
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void managerPartiallyUpdatesMenuItemPriceOnly() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        MenuItemEntity item = menuItemPolluter.createItem(
+                venue.venueId(), "Pizza", "Cheese", "12.50", MenuItemStatus.ACTIVE);
+        RestTestClient managerClient = managerClientFor(venue);
+
+        // Act
+        MenuItemApiResponse response = managerClient.patch()
+                .uri(menuItemPath(venue.venueId(), item.getId()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {"price":14.25}
+                        """)
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(MenuItemApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getMessage()).isEqualTo("Menu item updated successfully.");
+        assertThat(response.getData().id()).isEqualTo(item.getId());
+        assertThat(response.getData().name()).isEqualTo("Pizza");
+        assertThat(response.getData().description()).isEqualTo("Cheese");
+        assertThat(response.getData().price()).isEqualByComparingTo("14.25");
+        assertThat(response.getData().status()).isEqualTo(MenuItemStatus.ACTIVE);
+        assertThat(menuItemRepository.findById(item.getId()))
+                .hasValueSatisfying(stored -> {
+                    assertThat(stored.getName()).isEqualTo("Pizza");
+                    assertThat(stored.getDescription()).isEqualTo("Cheese");
+                    assertThat(stored.getPrice().amount()).isEqualByComparingTo("14.25");
+                    assertThat(stored.getStatus()).isEqualTo(MenuItemStatus.ACTIVE);
+                });
+    }
+
+    @Test
+    void unauthenticatedUpdateMenuItemReturnsUnauthorized() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        MenuItemEntity item = menuItemPolluter.createActiveItem(venue.venueId(), "Pizza");
+
+        // Act & Assert
+        restClient.patch()
+                .uri(menuItemPath(venue.venueId(), item.getId()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {"price":14.25}
+                        """)
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(401)
+                .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED");
+    }
+
+    @Test
+    void nonMemberUpdateMenuItemReturnsForbidden() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        ManagedVenue otherVenue = venuePolluter.createManagedVenue();
+        AuthSession nonMember = venuePolluter.addMember(otherVenue.venueId(), VenueRole.MANAGER);
+        MenuItemEntity item = menuItemPolluter.createActiveItem(venue.venueId(), "Pizza");
+        RestTestClient nonMemberClient = RestTestClientAuth.withSession(restClient, nonMember);
+
+        // Act & Assert
+        nonMemberClient.patch()
+                .uri(menuItemPath(venue.venueId(), item.getId()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {"price":14.25}
+                        """)
+                .exchange()
+                .expectStatus()
+                .isForbidden()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(403)
+                .jsonPath("$.errorCode").isEqualTo("FORBIDDEN");
+    }
+
+    @Test
+    void waiterUpdateMenuItemReturnsForbidden() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.WAITER);
+        MenuItemEntity item = menuItemPolluter.createActiveItem(venue.venueId(), "Pizza");
+        RestTestClient waiterClient = RestTestClientAuth.withSession(restClient, waiter);
+
+        // Act & Assert
+        waiterClient.patch()
+                .uri(menuItemPath(venue.venueId(), item.getId()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {"price":14.25}
+                        """)
+                .exchange()
+                .expectStatus()
+                .isForbidden()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(403)
+                .jsonPath("$.errorCode").isEqualTo("FORBIDDEN");
+    }
+
+    @Test
+    void updateMenuItemReturnsBadRequestForBlankName() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        MenuItemEntity item = menuItemPolluter.createActiveItem(venue.venueId(), "Pizza");
+        RestTestClient managerClient = managerClientFor(venue);
+
+        // Act & Assert
+        managerClient.patch()
+                .uri(menuItemPath(venue.venueId(), item.getId()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {"name":" "}
+                        """)
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(400)
+                .jsonPath("$.message").isEqualTo("Name must not be blank.")
+                .jsonPath("$.errorCode").isEqualTo("BAD_REQUEST");
+
+        assertThat(menuItemRepository.findById(item.getId()))
+                .hasValueSatisfying(stored -> assertThat(stored.getName()).isEqualTo("Pizza"));
+    }
+
+    @Test
+    void updateMenuItemReturnsBadRequestForNegativePrice() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        MenuItemEntity item = menuItemPolluter.createActiveItem(venue.venueId(), "Pizza");
+        RestTestClient managerClient = managerClientFor(venue);
+
+        // Act & Assert
+        managerClient.patch()
+                .uri(menuItemPath(venue.venueId(), item.getId()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {"price":-1}
+                        """)
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(400)
+                .jsonPath("$.message").isEqualTo("Price must be at least 0.01.")
+                .jsonPath("$.errorCode").isEqualTo("BAD_REQUEST");
+    }
+
+    @Test
+    void updateMenuItemReturnsNotFoundWhenItemDoesNotExist() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = managerClientFor(venue);
+
+        // Act & Assert
+        managerClient.patch()
+                .uri(menuItemPath(venue.venueId(), UUID.randomUUID()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {"price":14.25}
+                        """)
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void updateMenuItemReturnsNotFoundWhenItemBelongsToAnotherVenue() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        ManagedVenue otherVenue = venuePolluter.createManagedVenue();
+        MenuItemEntity otherItem = menuItemPolluter.createActiveItem(otherVenue.venueId(), "Pizza");
+        RestTestClient managerClient = managerClientFor(venue);
+
+        // Act & Assert
+        managerClient.patch()
+                .uri(menuItemPath(venue.venueId(), otherItem.getId()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("""
+                        {"price":14.25}
+                        """)
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(404)
+                .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void managerDeletesMenuItem() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        MenuItemEntity item = menuItemPolluter.createActiveItem(venue.venueId(), "Pizza");
+        RestTestClient managerClient = managerClientFor(venue);
+
