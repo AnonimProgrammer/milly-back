@@ -7,7 +7,7 @@ import com.milly.billing.domain.valueobject.PaymentStatus;
 import com.milly.billing.infrastructure.adapter.inbound.http.dto.BillSummaryApiResponse;
 import com.milly.billing.infrastructure.adapter.inbound.http.dto.ProcessPaymentApiResponse;
 import com.milly.billing.infrastructure.adapter.outbound.persistence.PaymentJpaRepository;
-import com.milly.common.idempotency.IdempotencyAspect;
+import com.milly.common.infrastructure.adapter.inbound.idempotency.IdempotencyAspect;
 import com.milly.config.domain.AbstractITest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
