@@ -3,6 +3,7 @@ package com.milly.auth.infrastructure.adapter.inbound.http;
 import com.milly.auth.application.polluter.AuthSession;
 import com.milly.auth.application.polluter.AuthSessionPolluter;
 import com.milly.auth.domain.valueobject.AuthProviderType;
+import com.milly.auth.infrastructure.adapter.outbound.auth.GoogleJwtTokenService;
 import com.milly.auth.infrastructure.adapter.inbound.http.dto.ContinueAuthApiResponse;
 import com.milly.auth.infrastructure.adapter.inbound.http.dto.CurrentUserApiResponse;
 import com.milly.config.domain.AbstractITest;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.web.servlet.client.EntityExchangeResult;
 import org.springframework.test.web.servlet.client.RestTestClient;
 
@@ -19,6 +21,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class AuthRestIntegrationTest extends AbstractITest {
 
@@ -29,6 +33,9 @@ class AuthRestIntegrationTest extends AbstractITest {
 
     @Autowired
     private AuthSessionPolluter authSessionPolluter;
+
+    @Autowired
+    private GoogleJwtTokenService googleJwtTokenService;
 
     @Test
     void passwordContinueRegistersNewUserAndSetsAuthCookies() {
@@ -95,6 +102,105 @@ class AuthRestIntegrationTest extends AbstractITest {
         // Assert
         assertThat(response).isNotNull();
         assertThat(response.getData().newUser()).isFalse();
+    }
+
+    @Test
+    void passwordContinueWithWrongPasswordReturnsUnauthorized() {
+        // Arrange
+        AuthSession existingUser = authSessionPolluter.registerPasswordUser();
+
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/auth/continue")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(passwordContinueBody(existingUser.email(), "wrong-password"))
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(401)
+                .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED")
+                .jsonPath("$.message").isEqualTo("Invalid username or password.");
+    }
+
+    @Test
+    void passwordContinueWithoutProfileForNewUserReturnsUnauthorized() {
+        // Arrange
+        String email = uniqueEmail();
+
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/auth/continue")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "provider", AuthProviderType.PASSWORD.name(),
+                        "credentials", Map.of(
+                                "email", email,
+                                "password", DEFAULT_PASSWORD)))
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(401)
+                .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED")
+                .jsonPath("$.message").isEqualTo("Profile data is required for first-time sign-in.");
+    }
+
+    @Test
+    void continueReturnsBadRequestWhenProviderMissing() {
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/auth/continue")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "credentials", Map.of(
+                                "email", uniqueEmail(),
+                                "password", DEFAULT_PASSWORD),
+                        "profile", Map.of(
+                                "firstName", "Test",
+                                "lastName", "User",
+                                "email", uniqueEmail())))
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(400)
+                .jsonPath("$.errorCode").isEqualTo("BAD_REQUEST")
+                .jsonPath("$.message").isEqualTo("Provider is required.");
+    }
+
+    @Test
+    void googleContinueRegistersNewUser() {
+        // Arrange
+        String email = uniqueEmail();
+        String googleSubject = "google-" + UUID.randomUUID();
+        Jwt jwt = mock(Jwt.class);
+        when(jwt.getSubject()).thenReturn(googleSubject);
+        when(jwt.getClaimAsString("email")).thenReturn(email);
+        when(googleJwtTokenService.decodeIdentityToken("google-id-token")).thenReturn(jwt);
+        when(googleJwtTokenService.isEmailVerified(jwt)).thenReturn(true);
+
+        // Act
+        ContinueAuthApiResponse response = restClient.post()
+                .uri("/api/v1/auth/continue")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "provider", AuthProviderType.GOOGLE.name(),
+                        "credentials", Map.of("idToken", "google-id-token"),
+                        "profile", Map.of(
+                                "firstName", "Google",
+                                "lastName", "User",
+                                "email", email)))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(ContinueAuthApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getData().newUser()).isTrue();
     }
 
     private AuthCookies continuePasswordUser(String email, String password) {
