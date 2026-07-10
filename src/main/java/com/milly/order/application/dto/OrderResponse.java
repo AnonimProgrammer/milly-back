@@ -1,5 +1,6 @@
 package com.milly.order.application.dto;
 
+import com.milly.order.application.service.OrderTotalCalculator;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
 import com.milly.order.domain.valueobject.OrderStatus;
@@ -14,16 +15,28 @@ public record OrderResponse(
         UUID tableId,
         OrderStatus status,
         List<OrderItemResponse> items,
-        OffsetDateTime createdAt
+        BigDecimal paidAmount,
+        BigDecimal remaining,
+        OffsetDateTime createdAt,
+        OffsetDateTime approvedAt,
+        Integer estimatedPreparationMinutes,
+        String estimatedPreparationDisplay
 ) {
 
-    public static OrderResponse of(OrderEntity order, List<OrderItemEntity> items) {
+    public static OrderResponse of(OrderEntity order, List<OrderItemEntity> items, BigDecimal paidAmount) {
+        BigDecimal orderTotal = OrderTotalCalculator.totalOf(items);
+        BigDecimal remaining = orderTotal.subtract(paidAmount).max(BigDecimal.ZERO);
         return new OrderResponse(
                 order.getId(),
                 order.getTableId(),
                 order.getStatus(),
                 items.stream().map(OrderItemResponse::of).toList(),
-                order.getCreatedAt()
+                paidAmount,
+                remaining,
+                order.getCreatedAt(),
+                order.getApprovedAt(),
+                order.getEstimatedPreparationMinutes(),
+                order.getEstimatedPreparationDisplay()
         );
     }
 

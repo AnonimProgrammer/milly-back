@@ -30,6 +30,7 @@ public class CreateMenuItemUseCase {
                 request.name(),
                 request.description(),
                 Money.of(request.price()),
+                request.approximatePreparationMinutes(),
                 MenuItemStatus.ACTIVE);
         return MenuItemResponse.of(menuItemRepository.save(menuItem));
     }

@@ -12,5 +12,7 @@ public interface MenuItemJpaRepository extends JpaRepository<MenuItemEntity, UUI
 
     List<MenuItemEntity> findByVenueIdAndStatusOrderByNameAsc(UUID venueId, MenuItemStatus status);
 
+    List<MenuItemEntity> findAllByIdInAndVenueId(List<UUID> ids, UUID venueId);
+
     Optional<MenuItemEntity> findByIdAndVenueIdAndStatus(UUID id, UUID venueId, MenuItemStatus status);
 }

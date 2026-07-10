@@ -5,5 +5,6 @@ public enum OrderEventType {
     ORDER_APPROVED,
     ORDER_REJECTED,
     ORDER_CLOSED,
-    ORDER_UPDATED
+    ORDER_UPDATED,
+    PAYMENT_RECEIVED
 }

@@ -39,6 +39,9 @@ public class UpdateMenuItemUseCase {
         if (request.price() != null) {
             menuItem.updatePrice(Money.of(request.price()));
         }
+        if (request.approximatePreparationMinutes() != null) {
+            menuItem.updateApproximatePreparationMinutes(request.approximatePreparationMinutes());
+        }
 
         return MenuItemResponse.of(menuItemRepository.save(menuItem));
     }

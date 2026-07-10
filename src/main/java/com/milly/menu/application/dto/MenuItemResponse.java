@@ -13,6 +13,7 @@ public record MenuItemResponse(
         String name,
         String description,
         BigDecimal price,
+        int approximatePreparationMinutes,
         MenuItemStatus status,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
@@ -24,6 +25,7 @@ public record MenuItemResponse(
                 menuItem.getName(),
                 menuItem.getDescription(),
                 menuItem.getPrice().amount(),
+                menuItem.getApproximatePreparationMinutes(),
                 menuItem.getStatus(),
                 menuItem.getCreatedAt(),
                 menuItem.getUpdatedAt());
