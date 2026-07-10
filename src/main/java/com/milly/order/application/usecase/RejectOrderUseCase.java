@@ -35,6 +35,6 @@ public class RejectOrderUseCase {
         orderEventNotifier.orderRejected(order.getId(), order.getVenueId(), order.getTableId());
 
         // Only reachable from PENDING, where payments can't exist yet.
-        return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()), BigDecimal.ZERO);
+        return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()), BigDecimal.ZERO, BigDecimal.ZERO);
     }
 }
