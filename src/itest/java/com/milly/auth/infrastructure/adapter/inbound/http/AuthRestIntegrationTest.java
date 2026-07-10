@@ -1,5 +1,6 @@
 package com.milly.auth.infrastructure.adapter.inbound.http;
 
+import com.milly.auth.application.exception.RefreshSessionFailedException;
 import com.milly.auth.application.polluter.AuthSession;
 import com.milly.auth.application.polluter.AuthSessionPolluter;
 import com.milly.auth.domain.valueobject.AuthProviderType;
@@ -263,6 +264,79 @@ class AuthRestIntegrationTest extends AbstractITest {
                 .jsonPath("$.status").isEqualTo(401)
                 .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED")
                 .jsonPath("$.message").isEqualTo(JwtTokenService.INVALID_TOKEN_MESSAGE);
+    }
+
+    @Test
+    void refreshSessionRotatesTokens() {
+        // Arrange
+        AuthCookies initialCookies = continuePasswordUser(uniqueEmail(), DEFAULT_PASSWORD);
+
+        // Act
+        EntityExchangeResult<Void> refreshResult = RestTestClientAuth.withAuthCookies(restClient, initialCookies)
+                .post()
+                .uri("/api/v1/auth/refresh")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(Void.class)
+                .returnResult();
+
+        AuthCookies rotatedCookies = RestTestClientAuth.parseAuthCookies(refreshResult.getResponseHeaders());
+
+        // Assert
+        assertThat(rotatedCookies.refreshToken()).isNotEqualTo(initialCookies.refreshToken());
+
+        RestTestClientAuth.withAuthCookies(restClient, rotatedCookies)
+                .get()
+                .uri("/api/v1/auth/me")
+                .exchange()
+                .expectStatus()
+                .isOk();
+
+        RestTestClientAuth.withAuthCookies(restClient, initialCookies)
+                .post()
+                .uri("/api/v1/auth/refresh")
+                .exchange()
+                .expectStatus()
+                .isUnauthorized();
+    }
+
+    @Test
+    void replayingConsumedRefreshTokenReturnsUnauthorized() {
+        // Arrange
+        AuthCookies initialCookies = continuePasswordUser(uniqueEmail(), DEFAULT_PASSWORD);
+        RestTestClientAuth.withAuthCookies(restClient, initialCookies)
+                .post()
+                .uri("/api/v1/auth/refresh")
+                .exchange()
+                .expectStatus()
+                .isOk();
+
+        // Act & Assert
+        RestTestClientAuth.withAuthCookies(restClient, initialCookies)
+                .post()
+                .uri("/api/v1/auth/refresh")
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(401)
+                .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED")
+                .jsonPath("$.message").isEqualTo(RefreshSessionFailedException.MESSAGE);
+    }
+
+    @Test
+    void refreshWithoutCookieReturnsUnauthorized() {
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/auth/refresh")
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(401)
+                .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED")
+                .jsonPath("$.message").isEqualTo(RefreshSessionFailedException.MESSAGE);
     }
 
     private AuthCookies continuePasswordUser(String email, String password) {
