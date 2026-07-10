@@ -1,0 +1,29 @@
+meta {
+  name: Reject - missing card details
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/api/v1/public/tables/{{testTableId}}/orders/{{testOrderId}}/payments
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "amount": "10.00",
+    "paymentType": "FULL",
+    "provider": "CARD"
+  }
+}
+
+docs {
+  No providerDetails supplied for a CARD payment.
+  Expect 422 with errorCode UNPROCESSABLE_ENTITY - card payments require last4 and brand.
+}
