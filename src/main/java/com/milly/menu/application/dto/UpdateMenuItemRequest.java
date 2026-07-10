@@ -1,5 +1,6 @@
 package com.milly.menu.application.dto;
 
+import com.milly.menu.domain.valueobject.MenuItemCategory;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
@@ -23,6 +24,8 @@ public record UpdateMenuItemRequest(
 
         @Min(value = 1, message = "Approximate preparation time must be at least 1 minute.")
         @Max(value = 480, message = "Approximate preparation time must be at most 480 minutes.")
-        Integer approximatePreparationMinutes
+        Integer approximatePreparationMinutes,
+
+        MenuItemCategory category
 ) {
 }

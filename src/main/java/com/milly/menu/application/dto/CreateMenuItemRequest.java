@@ -1,5 +1,6 @@
 package com.milly.menu.application.dto;
 
+import com.milly.menu.domain.valueobject.MenuItemCategory;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Max;
@@ -26,6 +27,9 @@ public record CreateMenuItemRequest(
         @NotNull(message = "Approximate preparation time is required.")
         @Min(value = 1, message = "Approximate preparation time must be at least 1 minute.")
         @Max(value = 480, message = "Approximate preparation time must be at most 480 minutes.")
-        Integer approximatePreparationMinutes
+        Integer approximatePreparationMinutes,
+
+        @NotNull(message = "Category is required.")
+        MenuItemCategory category
 ) {
 }
