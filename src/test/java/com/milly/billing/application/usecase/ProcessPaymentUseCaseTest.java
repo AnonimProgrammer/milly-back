@@ -90,6 +90,7 @@ class ProcessPaymentUseCaseTest {
 
         // Assert
         assertThat(response.payment().amount()).isEqualByComparingTo("50.00");
+        assertThat(response.payment().tipAmount()).isZero();
         assertThat(response.payment().status()).isEqualTo(PaymentStatus.COMPLETED);
         assertThat(response.bill().orderTotal()).isEqualByComparingTo("100.00");
         assertThat(response.bill().paidAmount()).isEqualByComparingTo("50.00");
@@ -99,6 +100,7 @@ class ProcessPaymentUseCaseTest {
         PaymentEntity savedPayment = paymentCaptor.getValue();
         assertThat(savedPayment.getOrderId()).isEqualTo(orderId);
         assertThat(savedPayment.getAmount().amount()).isEqualByComparingTo("50.00");
+        assertThat(savedPayment.getTipAmount().amount()).isZero();
         assertThat(savedPayment.getProvider()).isEqualTo(PaymentProvider.APPLE);
         assertThat(savedPayment.getProviderReference()).startsWith("pay_");
         verify(orderEventNotifier).paymentReceived(orderId, venueId, tableId);
@@ -148,6 +150,7 @@ class ProcessPaymentUseCaseTest {
                 PaymentType.FULL,
                 PaymentProvider.CARD,
                 new CreatePaymentRequest.ProviderDetails("4242", "Visa", 12, 2025),
+                null,
                 null);
 
         // Act
@@ -169,7 +172,7 @@ class ProcessPaymentUseCaseTest {
         givenNoExistingPayments();
         givenPaymentCanBeSaved();
         CreatePaymentRequest request = new CreatePaymentRequest(
-                BigDecimal.valueOf(50.00), PaymentType.SPLIT, PaymentProvider.APPLE, null, 3);
+                BigDecimal.valueOf(50.00), PaymentType.SPLIT, PaymentProvider.APPLE, null, 3, null);
 
         // Act
         processPaymentUseCase.execute(tableId, orderId, request);
@@ -238,7 +241,7 @@ class ProcessPaymentUseCaseTest {
         // Arrange
         givenApprovedOrderWithTotal();
         givenNoExistingPayments();
-        CreatePaymentRequest request = new CreatePaymentRequest(amount, PaymentType.FULL, PaymentProvider.APPLE, null, null);
+        CreatePaymentRequest request = new CreatePaymentRequest(amount, PaymentType.FULL, PaymentProvider.APPLE, null, null, null);
 
         // Act & Assert
         assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
@@ -274,7 +277,7 @@ class ProcessPaymentUseCaseTest {
         givenApprovedOrderWithTotal();
         givenNoExistingPayments();
         CreatePaymentRequest request = new CreatePaymentRequest(
-                BigDecimal.valueOf(50.00), PaymentType.FULL, PaymentProvider.CARD, details, null);
+                BigDecimal.valueOf(50.00), PaymentType.FULL, PaymentProvider.CARD, details, null, null);
 
         // Act & Assert
         assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
@@ -299,7 +302,7 @@ class ProcessPaymentUseCaseTest {
         givenApprovedOrderWithTotal();
         givenNoExistingPayments();
         CreatePaymentRequest request = new CreatePaymentRequest(
-                BigDecimal.valueOf(50.00), PaymentType.SPLIT, PaymentProvider.APPLE, null, splitPeople);
+                BigDecimal.valueOf(50.00), PaymentType.SPLIT, PaymentProvider.APPLE, null, splitPeople, null);
 
         // Act & Assert
         assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
@@ -341,6 +344,6 @@ class ProcessPaymentUseCaseTest {
     }
 
     private static CreatePaymentRequest walletPaymentRequest(String amount) {
-        return new CreatePaymentRequest(new BigDecimal(amount), PaymentType.FULL, PaymentProvider.APPLE, null, null);
+        return new CreatePaymentRequest(new BigDecimal(amount), PaymentType.FULL, PaymentProvider.APPLE, null, null, null);
     }
 }
