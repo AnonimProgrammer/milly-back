@@ -1,0 +1,20 @@
+meta {
+  name: List members
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/api/v1/venues/{{testVenueId}}/members
+  body: none
+  auth: inherit
+}
+
+vars:pre-request {
+  testVenueId: a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
