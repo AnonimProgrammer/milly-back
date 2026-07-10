@@ -1,13 +1,11 @@
 package com.milly.order.application.usecase;
 
-import com.milly.common.exception.InvalidStateTransitionException;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.StaffOrderResponse;
 import com.milly.order.application.service.OrderEventNotifier;
 import com.milly.order.application.service.OrderPreparationEstimator;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
-import com.milly.order.domain.valueobject.OrderStatus;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderItemJpaRepository;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderJpaRepository;
 import com.milly.venue.application.service.VenueAuthorizationService;
@@ -37,12 +35,7 @@ public class ApproveOrderUseCase {
         OrderEntity order = orderRepository.findByIdAndVenueId(orderId, venueId)
                 .orElseThrow(ResourceNotFoundException::new);
 
-        if (order.getStatus() != OrderStatus.PENDING) {
-            throw new InvalidStateTransitionException();
-        }
-
-        order.setStatus(OrderStatus.APPROVED);
-        order.setApprovedAt(OffsetDateTime.now());
+        order.approve(OffsetDateTime.now());
 
         List<OrderItemEntity> orderItems = orderItemRepository.findAllByOrderId(order.getId());
         orderPreparationEstimator.tryEstimate(venueId, order.getId(), orderItems)

@@ -1,7 +1,7 @@
 package com.milly.order.infrastructure.adapter.inbound.http;
 
-import com.milly.common.idempotency.Idempotent;
-import com.milly.common.web.ApiResponse;
+import com.milly.common.application.idempotency.Idempotent;
+import com.milly.common.application.dto.ApiResponse;
 import com.milly.order.application.dto.AddOrderItemsRequest;
 import com.milly.order.application.dto.CreateOrderRequest;
 import com.milly.order.application.dto.OrderResponse;

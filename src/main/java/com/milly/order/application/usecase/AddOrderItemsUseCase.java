@@ -1,7 +1,7 @@
 package com.milly.order.application.usecase;
 
-import com.milly.common.exception.InvalidStateTransitionException;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.InvalidStateTransitionException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.menu.domain.entity.MenuItemEntity;
 import com.milly.menu.domain.valueobject.MenuItemStatus;
 import com.milly.menu.infrastructure.adapter.outbound.persistence.MenuItemJpaRepository;
