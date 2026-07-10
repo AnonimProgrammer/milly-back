@@ -1,7 +1,7 @@
 package com.milly.auth.infrastructure.adapter.outbound.auth;
 
 import com.milly.auth.infrastructure.config.AuthProperties;
-import com.milly.common.exception.InvalidCredentialsException;
+import com.milly.common.application.exception.InvalidCredentialsException;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;

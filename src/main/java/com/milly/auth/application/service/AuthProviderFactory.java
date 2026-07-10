@@ -1,4 +1,4 @@
-package com.milly.auth.application.usecase.factory;
+package com.milly.auth.application.service;
 
 import com.milly.auth.application.port.outbound.AuthProvider;
 import com.milly.auth.domain.valueobject.AuthProviderType;
