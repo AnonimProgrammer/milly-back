@@ -171,3 +171,176 @@ class ProcessPaymentUseCaseTest {
         CreatePaymentRequest request = new CreatePaymentRequest(
                 BigDecimal.valueOf(50.00), PaymentType.SPLIT, PaymentProvider.APPLE, null, 3);
 
+        // Act
+        processPaymentUseCase.execute(tableId, orderId, request);
+
+        // Assert
+        verify(paymentRepository).save(paymentCaptor.capture());
+        assertThat(paymentCaptor.getValue().getProviderMetadata()).containsEntry("splitPeople", 3);
+    }
+    @Test
+    void throwsResourceNotFoundWhenTableNotFound() {
+        // Arrange
+        when(tableRepository.findById(tableId)).thenReturn(Optional.empty());
+        CreatePaymentRequest request = walletPaymentRequest("50.00");
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verifyNoInteractions(paymentRepository, orderEventNotifier);
+    }
+
+    @Test
+    void throwsResourceNotFoundWhenTableIsNotActive() {
+        // Arrange
+        TableEntity inactiveTable = aTable().withId(tableId).withVenueId(venueId).withStatus(TableStatus.INACTIVE).build();
+        when(tableRepository.findById(tableId)).thenReturn(Optional.of(inactiveTable));
+        CreatePaymentRequest request = walletPaymentRequest("50.00");
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verifyNoInteractions(paymentRepository, orderEventNotifier);
+    }
+
+    @Test
+    void throwsResourceNotFoundWhenOrderNotFound() {
+        // Arrange
+        TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
+        when(tableRepository.findById(tableId)).thenReturn(Optional.of(activeTable));
+        when(orderRepository.findByIdAndTableIdForUpdate(orderId, tableId)).thenReturn(Optional.empty());
+        CreatePaymentRequest request = walletPaymentRequest("50.00");
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(ResourceNotFoundException.class);
+        verifyNoInteractions(paymentRepository, orderEventNotifier);
+    }
+    @Test
+    void throwsPaymentValidationExceptionWhenOrderIsNotApproved() {
+        // Arrange
+        TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
+        OrderEntity pendingOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
+                .withStatus(OrderStatus.PENDING).build();
+        when(tableRepository.findById(tableId)).thenReturn(Optional.of(activeTable));
+        when(orderRepository.findByIdAndTableIdForUpdate(orderId, tableId)).thenReturn(Optional.of(pendingOrder));
+        CreatePaymentRequest request = walletPaymentRequest("50.00");
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(PaymentValidationException.class)
+                .hasMessage("Order is not open for payment.");
+        verifyNoInteractions(paymentRepository, orderEventNotifier);
+    }
+    @ParameterizedTest
+    @MethodSource("invalidAmounts")
+    void throwsPaymentValidationExceptionForNonPositiveAmount(BigDecimal amount) {
+        // Arrange
+        givenApprovedOrderWithTotal();
+        givenNoExistingPayments();
+        CreatePaymentRequest request = new CreatePaymentRequest(amount, PaymentType.FULL, PaymentProvider.APPLE, null, null);
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(PaymentValidationException.class)
+                .hasMessage("Amount must be greater than zero.");
+        verify(paymentRepository, never()).save(any());
+        verify(orderEventNotifier, never()).paymentReceived(any(), any(), any());
+    }
+
+    private static Stream<BigDecimal> invalidAmounts() {
+        return Stream.of(BigDecimal.ZERO, BigDecimal.valueOf(-10.00));
+    }
+
+    @Test
+    void throwsPaymentValidationExceptionWhenAmountExceedsRemainingBalance() {
+        // Arrange
+        givenApprovedOrderWithTotal();
+        givenNoExistingPayments();
+        CreatePaymentRequest request = walletPaymentRequest("101.00");
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(PaymentValidationException.class)
+                .hasMessage("Amount exceeds the remaining balance.");
+        verify(paymentRepository, never()).save(any());
+        verify(orderEventNotifier, never()).paymentReceived(any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidCardDetails")
+    void throwsPaymentValidationExceptionForInvalidCardDetails(CreatePaymentRequest.ProviderDetails details) {
+        // Arrange
+        givenApprovedOrderWithTotal();
+        givenNoExistingPayments();
+        CreatePaymentRequest request = new CreatePaymentRequest(
+                BigDecimal.valueOf(50.00), PaymentType.FULL, PaymentProvider.CARD, details, null);
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(PaymentValidationException.class)
+                .hasMessage("Card payments require a 4-digit last4 and a brand.");
+        verify(paymentRepository, never()).save(any());
+        verify(orderEventNotifier, never()).paymentReceived(any(), any(), any());
+    }
+
+    private static Stream<CreatePaymentRequest.ProviderDetails> invalidCardDetails() {
+        return Stream.of(
+                null,
+                new CreatePaymentRequest.ProviderDetails(null, "Visa", null, null),
+                new CreatePaymentRequest.ProviderDetails("123", "Visa", null, null),
+                new CreatePaymentRequest.ProviderDetails("1234", null, null, null));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidSplitPeople")
+    void throwsPaymentValidationExceptionForInvalidSplitPeople(Integer splitPeople) {
+        // Arrange
+        givenApprovedOrderWithTotal();
+        givenNoExistingPayments();
+        CreatePaymentRequest request = new CreatePaymentRequest(
+                BigDecimal.valueOf(50.00), PaymentType.SPLIT, PaymentProvider.APPLE, null, splitPeople);
+
+        // Act & Assert
+        assertThatThrownBy(() -> processPaymentUseCase.execute(tableId, orderId, request))
+                .isInstanceOf(PaymentValidationException.class)
+                .hasMessage("splitPeople is required and must be at least 2 for split payments.");
+        verify(paymentRepository, never()).save(any());
+        verify(orderEventNotifier, never()).paymentReceived(any(), any(), any());
+    }
+
+    private static Stream<Integer> invalidSplitPeople() {
+        return Stream.of(null, 1);
+    }
+
+    private void givenApprovedOrderWithTotal() {
+        TableEntity activeTable = aTable().withId(tableId).withVenueId(venueId).build();
+        OrderEntity approvedOrder = anOrder().withId(orderId).withVenueId(venueId).withTableId(tableId)
+                .withStatus(OrderStatus.APPROVED).build();
+        List<OrderItemEntity> orderItems = List.of(anOrderItem().withOrderId(orderId).withUnitPrice(Money.of("100.00")).build());
+        when(tableRepository.findById(tableId)).thenReturn(Optional.of(activeTable));
+        when(orderRepository.findByIdAndTableIdForUpdate(orderId, tableId)).thenReturn(Optional.of(approvedOrder));
+        when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(orderItems);
+    }
+
+    private void givenNoExistingPayments() {
+        givenExistingPayments();
+    }
+
+    private void givenExistingPayments(PaymentEntity... payments) {
+        when(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(orderId, PaymentStatus.COMPLETED))
+                .thenReturn(List.of(payments));
+    }
+
+    private void givenPaymentCanBeSaved() {
+        when(paymentRepository.save(any(PaymentEntity.class))).thenAnswer(invocation -> {
+            PaymentEntity savedPayment = invocation.getArgument(0);
+            savedPayment.setId(UUID.randomUUID());
+            return savedPayment;
+        });
+    }
+
+    private static CreatePaymentRequest walletPaymentRequest(String amount) {
+        return new CreatePaymentRequest(new BigDecimal(amount), PaymentType.FULL, PaymentProvider.APPLE, null, null);
+    }
+}
