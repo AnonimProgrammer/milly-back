@@ -2,6 +2,7 @@ package com.milly.order.application.polluter;
 
 import com.milly.menu.application.dto.CreateMenuItemRequest;
 import com.milly.menu.application.usecase.CreateMenuItemUseCase;
+import com.milly.menu.domain.valueobject.MenuItemCategory;
 import com.milly.table.application.dto.CreateTableRequest;
 import com.milly.table.application.usecase.CreateTableUseCase;
 import com.milly.table.application.usecase.DeactivateTableUseCase;
@@ -30,7 +31,7 @@ public class OrderPolluter {
         var menuItem = createMenuItemUseCase.execute(
                 venue.manager().userId(),
                 venue.venueId(),
-                new CreateMenuItemRequest("Burger", "Tasty burger", new BigDecimal("12.50"), 15));
+                new CreateMenuItemRequest("Burger", "Tasty burger", new BigDecimal("12.50"), 15, MenuItemCategory.MAINS));
         return new OrderTestFixture(venue, table.id(), menuItem.id());
     }
 
@@ -47,7 +48,7 @@ public class OrderPolluter {
         var menuItem = createMenuItemUseCase.execute(
                 venue.manager().userId(),
                 venue.venueId(),
-                new CreateMenuItemRequest("Burger", "Tasty burger", new BigDecimal("12.50"), 15));
+                new CreateMenuItemRequest("Burger", "Tasty burger", new BigDecimal("12.50"), 15, MenuItemCategory.MAINS));
         return new OrderTestFixture(venue, table.id(), menuItem.id());
     }
 }
