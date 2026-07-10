@@ -19,6 +19,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.client.RestTestClient;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,10 +43,12 @@ class StaffOrderIntegrationTest extends AbstractITest {
     private AuthSessionPolluter authSessionPolluter;
 
     @Test
-    void memberListsOrders() {
+    void memberListsOrders() throws InterruptedException {
         // Arrange
         OrderTestFixture fixture = orderPolluter.createOrderableTable();
-        UUID orderId = placeOrder(fixture);
+        UUID olderOrderId = placeOrder(fixture);
+        Thread.sleep(20);
+        UUID newerOrderId = placeOrder(fixture);
         // Act
         StaffOrderListApiResponse response = RestTestClientAuth.withSession(restClient, fixture.venue().manager()).get()
                 .uri("/api/v1/venues/{venueId}/orders", fixture.venue().venueId())
@@ -52,7 +58,37 @@ class StaffOrderIntegrationTest extends AbstractITest {
                 .returnResult().getResponseBody();
         // Assert
         assertThat(response).isNotNull();
-        assertThat(response.getData()).extracting("id").contains(orderId);
+        assertThat(response.getData().data()).extracting("id").containsExactly(olderOrderId, newerOrderId);
+        assertThat(response.getData().pagination().limit()).isEqualTo(20);
+    }
+
+    @Test
+    void memberListsOrdersWithLimit() {
+        // Arrange
+        OrderTestFixture fixture = orderPolluter.createOrderableTable();
+        placeOrder(fixture);
+        placeOrder(fixture);
+        ZoneId zone = ZoneId.of("UTC");
+        OffsetDateTime from = LocalDate.now(zone).atStartOfDay(zone).toOffsetDateTime();
+        OffsetDateTime to = LocalDate.now(zone).atTime(LocalTime.MAX).atZone(zone).toOffsetDateTime();
+        // Act
+        StaffOrderListApiResponse response = RestTestClientAuth.withSession(restClient, fixture.venue().manager()).get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/api/v1/venues/{venueId}/orders")
+                        .queryParam("from", from)
+                        .queryParam("to", to)
+                        .queryParam("limit", 1)
+                        .build(fixture.venue().venueId()))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(StaffOrderListApiResponse.class)
+                .returnResult().getResponseBody();
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getData().data()).hasSize(1);
+        assertThat(response.getData().pagination().limit()).isEqualTo(1);
+        assertThat(response.getData().pagination().hasNext()).isTrue();
+        assertThat(response.getData().pagination().nextCursor()).isEqualTo("1");
     }
 
     @Test
@@ -148,8 +184,8 @@ class StaffOrderIntegrationTest extends AbstractITest {
                 .returnResult().getResponseBody();
         // Assert
         assertThat(response).isNotNull();
-        assertThat(response.getData()).extracting("id").contains(pendingOrderId);
-        assertThat(response.getData()).extracting("id").doesNotContain(approvedOrderId);
+        assertThat(response.getData().data()).extracting("id").contains(pendingOrderId);
+        assertThat(response.getData().data()).extracting("id").doesNotContain(approvedOrderId);
     }
 
     @Test
@@ -249,7 +285,7 @@ class StaffOrderIntegrationTest extends AbstractITest {
                 .returnResult().getResponseBody();
         // Assert
         assertThat(response).isNotNull();
-        assertThat(response.getData()).isEmpty();
+        assertThat(response.getData().data()).isEmpty();
     }
 
     @Test
