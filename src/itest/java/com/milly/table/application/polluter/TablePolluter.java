@@ -56,4 +56,3 @@ public class TablePolluter {
         return createInactiveTable(venue, "Table 1");
     }
 }
-
