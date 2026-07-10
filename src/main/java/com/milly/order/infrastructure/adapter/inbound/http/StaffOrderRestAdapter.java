@@ -1,9 +1,12 @@
 package com.milly.order.infrastructure.adapter.inbound.http;
 
 import com.milly.common.web.ApiResponse;
+import com.milly.common.web.PageResponse;
 import com.milly.order.application.dto.StaffOrderResponse;
+import com.milly.order.application.dto.OrderPreparationEstimateResponse;
 import com.milly.order.application.usecase.ApproveOrderUseCase;
 import com.milly.order.application.usecase.CloseOrderUseCase;
+import com.milly.order.application.usecase.EstimateOrderPreparationTimeUseCase;
 import com.milly.order.application.usecase.GetVenueOrderUseCase;
 import com.milly.order.application.usecase.ListVenueOrdersUseCase;
 import com.milly.order.application.usecase.RejectOrderUseCase;
@@ -14,11 +17,12 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.format.annotation.DateTimeFormat.ISO;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @RestController
@@ -31,16 +35,22 @@ public class StaffOrderRestAdapter {
     private final ApproveOrderUseCase approveOrderUseCase;
     private final RejectOrderUseCase rejectOrderUseCase;
     private final CloseOrderUseCase closeOrderUseCase;
+    private final EstimateOrderPreparationTimeUseCase estimateOrderPreparationTimeUseCase;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<StaffOrderResponse>>> listOrders(
+    public ResponseEntity<ApiResponse<PageResponse<StaffOrderResponse>>> listOrders(
             @PathVariable UUID venueId,
             @RequestParam(required = false) OrderStatus status,
+            @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE_TIME) OffsetDateTime from,
+            @RequestParam(required = false) @DateTimeFormat(iso = ISO.DATE_TIME) OffsetDateTime to,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "20") int limit,
             @AuthenticationPrincipal UUID userId) {
         return ResponseEntity.ok(ApiResponse.success(
-                listVenueOrdersUseCase.execute(venueId, userId, status),
+                listVenueOrdersUseCase.execute(venueId, userId, status, from, to, cursor, limit),
                 "Orders retrieved successfully."));
     }
+
 
     @GetMapping("/{orderId}")
     public ResponseEntity<ApiResponse<StaffOrderResponse>> getOrder(
@@ -80,5 +90,15 @@ public class StaffOrderRestAdapter {
         return ResponseEntity.ok(ApiResponse.success(
                 closeOrderUseCase.execute(venueId, userId, orderId),
                 "Order closed successfully."));
+    }
+
+    @PostMapping("/{orderId}/preparation-time/estimate")
+    public ResponseEntity<ApiResponse<OrderPreparationEstimateResponse>> estimatePreparationTime(
+            @PathVariable UUID venueId,
+            @PathVariable UUID orderId,
+            @AuthenticationPrincipal UUID userId) {
+        return ResponseEntity.ok(ApiResponse.success(
+                estimateOrderPreparationTimeUseCase.execute(venueId, userId, orderId),
+                "Order preparation time estimated successfully."));
     }
 }

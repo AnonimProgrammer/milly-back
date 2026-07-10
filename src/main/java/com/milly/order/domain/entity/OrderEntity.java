@@ -49,6 +49,20 @@ public class OrderEntity {
     @Column(name = "closed_at")
     private OffsetDateTime closedAt;
 
+    @Column(name = "approved_at")
+    private OffsetDateTime approvedAt;
+
+    @Column(name = "estimated_preparation_minutes")
+    private Integer estimatedPreparationMinutes;
+
+    @Column(name = "estimated_preparation_display")
+    private String estimatedPreparationDisplay;
+
+    public void applyPreparationEstimate(int minutes, String displayValue) {
+        this.estimatedPreparationMinutes = minutes;
+        this.estimatedPreparationDisplay = displayValue;
+    }
+
     public static OrderEntity create(UUID venueId, UUID tableId, OrderStatus status) {
         OrderEntity order = new OrderEntity();
         order.setVenueId(venueId);
