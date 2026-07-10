@@ -1,6 +1,6 @@
 package com.milly.table.application.usecase;
 
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.table.application.dto.PublicTableResponse;
 import com.milly.table.domain.valueobject.TableStatus;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;

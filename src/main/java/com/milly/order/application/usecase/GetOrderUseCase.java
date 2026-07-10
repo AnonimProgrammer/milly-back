@@ -1,6 +1,6 @@
 package com.milly.order.application.usecase;
 
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.OrderResponse;
 import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.domain.entity.OrderEntity;

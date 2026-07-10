@@ -1,6 +1,6 @@
 package com.milly.venue.application.usecase;
 
-import com.milly.common.exception.AccessDeniedException;
+import com.milly.common.application.exception.AccessDeniedException;
 import com.milly.venue.application.dto.CreateVenueRequest;
 import com.milly.venue.application.dto.CreateVenueResponse;
 import com.milly.venue.domain.entity.VenueEntity;

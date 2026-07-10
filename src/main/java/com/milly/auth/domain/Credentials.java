@@ -1,7 +1,7 @@
 package com.milly.auth.domain;
 
 import com.milly.common.domain.Preconditions;
-import com.milly.common.exception.InvalidCredentialsException;
+import com.milly.common.application.exception.InvalidCredentialsException;
 
 import java.util.Map;
 

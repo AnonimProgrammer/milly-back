@@ -9,4 +9,3 @@ public record TableTestFixture(
         UUID tableId
 ) {
 }
-

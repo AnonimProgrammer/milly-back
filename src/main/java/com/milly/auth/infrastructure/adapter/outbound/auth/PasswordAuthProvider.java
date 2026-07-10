@@ -6,7 +6,7 @@ import com.milly.auth.domain.Credentials;
 import com.milly.auth.domain.entity.UserAuthEntity;
 import com.milly.auth.domain.valueobject.AuthProviderType;
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserAuthJpaRepository;
-import com.milly.common.exception.InvalidCredentialsException;
+import com.milly.common.application.exception.InvalidCredentialsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;

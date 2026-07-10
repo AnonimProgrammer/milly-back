@@ -1,6 +1,7 @@
 package com.milly.order.domain.entity;
 
 import com.github.f4b6a3.ulid.UlidCreator;
+import com.milly.common.application.exception.InvalidStateTransitionException;
 import com.milly.order.domain.valueobject.OrderStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -61,6 +62,29 @@ public class OrderEntity {
     public void applyPreparationEstimate(int minutes, String displayValue) {
         this.estimatedPreparationMinutes = minutes;
         this.estimatedPreparationDisplay = displayValue;
+    }
+
+    public void approve(OffsetDateTime approvedAt) {
+        if (status != OrderStatus.PENDING) {
+            throw new InvalidStateTransitionException();
+        }
+        this.status = OrderStatus.APPROVED;
+        this.approvedAt = approvedAt;
+    }
+
+    public void reject() {
+        if (status != OrderStatus.PENDING) {
+            throw new InvalidStateTransitionException();
+        }
+        this.status = OrderStatus.REJECTED;
+    }
+
+    public void close(OffsetDateTime closedAt) {
+        if (status != OrderStatus.APPROVED) {
+            throw new InvalidStateTransitionException();
+        }
+        this.status = OrderStatus.CLOSED;
+        this.closedAt = closedAt;
     }
 
     public static OrderEntity create(UUID venueId, UUID tableId, OrderStatus status) {

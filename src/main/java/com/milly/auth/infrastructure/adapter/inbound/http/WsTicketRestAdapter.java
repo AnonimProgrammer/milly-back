@@ -2,7 +2,7 @@ package com.milly.auth.infrastructure.adapter.inbound.http;
 
 import com.milly.auth.application.dto.IssueWsTicketResponse;
 import com.milly.auth.application.usecase.IssueWsTicketUseCase;
-import com.milly.common.web.ApiResponse;
+import com.milly.common.application.dto.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

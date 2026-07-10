@@ -2,9 +2,9 @@ package com.milly.auth.infrastructure.adapter.inbound.http;
 
 import com.milly.auth.application.exception.RefreshSessionFailedException;
 import com.milly.auth.infrastructure.adapter.outbound.security.AuthCookieWriter;
-import com.milly.common.web.ApiResponse;
-import com.milly.common.web.ErrorCode;
-import com.milly.common.web.HttpErrorResponses;
+import com.milly.common.application.dto.ApiResponse;
+import com.milly.common.infrastructure.adapter.inbound.http.ErrorCode;
+import com.milly.common.infrastructure.adapter.inbound.http.HttpErrorResponses;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;

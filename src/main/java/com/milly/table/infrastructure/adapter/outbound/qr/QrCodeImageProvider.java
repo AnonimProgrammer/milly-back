@@ -1,5 +1,6 @@
 package com.milly.table.infrastructure.adapter.outbound.qr;
 
+import com.milly.table.application.port.outbound.QrCodeGenerator;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.client.j2se.MatrixToImageWriter;
@@ -13,10 +14,11 @@ import java.util.EnumMap;
 import java.util.Map;
 
 @Component
-public class QrCodeImageProvider {
+public class QrCodeImageProvider implements QrCodeGenerator {
 
     private static final int IMAGE_SIZE = 256;
 
+    @Override
     public byte[] generatePngBytes(String content) {
         try {
             QRCodeWriter writer = new QRCodeWriter();

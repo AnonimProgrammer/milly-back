@@ -3,13 +3,13 @@ package com.milly.auth.application.usecase;
 import com.milly.auth.application.dto.RefreshSessionResponse;
 import com.milly.auth.application.exception.RefreshSessionFailedException;
 import com.milly.auth.application.port.outbound.RefreshTokenStore;
+import com.milly.auth.application.port.outbound.SessionTokenPort;
 import com.milly.auth.domain.entity.UserEntity;
 import com.milly.auth.domain.model.AuthUser;
 import com.milly.auth.domain.model.IssuedRefreshToken;
+import com.milly.auth.domain.model.ParsedRefreshToken;
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserJpaRepository;
-import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
-import com.milly.common.exception.InvalidCredentialsException;
-import io.jsonwebtoken.Claims;
+import com.milly.common.application.exception.InvalidCredentialsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +20,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RefreshSessionUseCase {
 
-    private final JwtTokenService jwtTokenService;
+    private final SessionTokenPort sessionTokenPort;
     private final UserJpaRepository userRepository;
     private final LoadAuthUserUseCase loadAuthUserUseCase;
     private final RefreshTokenStore refreshTokenStore;
@@ -32,9 +32,9 @@ public class RefreshSessionUseCase {
         }
 
         try {
-            Claims claims = jwtTokenService.parseToken(refreshToken, true);
-            UUID userId = jwtTokenService.extractUserId(claims);
-            String jti = jwtTokenService.extractJti(claims);
+            ParsedRefreshToken parsed = sessionTokenPort.parseRefreshToken(refreshToken);
+            UUID userId = parsed.userId();
+            String jti = parsed.jti();
 
             if (!refreshTokenStore.consume(jti, userId)) {
                 throw new RefreshSessionFailedException();
@@ -44,8 +44,8 @@ public class RefreshSessionUseCase {
                     .orElseThrow(RefreshSessionFailedException::new);
 
             AuthUser authUser = loadAuthUserUseCase.execute(user);
-            String accessToken = jwtTokenService.issueAccessToken(authUser);
-            IssuedRefreshToken newRefreshToken = jwtTokenService.issueRefreshToken(authUser);
+            String accessToken = sessionTokenPort.issueAccessToken(authUser);
+            IssuedRefreshToken newRefreshToken = sessionTokenPort.issueRefreshToken(authUser);
             refreshTokenStore.register(newRefreshToken.jti(), userId);
 
             return new RefreshSessionResponse(accessToken, newRefreshToken.token());

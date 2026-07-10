@@ -1,7 +1,7 @@
 package com.milly.order.application.service;
 
-import com.milly.common.exception.AiServiceUnavailableException;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.AiServiceUnavailableException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.config.application.port.outbound.OrderPreparationAnalysisPort;
 import com.milly.menu.domain.entity.MenuItemEntity;
 import com.milly.menu.infrastructure.adapter.outbound.persistence.MenuItemJpaRepository;

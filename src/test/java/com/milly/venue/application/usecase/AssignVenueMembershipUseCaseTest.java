@@ -1,6 +1,6 @@
 package com.milly.venue.application.usecase;
 
-import com.milly.common.exception.VenueMembershipAlreadyExistsException;
+import com.milly.common.application.exception.VenueMembershipAlreadyExistsException;
 import com.milly.venue.domain.entity.VenueMembershipEntity;
 import com.milly.venue.domain.valueobject.VenueRole;
 import com.milly.venue.infrastructure.adapter.outbound.persistence.VenueMembershipJpaRepository;

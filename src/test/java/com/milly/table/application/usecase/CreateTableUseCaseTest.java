@@ -1,6 +1,6 @@
 package com.milly.table.application.usecase;
 
-import com.milly.common.exception.AccessDeniedException;
+import com.milly.common.application.exception.AccessDeniedException;
 import com.milly.table.application.dto.CreateTableRequest;
 import com.milly.table.application.dto.TableResponse;
 import com.milly.table.domain.entity.TableEntity;

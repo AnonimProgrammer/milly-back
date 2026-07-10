@@ -4,7 +4,8 @@ import com.milly.auth.application.dto.ContinueAuthRequest;
 import com.milly.auth.application.dto.ContinueAuthResponse;
 import com.milly.auth.application.port.outbound.AuthProvider;
 import com.milly.auth.application.port.outbound.RefreshTokenStore;
-import com.milly.auth.application.usecase.factory.AuthProviderFactory;
+import com.milly.auth.application.port.outbound.SessionTokenPort;
+import com.milly.auth.application.service.AuthProviderFactory;
 import com.milly.auth.domain.entity.UserEntity;
 import com.milly.auth.domain.model.AuthUser;
 import com.milly.auth.domain.model.ExternalIdentity;
@@ -12,8 +13,7 @@ import com.milly.auth.domain.model.IdentityResolution;
 import com.milly.auth.domain.model.IssuedRefreshToken;
 import com.milly.auth.domain.valueobject.AuthProviderType;
 import com.milly.auth.domain.valueobject.RoleName;
-import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
-import com.milly.common.exception.InvalidCredentialsException;
+import com.milly.common.application.exception.InvalidCredentialsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,7 +48,7 @@ class ContinueAuthUseCaseTest {
     private LoadAuthUserUseCase loadAuthUserUseCase;
 
     @Mock
-    private JwtTokenService jwtTokenService;
+    private SessionTokenPort sessionTokenPort;
 
     @Mock
     private RefreshTokenStore refreshTokenStore;
@@ -76,7 +76,7 @@ class ContinueAuthUseCaseTest {
                 providerFactory,
                 resolveIdentityUseCase,
                 loadAuthUserUseCase,
-                jwtTokenService,
+                sessionTokenPort,
                 refreshTokenStore);
     }
 
@@ -114,8 +114,8 @@ class ContinueAuthUseCaseTest {
         when(resolveIdentityUseCase.execute(googleIdentity, profile, null))
                 .thenReturn(new IdentityResolution(user, false));
         when(loadAuthUserUseCase.execute(user)).thenReturn(authUser);
-        when(jwtTokenService.issueAccessToken(authUser)).thenReturn(accessToken);
-        when(jwtTokenService.issueRefreshToken(authUser)).thenReturn(issuedRefreshToken);
+        when(sessionTokenPort.issueAccessToken(authUser)).thenReturn(accessToken);
+        when(sessionTokenPort.issueRefreshToken(authUser)).thenReturn(issuedRefreshToken);
 
         // Act
         ContinueAuthResponse response = continueAuthUseCase.execute(request);
@@ -159,7 +159,7 @@ class ContinueAuthUseCaseTest {
                 .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessage("Invalid username or password.");
 
-        verifyNoInteractions(resolveIdentityUseCase, loadAuthUserUseCase, jwtTokenService, refreshTokenStore);
+        verifyNoInteractions(resolveIdentityUseCase, loadAuthUserUseCase, sessionTokenPort, refreshTokenStore);
     }
 
     @Test
@@ -174,7 +174,7 @@ class ContinueAuthUseCaseTest {
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessage("Unsupported auth provider: PASSWORD");
 
-        verifyNoInteractions(authProvider, resolveIdentityUseCase, loadAuthUserUseCase, jwtTokenService, refreshTokenStore);
+        verifyNoInteractions(authProvider, resolveIdentityUseCase, loadAuthUserUseCase, sessionTokenPort, refreshTokenStore);
     }
 
     @Test
@@ -191,7 +191,7 @@ class ContinueAuthUseCaseTest {
                 .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessage("Profile data is required for first-time sign-in.");
 
-        verifyNoInteractions(loadAuthUserUseCase, jwtTokenService, refreshTokenStore);
+        verifyNoInteractions(loadAuthUserUseCase, sessionTokenPort, refreshTokenStore);
     }
 
     @Test
@@ -210,7 +210,7 @@ class ContinueAuthUseCaseTest {
                 .isInstanceOf(InvalidCredentialsException.class);
 
         verifyNoMoreInteractions(authProvider);
-        verifyNoInteractions(loadAuthUserUseCase, jwtTokenService, refreshTokenStore);
+        verifyNoInteractions(loadAuthUserUseCase, sessionTokenPort, refreshTokenStore);
     }
 
     private void stubSuccessfulAuthFlow(
@@ -222,8 +222,8 @@ class ContinueAuthUseCaseTest {
         when(authProvider.authenticate(passwordRequest("secret-password").credentials())).thenReturn(identity);
         when(resolveIdentityUseCase.execute(identity, profile, "secret-password")).thenReturn(resolution);
         when(loadAuthUserUseCase.execute(user)).thenReturn(authUser);
-        when(jwtTokenService.issueAccessToken(authUser)).thenReturn(accessToken);
-        when(jwtTokenService.issueRefreshToken(authUser)).thenReturn(issuedRefreshToken);
+        when(sessionTokenPort.issueAccessToken(authUser)).thenReturn(accessToken);
+        when(sessionTokenPort.issueRefreshToken(authUser)).thenReturn(issuedRefreshToken);
     }
 
     private ContinueAuthRequest passwordRequest(String password) {

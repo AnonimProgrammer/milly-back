@@ -1,7 +1,7 @@
 package com.milly.order.application.usecase;
 
 import com.milly.common.domain.valueobject.Money;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.OrderResponse;
 import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.domain.entity.OrderEntity;
@@ -24,7 +24,7 @@ import java.util.UUID;
 
 import static com.milly.order.application.usecase.builder.OrderItemTestBuilder.anOrderItem;
 import static com.milly.order.application.usecase.builder.OrderTestBuilder.anOrder;
-import static com.milly.order.application.usecase.builder.TableTestBuilder.aTable;
+import static com.milly.table.application.usecase.builder.TableTestBuilder.aTable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;

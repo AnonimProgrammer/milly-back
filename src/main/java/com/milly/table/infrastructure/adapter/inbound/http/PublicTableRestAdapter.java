@@ -1,6 +1,6 @@
 package com.milly.table.infrastructure.adapter.inbound.http;
 
-import com.milly.common.web.ApiResponse;
+import com.milly.common.application.dto.ApiResponse;
 import com.milly.table.application.dto.PublicTableResponse;
 import com.milly.table.application.usecase.GetPublicTableUseCase;
 import lombok.RequiredArgsConstructor;
