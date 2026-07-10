@@ -160,3 +160,165 @@ class TableRestIntegrationTest extends AbstractITest {
         RestTestClient managerClient = managerClientFor(venue);
         TableTestFixture fixture = tablePolluter.createActiveTable(venue, "Table 1");
 
+        // Act
+        TableApiResponse response = managerClient.get()
+                .uri(tablePath(venue.venueId(), fixture.tableId()))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(TableApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getData().id()).isEqualTo(fixture.tableId());
+        assertThat(response.getData().status()).isEqualTo(TableStatus.ACTIVE);
+        assertThat(response.getData().label()).isEqualTo("Table 1");
+    }
+
+    @Test
+    void managerUpdatesTableLabel() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = managerClientFor(venue);
+        TableTestFixture fixture = tablePolluter.createActiveTable(venue, "Old label");
+
+        // Act
+        TableApiResponse response = managerClient.patch()
+                .uri(tablePath(venue.venueId(), fixture.tableId()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"label\":\"New label\"}")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(TableApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getData().label()).isEqualTo("New label");
+        assertThat(tableRepository.findById(fixture.tableId()))
+                .hasValueSatisfying(stored -> assertThat(stored.getLabel()).isEqualTo("New label"));
+    }
+
+    @Test
+    void managerDeactivatesTableAndPersistsInactiveStatus() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = managerClientFor(venue);
+        TableTestFixture fixture = tablePolluter.createActiveTable(venue, "Table 1");
+
+        // Act & Assert
+        managerClient.post()
+                .uri(deactivateTablePath(venue.venueId(), fixture.tableId()))
+                .exchange()
+                .expectStatus()
+                .isNoContent();
+
+        assertThat(tableRepository.findById(fixture.tableId()))
+                .hasValueSatisfying(stored -> assertThat(stored.getStatus()).isEqualTo(TableStatus.INACTIVE));
+    }
+
+    @Test
+    void managerGeneratesQrForActiveTable() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = managerClientFor(venue);
+        TableTestFixture fixture = tablePolluter.createActiveTable(venue, "Table 1");
+
+        // Act
+        TableQrApiResponse response = managerClient.post()
+                .uri(qrPath(venue.venueId(), fixture.tableId()))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(TableQrApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        TableQrResponse data = response.getData();
+        assertThat(data.tableId()).isEqualTo(fixture.tableId());
+        assertThat(data.customerUrl()).isEqualTo("http://localhost:3000/table/" + fixture.tableId());
+        assertThat(data.qrImageUrl()).isEqualTo(
+                "https://storage.local/venues/" + venue.venueId() + "/tables/" + fixture.tableId() + "/qr.png");
+        assertThat(tableRepository.findById(fixture.tableId()))
+                .hasValueSatisfying(stored -> assertThat(stored.getQrImageUrl()).isEqualTo(data.qrImageUrl()));
+    }
+
+    @Test
+    void managerGeneratesQrForInactiveTableReturnsNotFound() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = managerClientFor(venue);
+        TableTestFixture fixture = tablePolluter.createInactiveTable(venue, "Table 1");
+
+        // Act & Assert
+        managerClient.post()
+                .uri(qrPath(venue.venueId(), fixture.tableId()))
+                .exchange()
+                .expectStatus()
+                .isNotFound();
+    }
+
+    @Test
+    void getTableReturnsNotFoundWhenTableDoesNotExist() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = managerClientFor(venue);
+
+        // Act & Assert
+        managerClient.get()
+                .uri(tablePath(venue.venueId(), UUID.randomUUID()))
+                .exchange()
+                .expectStatus()
+                .isNotFound();
+    }
+
+    @Test
+    void updateTableLabelReturnsNotFoundWhenTableDoesNotExist() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = managerClientFor(venue);
+
+        // Act & Assert
+        managerClient.patch()
+                .uri(tablePath(venue.venueId(), UUID.randomUUID()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body("{\"label\":\"New label\"}")
+                .exchange()
+                .expectStatus()
+                .isNotFound();
+    }
+
+    @Test
+    void deactivateTableReturnsNotFoundWhenTableDoesNotExist() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = managerClientFor(venue);
+
+        // Act & Assert
+        managerClient.post()
+                .uri(deactivateTablePath(venue.venueId(), UUID.randomUUID()))
+                .exchange()
+                .expectStatus()
+                .isNotFound();
+    }
+
+    @Test
+    void generateQrReturnsNotFoundWhenTableDoesNotExist() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = managerClientFor(venue);
+
+        // Act & Assert
+        managerClient.post()
+                .uri(qrPath(venue.venueId(), UUID.randomUUID()))
+                .exchange()
+                .expectStatus()
+                .isNotFound();
+    }
+}
