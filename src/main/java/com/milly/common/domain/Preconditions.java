@@ -1,6 +1,6 @@
 package com.milly.common.domain;
 
-import com.milly.common.exception.InvalidCredentialsException;
+import com.milly.common.application.exception.InvalidCredentialsException;
 
 import java.util.Map;
 

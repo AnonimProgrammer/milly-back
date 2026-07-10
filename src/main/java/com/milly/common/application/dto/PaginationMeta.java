@@ -1,4 +1,4 @@
-package com.milly.common.web;
+package com.milly.common.application.dto;
 
 public record PaginationMeta(
         String nextCursor,
@@ -7,4 +7,3 @@ public record PaginationMeta(
         boolean hasPrevious,
         int limit) {
 }
-

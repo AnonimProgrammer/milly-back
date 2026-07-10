@@ -1,4 +1,4 @@
-package com.milly.common.web;
+package com.milly.common.application.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AccessLevel;

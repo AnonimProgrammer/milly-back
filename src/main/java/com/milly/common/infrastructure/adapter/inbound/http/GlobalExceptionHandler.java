@@ -1,6 +1,7 @@
-package com.milly.common.web;
+package com.milly.common.infrastructure.adapter.inbound.http;
 
-import com.milly.common.exception.*;
+import com.milly.common.application.dto.ApiResponse;
+import com.milly.common.application.exception.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpStatus;

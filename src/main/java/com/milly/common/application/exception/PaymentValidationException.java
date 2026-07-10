@@ -1,4 +1,4 @@
-package com.milly.common.exception;
+package com.milly.common.application.exception;
 
 /**
  * Thrown for business-rule violations on a payment attempt (order not payable, invalid amount,

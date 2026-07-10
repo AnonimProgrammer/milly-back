@@ -1,4 +1,4 @@
-package com.milly.common.idempotency;
+package com.milly.common.application.idempotency;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

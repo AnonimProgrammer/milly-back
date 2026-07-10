@@ -1,6 +1,8 @@
-package com.milly.common.idempotency;
+package com.milly.common.infrastructure.adapter.outbound.idempotency;
 
 import com.github.benmanes.caffeine.cache.Cache;
+import com.milly.common.application.idempotency.IdempotencyRecord;
+import com.milly.common.application.port.outbound.IdempotencyStore;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
