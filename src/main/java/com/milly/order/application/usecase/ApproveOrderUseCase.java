@@ -43,6 +43,6 @@ public class ApproveOrderUseCase {
 
         orderEventNotifier.orderApproved(order.getId(), order.getVenueId(), order.getTableId());
 
-        return StaffOrderResponse.of(order, orderItems, BigDecimal.ZERO);
+        return StaffOrderResponse.of(order, orderItems, BigDecimal.ZERO, BigDecimal.ZERO);
     }
 }
