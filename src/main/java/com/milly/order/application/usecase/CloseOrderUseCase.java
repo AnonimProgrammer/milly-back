@@ -40,6 +40,7 @@ public class CloseOrderUseCase {
         // Staff can close an order regardless of how much (if anything) has been paid,
         // so this must reflect whatever payments actually exist.
         BigDecimal paidAmount = paymentSummaryPort.paidAmountFor(order.getId());
-        return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()), paidAmount);
+        BigDecimal totalTipAmount = paymentSummaryPort.tipAmountFor(order.getId());
+        return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()), paidAmount, totalTipAmount);
     }
 }
