@@ -1,0 +1,28 @@
+meta {
+  name: Redeem venue invitation
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/api/v1/invitations/redeem
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+}
+
+body:json {
+  {
+    "token": "{{invitationToken}}"
+  }
+}
+
+docs {
+  Run **Create venue invitation** as a manager, then copy `data.token` into the `invitationToken` environment variable.
+
+  Authenticate as a different user (not already a member of the venue) before redeeming.
+}

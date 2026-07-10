@@ -1,0 +1,29 @@
+meta {
+  name: Create venue invitation
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/api/v1/venues/{{venueId}}/invitations
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+  Accept: application/json
+  X-Idempotency-Key: {{idempotencyKey}}
+}
+
+body:json {
+  {
+    "role": "WAITER"
+  }
+}
+
+docs {
+  Run **Continue — login (password)** and **Register venue** first so Bruno stores auth cookies and `venueId`.
+
+  Manager-only. Returns a single-use invite link in `data.inviteUrl` with TTL from `venue.invitation.ttl-seconds`.
+}
