@@ -69,12 +69,16 @@ public class ListVenueOrdersUseCase {
         Map<UUID, BigDecimal> paidAmountsByOrder = orderIds.isEmpty()
                 ? Collections.emptyMap()
                 : paymentSummaryPort.paidAmountsFor(orderIds);
+        Map<UUID, BigDecimal> tipAmountsByOrder = orderIds.isEmpty()
+                ? Collections.emptyMap()
+                : paymentSummaryPort.tipAmountsFor(orderIds);
 
         List<StaffOrderResponse> response = orderContent.stream()
                 .map(order -> StaffOrderResponse.of(
                         order,
                         itemsByOrder.getOrDefault(order.getId(), List.of()),
-                        paidAmountsByOrder.getOrDefault(order.getId(), BigDecimal.ZERO)))
+                        paidAmountsByOrder.getOrDefault(order.getId(), BigDecimal.ZERO),
+                        tipAmountsByOrder.getOrDefault(order.getId(), BigDecimal.ZERO)))
                 .toList();
 
         return new PageResponse<>(response, new PaginationMeta(
