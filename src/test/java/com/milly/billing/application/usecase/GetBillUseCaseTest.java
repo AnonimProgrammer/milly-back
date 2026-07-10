@@ -76,6 +76,7 @@ class GetBillUseCaseTest {
         // Assert
         assertThat(response.orderTotal()).isEqualByComparingTo("125.00");
         assertThat(response.paidAmount()).isEqualByComparingTo("125.00");
+        assertThat(response.totalTipAmount()).isZero();
         assertThat(response.payments()).extracting("id").containsExactly(payment1.getId(), payment2.getId());
     }
 
