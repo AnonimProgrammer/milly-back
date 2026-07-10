@@ -1,4 +1,4 @@
-package com.milly.common.web;
+package com.milly.common.infrastructure.adapter.inbound.http;
 
 public enum ErrorCode {
     UNAUTHORIZED,

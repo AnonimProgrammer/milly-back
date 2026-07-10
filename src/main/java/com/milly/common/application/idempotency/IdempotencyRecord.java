@@ -1,4 +1,4 @@
-package com.milly.common.idempotency;
+package com.milly.common.application.idempotency;
 
 /**
  * A cached outcome for a given idempotency scope key.

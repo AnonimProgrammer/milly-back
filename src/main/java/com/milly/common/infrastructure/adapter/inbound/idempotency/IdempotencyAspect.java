@@ -1,6 +1,8 @@
-package com.milly.common.idempotency;
+package com.milly.common.infrastructure.adapter.inbound.idempotency;
 
-import com.milly.common.exception.IdempotencyConflictException;
+import com.milly.common.application.exception.IdempotencyConflictException;
+import com.milly.common.application.idempotency.IdempotencyRecord;
+import com.milly.common.application.port.outbound.IdempotencyStore;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.lang.ProceedingJoinPoint;
@@ -49,7 +51,7 @@ public class IdempotencyAspect {
     private final IdempotencyStore idempotencyStore;
     private final ObjectMapper objectMapper;
 
-    @Around("@annotation(com.milly.common.idempotency.Idempotent)")
+    @Around("@annotation(com.milly.common.application.idempotency.Idempotent)")
     public Object aroundIdempotentMethod(ProceedingJoinPoint joinPoint) throws Throwable {
         HttpServletRequest request = currentRequest();
         String idempotencyKey = request == null ? null : request.getHeader(IDEMPOTENCY_KEY_HEADER);

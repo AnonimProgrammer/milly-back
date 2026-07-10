@@ -1,4 +1,4 @@
-package com.milly.common.exception;
+package com.milly.common.application.exception;
 
 public class IdempotencyConflictException extends RuntimeException {
 

@@ -1,5 +1,6 @@
-package com.milly.common.web;
+package com.milly.common.infrastructure.adapter.inbound.http;
 
+import com.milly.common.application.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 

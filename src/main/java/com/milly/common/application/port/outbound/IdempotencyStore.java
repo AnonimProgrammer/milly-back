@@ -1,4 +1,6 @@
-package com.milly.common.idempotency;
+package com.milly.common.application.port.outbound;
+
+import com.milly.common.application.idempotency.IdempotencyRecord;
 
 import java.util.Optional;
 
