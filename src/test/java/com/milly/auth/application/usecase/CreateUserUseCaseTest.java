@@ -14,8 +14,8 @@ import com.milly.auth.infrastructure.adapter.outbound.persistence.RoleJpaReposit
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserAuthJpaRepository;
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserJpaRepository;
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserRoleJpaRepository;
-import com.milly.common.exception.InvalidCredentialsException;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.InvalidCredentialsException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
