@@ -56,4 +56,19 @@ class OrderEventNotifierTest {
                 StompTopics.tableTopic(tableId),
                 StompTopics.venueStaffTopic(venueId));
     }
+
+    @Test
+    void paymentReceivedPublishesToTableAndVenueStaffTopics() {
+        UUID orderId = UUID.randomUUID();
+        UUID venueId = UUID.randomUUID();
+        UUID tableId = UUID.randomUUID();
+
+        orderEventNotifier.paymentReceived(orderId, venueId, tableId);
+
+        ArgumentCaptor<String> destinationCaptor = ArgumentCaptor.forClass(String.class);
+        verify(wsEventPublisher, times(2)).publishAfterCommit(destinationCaptor.capture(), org.mockito.ArgumentMatchers.any());
+        assertThat(destinationCaptor.getAllValues()).containsExactly(
+                StompTopics.tableTopic(tableId),
+                StompTopics.venueStaffTopic(venueId));
+    }
 }
