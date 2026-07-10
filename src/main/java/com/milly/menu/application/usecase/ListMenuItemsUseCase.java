@@ -23,7 +23,7 @@ public class ListMenuItemsUseCase {
     public List<MenuItemResponse> execute(UUID userId, UUID venueId) {
         venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER);
 
-        return menuItemRepository.findByVenueIdAndStatusOrderByNameAsc(venueId, MenuItemStatus.ACTIVE).stream()
+        return menuItemRepository.findByVenueIdAndStatusOrderByCategoryAscNameAsc(venueId, MenuItemStatus.ACTIVE).stream()
                 .map(MenuItemResponse::of)
                 .toList();
     }

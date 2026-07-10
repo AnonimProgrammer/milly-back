@@ -10,7 +10,7 @@ import java.util.UUID;
 
 public interface MenuItemJpaRepository extends JpaRepository<MenuItemEntity, UUID> {
 
-    List<MenuItemEntity> findByVenueIdAndStatusOrderByNameAsc(UUID venueId, MenuItemStatus status);
+    List<MenuItemEntity> findByVenueIdAndStatusOrderByCategoryAscNameAsc(UUID venueId, MenuItemStatus status);
 
     List<MenuItemEntity> findAllByIdInAndVenueId(List<UUID> ids, UUID venueId);
 
