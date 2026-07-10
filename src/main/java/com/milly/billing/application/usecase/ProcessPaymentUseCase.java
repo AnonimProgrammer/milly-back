@@ -76,11 +76,20 @@ public class ProcessPaymentUseCase {
             throw new PaymentValidationException("Amount exceeds the remaining balance.");
         }
 
+        BigDecimal tipAmount = request.tipAmount() != null ? request.tipAmount() : BigDecimal.ZERO;
+        if (tipAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new PaymentValidationException("Tip amount must not be negative.");
+        }
+        if (tipAmount.compareTo(amount) > 0) {
+            throw new PaymentValidationException("Tip amount exceeds the payment amount.");
+        }
+
         validateProviderDetails(request);
 
         PaymentEntity payment = PaymentEntity.create(
                 order.getId(),
                 Money.of(amount),
+                Money.of(tipAmount),
                 request.provider(),
                 request.paymentType(),
                 generateProviderReference(),
