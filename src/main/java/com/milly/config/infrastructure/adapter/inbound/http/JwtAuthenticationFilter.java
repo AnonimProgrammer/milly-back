@@ -1,8 +1,8 @@
 package com.milly.config.infrastructure.adapter.inbound.http;
 
+import com.milly.auth.application.port.outbound.SessionTokenPort;
+import com.milly.auth.domain.model.ParsedAccessToken;
 import com.milly.auth.infrastructure.adapter.outbound.security.AuthCookieWriter;
-import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
-import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,9 +26,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     public static final String AUTH_ERROR_MESSAGE_ATTRIBUTE = "authErrorMessage";
     private static final String MISSING_AUTH_DETAILS_MESSAGE = "No authentication details were provided.";
-    private static final String INVALID_OR_EXPIRED_TOKEN_MESSAGE = JwtTokenService.INVALID_TOKEN_MESSAGE;
+    private static final String INVALID_OR_EXPIRED_TOKEN_MESSAGE = SessionTokenPort.INVALID_TOKEN_MESSAGE;
 
-    private final JwtTokenService jwtTokenService;
+    private final SessionTokenPort sessionTokenPort;
 
     @Override
     protected void doFilterInternal(
@@ -43,29 +43,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = accessToken.get();
-        if (!jwtTokenService.isValidToken(token)) {
+        if (!sessionTokenPort.isValidAccessToken(token)) {
             SecurityContextHolder.clearContext();
             request.setAttribute(AUTH_ERROR_MESSAGE_ATTRIBUTE, INVALID_OR_EXPIRED_TOKEN_MESSAGE);
             filterChain.doFilter(request, response);
             return;
         }
 
-        Claims claims = jwtTokenService.parseToken(token, false);
+        ParsedAccessToken parsed = sessionTokenPort.parseAccessToken(token);
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                jwtTokenService.extractUserId(claims), null, extractAuthorities(claims));
+                parsed.userId(), null, extractAuthorities(parsed.roles()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         filterChain.doFilter(request, response);
     }
 
-    private Collection<SimpleGrantedAuthority> extractAuthorities(Claims claims) {
-        Object value = claims.get(JwtTokenService.ROLES_CLAIM);
-        if (!(value instanceof List<?> roles)) {
-            return List.of();
-        }
+    private Collection<SimpleGrantedAuthority> extractAuthorities(List<String> roles) {
         return roles.stream()
-                .filter(String.class::isInstance)
-                .map(String.class::cast)
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role))
                 .toList();
     }

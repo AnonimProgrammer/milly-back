@@ -1,6 +1,6 @@
 package com.milly.config.infrastructure.adapter.outbound.ai.langchain4j;
 
-import com.milly.common.exception.AiServiceUnavailableException;
+import com.milly.common.application.exception.AiServiceUnavailableException;
 import com.milly.config.application.dto.AiResponse;
 import com.milly.config.application.port.outbound.AiChatPort;
 import com.milly.config.application.port.outbound.OrderPreparationAnalysisPort;

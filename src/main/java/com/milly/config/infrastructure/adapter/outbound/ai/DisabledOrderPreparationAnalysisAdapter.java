@@ -1,6 +1,6 @@
 package com.milly.config.infrastructure.adapter.outbound.ai;
 
-import com.milly.common.exception.AiServiceUnavailableException;
+import com.milly.common.application.exception.AiServiceUnavailableException;
 import com.milly.config.application.dto.AiResponse;
 import com.milly.config.application.port.outbound.OrderPreparationAnalysisPort;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
