@@ -1,13 +1,13 @@
 package com.milly.table.application.usecase;
 
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.config.application.port.outbound.BlobStorage;
 import com.milly.table.application.dto.TableQrResponse;
 import com.milly.table.application.service.TableCustomerUrlBuilder;
 import com.milly.table.domain.entity.TableEntity;
 import com.milly.table.domain.valueobject.TableStatus;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
-import com.milly.table.infrastructure.adapter.outbound.qr.QrCodeImageProvider;
+import com.milly.table.application.port.outbound.QrCodeGenerator;
 import com.milly.venue.application.service.VenueAuthorizationService;
 import com.milly.venue.domain.valueobject.VenueRole;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ public class GenerateTableQrUseCase {
     private final VenueAuthorizationService venueAuthorizationService;
     private final TableJpaRepository tableRepository;
     private final TableCustomerUrlBuilder tableCustomerUrlBuilder;
-    private final QrCodeImageProvider qrCodeImageProvider;
+    private final QrCodeGenerator qrCodeGenerator;
     private final BlobStorage blobStorage;
 
     @Transactional
@@ -40,7 +40,7 @@ public class GenerateTableQrUseCase {
         }
 
         String customerUrl = tableCustomerUrlBuilder.build(tableId);
-        byte[] qrImageBytes = qrCodeImageProvider.generatePngBytes(customerUrl);
+        byte[] qrImageBytes = qrCodeGenerator.generatePngBytes(customerUrl);
         String storageKey = "venues/%s/tables/%s/qr.png".formatted(venueId, tableId);
         String qrImageUrl = blobStorage.upload(storageKey, qrImageBytes, QR_IMAGE_MIME_TYPE).url();
 
