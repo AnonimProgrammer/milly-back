@@ -4,6 +4,8 @@ import com.milly.auth.application.polluter.AuthSession;
 import com.milly.auth.application.polluter.AuthSessionPolluter;
 import com.milly.auth.domain.valueobject.AuthProviderType;
 import com.milly.auth.infrastructure.adapter.outbound.auth.GoogleJwtTokenService;
+import com.milly.auth.infrastructure.adapter.outbound.security.AuthCookieWriter;
+import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
 import com.milly.auth.infrastructure.adapter.inbound.http.dto.ContinueAuthApiResponse;
 import com.milly.auth.infrastructure.adapter.inbound.http.dto.CurrentUserApiResponse;
 import com.milly.config.domain.AbstractITest;
@@ -201,6 +203,66 @@ class AuthRestIntegrationTest extends AbstractITest {
         // Assert
         assertThat(response).isNotNull();
         assertThat(response.getData().newUser()).isTrue();
+    }
+
+    @Test
+    void authenticatedGetMeReturnsCurrentUser() {
+        // Arrange
+        AuthSession user = authSessionPolluter.registerPasswordUser();
+        RestTestClient userClient = RestTestClientAuth.withSession(restClient, user);
+
+        // Act
+        CurrentUserApiResponse response = userClient.get()
+                .uri("/api/v1/auth/me")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(CurrentUserApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getMessage()).isEqualTo("Current user retrieved successfully.");
+        assertThat(response.getData().id()).isEqualTo(user.userId());
+        assertThat(response.getData().email()).isEqualTo(user.email());
+        assertThat(response.getData().firstName()).isEqualTo("Test");
+        assertThat(response.getData().lastName()).isEqualTo("User");
+        assertThat(response.getData().roles()).containsExactly("USER");
+    }
+
+    @Test
+    void unauthenticatedGetMeReturnsUnauthorized() {
+        // Act & Assert
+        restClient.get()
+                .uri("/api/v1/auth/me")
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(401)
+                .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED")
+                .jsonPath("$.message").isEqualTo("No authentication details were provided.");
+    }
+
+    @Test
+    void invalidSessionGetMeReturnsUnauthorized() {
+        // Arrange
+        RestTestClient invalidClient = restClient.mutate()
+                .defaultCookie(AuthCookieWriter.ACCESS_TOKEN_COOKIE, "not-a-valid-token")
+                .build();
+
+        // Act & Assert
+        invalidClient.get()
+                .uri("/api/v1/auth/me")
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(401)
+                .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED")
+                .jsonPath("$.message").isEqualTo(JwtTokenService.INVALID_TOKEN_MESSAGE);
     }
 
     private AuthCookies continuePasswordUser(String email, String password) {
