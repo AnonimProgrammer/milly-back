@@ -59,6 +59,7 @@ class PaymentRestIntegrationTest extends AbstractITest {
         assertThat(response.getMessage()).isEqualTo("Payment processed successfully.");
         assertThat(response.getData().payment().status()).isEqualTo(PaymentStatus.COMPLETED);
         assertThat(response.getData().payment().amount()).isEqualByComparingTo("42.50");
+        assertThat(response.getData().payment().tipAmount()).isZero();
         assertThat(response.getData().payment().providerMetadata())
                 .containsEntry("last4", "4242")
                 .containsEntry("brand", "visa")
@@ -67,10 +68,14 @@ class PaymentRestIntegrationTest extends AbstractITest {
         assertThat(response.getData().bill().paidAmount()).isEqualByComparingTo("42.50");
         assertThat(response.getData().bill().remaining()).isEqualByComparingTo("57.50");
         assertThat(response.getData().bill().fullyPaid()).isFalse();
+        assertThat(response.getData().bill().totalTipAmount()).isZero();
 
         assertThat(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(order.orderId(), PaymentStatus.COMPLETED))
                 .singleElement()
-                .satisfies(payment -> assertThat(payment.getAmount().amount()).isEqualByComparingTo("42.50"));
+                .satisfies(payment -> {
+                    assertThat(payment.getAmount().amount()).isEqualByComparingTo("42.50");
+                    assertThat(payment.getTipAmount().amount()).isZero();
+                });
     }
 
     @Test
