@@ -1,9 +1,9 @@
 package com.milly.order.application.usecase;
 
 import com.milly.common.domain.valueobject.Money;
-import com.milly.common.exception.AccessDeniedException;
-import com.milly.common.exception.InvalidStateTransitionException;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.AccessDeniedException;
+import com.milly.common.application.exception.InvalidStateTransitionException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.StaffOrderResponse;
 import com.milly.order.application.service.OrderEventNotifier;
 import com.milly.order.application.service.OrderPreparationEstimator;

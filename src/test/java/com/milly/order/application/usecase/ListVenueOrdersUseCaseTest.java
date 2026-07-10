@@ -1,8 +1,8 @@
 package com.milly.order.application.usecase;
 
 import com.milly.common.domain.valueobject.Money;
-import com.milly.common.exception.AccessDeniedException;
-import com.milly.common.web.PageResponse;
+import com.milly.common.application.exception.AccessDeniedException;
+import com.milly.common.application.dto.PageResponse;
 import com.milly.order.application.dto.StaffOrderResponse;
 import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.domain.entity.OrderEntity;

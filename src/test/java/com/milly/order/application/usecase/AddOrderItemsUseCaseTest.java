@@ -1,8 +1,8 @@
 package com.milly.order.application.usecase;
 
 import com.milly.common.domain.valueobject.Money;
-import com.milly.common.exception.InvalidStateTransitionException;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.InvalidStateTransitionException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.menu.domain.entity.MenuItemEntity;
 import com.milly.menu.infrastructure.adapter.outbound.persistence.MenuItemJpaRepository;
 import com.milly.order.application.dto.AddOrderItemsRequest;
@@ -35,7 +35,7 @@ import java.util.UUID;
 import static com.milly.order.application.usecase.builder.MenuItemTestBuilder.aMenuItem;
 import static com.milly.order.application.usecase.builder.OrderItemTestBuilder.anOrderItem;
 import static com.milly.order.application.usecase.builder.OrderTestBuilder.anOrder;
-import static com.milly.order.application.usecase.builder.TableTestBuilder.aTable;
+import static com.milly.table.application.usecase.builder.TableTestBuilder.aTable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
