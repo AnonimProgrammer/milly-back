@@ -15,7 +15,6 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
@@ -41,9 +40,6 @@ public class UserEntity {
     @Column(name = "phone_number")
     private String phoneNumber;
 
-    @Column(name = "birth_date", nullable = false)
-    private LocalDate birthDate;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserStatus status;
@@ -56,16 +52,11 @@ public class UserEntity {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt = OffsetDateTime.now();
 
-    public static UserEntity createActive(
-            String firstName,
-            String lastName,
-            String email,
-            LocalDate birthDate) {
+    public static UserEntity createActive(String firstName, String lastName, String email) {
         UserEntity user = new UserEntity();
         user.setFirstName(firstName);
         user.setLastName(lastName);
         user.setEmail(email);
-        user.setBirthDate(birthDate);
         user.setStatus(UserStatus.ACTIVE);
         return user;
     }
