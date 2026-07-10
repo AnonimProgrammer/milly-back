@@ -159,3 +159,163 @@ class PaymentRestIntegrationTest extends AbstractITest {
                 .expectStatus()
                 .isEqualTo(422)
                 .expectBody()
+                .jsonPath("$.errorCode").isEqualTo("UNPROCESSABLE_ENTITY");
+
+        assertThat(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(order.orderId(), PaymentStatus.COMPLETED))
+                .isEmpty();
+    }
+
+    @Test
+    void processPaymentRejectsCardPaymentMissingCardDetails() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("amount", "10.00", "paymentType", "FULL", "provider", "CARD"))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(422)
+                .expectBody()
+                .jsonPath("$.errorCode").isEqualTo("UNPROCESSABLE_ENTITY");
+    }
+
+    @Test
+    void processPaymentReturnsNotFoundWhenOrderBelongsToDifferentTable() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+        UUID otherTableId = billingPolluter.createApprovedOrder().tableId();
+
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", otherTableId, order.orderId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("amount", "10.00", "paymentType", "FULL", "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
+    }
+    @Test
+    void retryingPaymentWithSameIdempotencyKeyAndBodyDoesNotChargeTwice() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+        String idempotencyKey = UUID.randomUUID().toString();
+        Map<String, Object> body = Map.of("amount", "25.00", "paymentType", "FULL", "provider", "APPLE");
+
+        // Act
+        ProcessPaymentApiResponse first = restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .header(IdempotencyAspect.IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody(ProcessPaymentApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        ProcessPaymentApiResponse second = restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .header(IdempotencyAspect.IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody(ProcessPaymentApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(first).isNotNull();
+        assertThat(second).isNotNull();
+        assertThat(second.getData().payment().id()).isEqualTo(first.getData().payment().id());
+        assertThat(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(order.orderId(), PaymentStatus.COMPLETED))
+                .singleElement();
+    }
+
+    @Test
+    void reusingIdempotencyKeyWithDifferentBodyReturnsConflict() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+        String idempotencyKey = UUID.randomUUID().toString();
+
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .header(IdempotencyAspect.IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("amount", "25.00", "paymentType", "FULL", "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isCreated();
+
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .header(IdempotencyAspect.IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("amount", "30.00", "paymentType", "FULL", "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(409)
+                .expectBody()
+                .jsonPath("$.errorCode").isEqualTo("CONFLICT");
+
+        assertThat(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(order.orderId(), PaymentStatus.COMPLETED))
+                .singleElement();
+    }
+    @Test
+    void getBillReturnsSummaryWithPaymentHistory() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+        payFull(order, "42.50");
+
+        // Act
+        BillSummaryApiResponse response = restClient.get()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/bill", order.tableId(), order.orderId())
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(BillSummaryApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getMessage()).isEqualTo("Bill retrieved successfully.");
+        assertThat(response.getData().orderTotal()).isEqualByComparingTo(order.orderTotal());
+        assertThat(response.getData().paidAmount()).isEqualByComparingTo("42.50");
+        assertThat(response.getData().remaining()).isEqualByComparingTo("57.50");
+        assertThat(response.getData().payments()).hasSize(1);
+    }
+
+    @Test
+    void getBillReturnsNotFoundWhenOrderDoesNotExist() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+        UUID missingOrderId = UUID.randomUUID();
+
+        // Act & Assert
+        restClient.get()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/bill", order.tableId(), missingOrderId)
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody()
+                .jsonPath("$.errorCode").isEqualTo("NOT_FOUND");
+    }
+    private void payFull(PayableOrder order, String amount) {
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("amount", amount, "paymentType", "CUSTOM", "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isCreated();
+    }
+}
