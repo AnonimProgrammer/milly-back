@@ -1,7 +1,7 @@
 package com.milly.order.application.usecase;
 
-import com.milly.common.web.PageResponse;
-import com.milly.common.web.PaginationMeta;
+import com.milly.common.application.dto.PageResponse;
+import com.milly.common.application.dto.PaginationMeta;
 import com.milly.order.application.dto.StaffOrderResponse;
 import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.domain.entity.OrderEntity;

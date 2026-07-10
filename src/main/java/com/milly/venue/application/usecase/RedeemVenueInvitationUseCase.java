@@ -1,8 +1,8 @@
 package com.milly.venue.application.usecase;
 
-import com.milly.common.exception.InvalidInvitationException;
-import com.milly.common.exception.ResourceNotFoundException;
-import com.milly.common.exception.VenueMembershipAlreadyExistsException;
+import com.milly.common.application.exception.InvalidInvitationException;
+import com.milly.common.application.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.VenueMembershipAlreadyExistsException;
 import com.milly.venue.application.dto.RedeemVenueInvitationRequest;
 import com.milly.venue.application.dto.VenueMembershipResponse;
 import com.milly.venue.application.port.outbound.VenueInvitationStore;

@@ -1,12 +1,10 @@
 package com.milly.order.application.usecase;
 
-import com.milly.common.exception.InvalidStateTransitionException;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.order.application.dto.StaffOrderResponse;
 import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import com.milly.order.application.service.OrderEventNotifier;
 import com.milly.order.domain.entity.OrderEntity;
-import com.milly.order.domain.valueobject.OrderStatus;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderItemJpaRepository;
 import com.milly.order.infrastructure.adapter.outbound.persistence.OrderJpaRepository;
 import com.milly.venue.application.service.VenueAuthorizationService;
@@ -35,12 +33,7 @@ public class CloseOrderUseCase {
         OrderEntity order = orderRepository.findByIdAndVenueId(orderId, venueId)
                 .orElseThrow(ResourceNotFoundException::new);
 
-        if (order.getStatus() != OrderStatus.APPROVED) {
-            throw new InvalidStateTransitionException();
-        }
-
-        order.setStatus(OrderStatus.CLOSED);
-        order.setClosedAt(OffsetDateTime.now());
+        order.close(OffsetDateTime.now());
 
         orderEventNotifier.orderClosed(order.getId(), order.getVenueId(), order.getTableId());
 

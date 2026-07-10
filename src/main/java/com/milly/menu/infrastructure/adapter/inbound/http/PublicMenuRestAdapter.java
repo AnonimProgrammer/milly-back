@@ -1,6 +1,6 @@
 package com.milly.menu.infrastructure.adapter.inbound.http;
 
-import com.milly.common.web.ApiResponse;
+import com.milly.common.application.dto.ApiResponse;
 import com.milly.menu.application.dto.MenuItemResponse;
 import com.milly.menu.application.usecase.ListPublicMenuItemsUseCase;
 import lombok.RequiredArgsConstructor;

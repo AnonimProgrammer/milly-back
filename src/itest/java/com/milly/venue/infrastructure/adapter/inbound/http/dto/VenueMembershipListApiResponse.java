@@ -1,6 +1,6 @@
 package com.milly.venue.infrastructure.adapter.inbound.http.dto;
 
-import com.milly.common.web.ApiResponse;
+import com.milly.common.application.dto.ApiResponse;
 import com.milly.venue.application.dto.VenueMembershipResponse;
 
 import java.util.List;

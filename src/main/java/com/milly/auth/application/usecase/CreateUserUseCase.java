@@ -15,8 +15,8 @@ import com.milly.auth.infrastructure.adapter.outbound.persistence.UserAuthJpaRep
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserJpaRepository;
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserRoleJpaRepository;
 import com.milly.common.domain.Preconditions;
-import com.milly.common.exception.InvalidCredentialsException;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.InvalidCredentialsException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

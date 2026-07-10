@@ -3,7 +3,7 @@ package com.milly.config.infrastructure.adapter.outbound.storage;
 import com.milly.config.application.port.outbound.BlobStorage;
 import com.milly.config.domain.model.BlobObject;
 import com.milly.config.infrastructure.config.storage.StorageProperties;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.core.ResponseInputStream;

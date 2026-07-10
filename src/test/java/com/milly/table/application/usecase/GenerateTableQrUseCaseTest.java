@@ -1,7 +1,7 @@
 package com.milly.table.application.usecase;
 
-import com.milly.common.exception.AccessDeniedException;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.AccessDeniedException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.config.application.port.outbound.BlobStorage;
 import com.milly.config.domain.model.BlobObject;
 import com.milly.table.application.dto.TableQrResponse;
@@ -9,7 +9,7 @@ import com.milly.table.application.service.TableCustomerUrlBuilder;
 import com.milly.table.domain.entity.TableEntity;
 import com.milly.table.domain.valueobject.TableStatus;
 import com.milly.table.infrastructure.adapter.outbound.persistence.TableJpaRepository;
-import com.milly.table.infrastructure.adapter.outbound.qr.QrCodeImageProvider;
+import com.milly.table.application.port.outbound.QrCodeGenerator;
 import com.milly.venue.application.service.VenueAuthorizationService;
 import com.milly.venue.domain.valueobject.VenueRole;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +46,7 @@ class GenerateTableQrUseCaseTest {
     private TableCustomerUrlBuilder tableCustomerUrlBuilder;
 
     @Mock
-    private QrCodeImageProvider qrCodeImageProvider;
+    private QrCodeGenerator qrCodeGenerator;
 
     @Mock
     private BlobStorage blobStorage;
@@ -67,7 +67,7 @@ class GenerateTableQrUseCaseTest {
                 venueAuthorizationService,
                 tableRepository,
                 tableCustomerUrlBuilder,
-                qrCodeImageProvider,
+                qrCodeGenerator,
                 blobStorage);
     }
 
@@ -77,7 +77,7 @@ class GenerateTableQrUseCaseTest {
         TableEntity table = aTable().withId(tableId).withVenueId(venueId).build();
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.of(table));
         when(tableCustomerUrlBuilder.build(tableId)).thenReturn(customerUrl);
-        when(qrCodeImageProvider.generatePngBytes(customerUrl)).thenReturn(qrImageBytes);
+        when(qrCodeGenerator.generatePngBytes(customerUrl)).thenReturn(qrImageBytes);
         when(blobStorage.upload(storageKey, qrImageBytes, QR_IMAGE_MIME_TYPE))
                 .thenReturn(BlobObject.forUpload(storageKey, qrImageBytes, QR_IMAGE_MIME_TYPE).withUrl(qrImageUrl));
 
@@ -91,7 +91,7 @@ class GenerateTableQrUseCaseTest {
         assertThat(table.getQrImageUrl()).isEqualTo(qrImageUrl);
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
         verify(tableCustomerUrlBuilder).build(tableId);
-        verify(qrCodeImageProvider).generatePngBytes(customerUrl);
+        verify(qrCodeGenerator).generatePngBytes(customerUrl);
         verify(blobStorage).upload(storageKey, qrImageBytes, QR_IMAGE_MIME_TYPE);
         verify(tableRepository).save(table);
     }
@@ -103,7 +103,7 @@ class GenerateTableQrUseCaseTest {
         tableWithExistingQr.setQrImageUrl("https://storage.local/old-qr.png");
         when(tableRepository.findByIdAndVenueId(tableId, venueId)).thenReturn(Optional.of(tableWithExistingQr));
         when(tableCustomerUrlBuilder.build(tableId)).thenReturn(customerUrl);
-        when(qrCodeImageProvider.generatePngBytes(customerUrl)).thenReturn(qrImageBytes);
+        when(qrCodeGenerator.generatePngBytes(customerUrl)).thenReturn(qrImageBytes);
         when(blobStorage.upload(storageKey, qrImageBytes, QR_IMAGE_MIME_TYPE))
                 .thenReturn(BlobObject.forUpload(storageKey, qrImageBytes, QR_IMAGE_MIME_TYPE).withUrl(qrImageUrl));
 
@@ -114,7 +114,7 @@ class GenerateTableQrUseCaseTest {
         assertThat(response.qrImageUrl()).isEqualTo(qrImageUrl);
         assertThat(tableWithExistingQr.getQrImageUrl()).isEqualTo(qrImageUrl);
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
-        verify(qrCodeImageProvider).generatePngBytes(customerUrl);
+        verify(qrCodeGenerator).generatePngBytes(customerUrl);
         verify(blobStorage).upload(storageKey, qrImageBytes, QR_IMAGE_MIME_TYPE);
         verify(tableRepository).save(tableWithExistingQr);
     }
@@ -130,7 +130,7 @@ class GenerateTableQrUseCaseTest {
         assertThatThrownBy(() -> generateTableQrUseCase.execute(userId, venueId, tableId))
                 .isInstanceOf(ResourceNotFoundException.class);
 
-        verifyNoInteractions(tableCustomerUrlBuilder, qrCodeImageProvider, blobStorage);
+        verifyNoInteractions(tableCustomerUrlBuilder, qrCodeGenerator, blobStorage);
         verify(tableRepository, never()).save(any(TableEntity.class));
     }
 
@@ -143,7 +143,7 @@ class GenerateTableQrUseCaseTest {
         assertThatThrownBy(() -> generateTableQrUseCase.execute(userId, venueId, tableId))
                 .isInstanceOf(ResourceNotFoundException.class);
 
-        verifyNoInteractions(tableCustomerUrlBuilder, qrCodeImageProvider, blobStorage);
+        verifyNoInteractions(tableCustomerUrlBuilder, qrCodeGenerator, blobStorage);
         verify(tableRepository, never()).save(any(TableEntity.class));
     }
 
@@ -157,6 +157,6 @@ class GenerateTableQrUseCaseTest {
         assertThatThrownBy(() -> generateTableQrUseCase.execute(userId, venueId, tableId))
                 .isInstanceOf(AccessDeniedException.class);
 
-        verifyNoInteractions(tableRepository, tableCustomerUrlBuilder, qrCodeImageProvider, blobStorage);
+        verifyNoInteractions(tableRepository, tableCustomerUrlBuilder, qrCodeGenerator, blobStorage);
     }
 }

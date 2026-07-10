@@ -1,6 +1,6 @@
 package com.milly.venue.application.service;
 
-import com.milly.common.exception.AccessDeniedException;
+import com.milly.common.application.exception.AccessDeniedException;
 import com.milly.venue.domain.entity.VenueMembershipEntity;
 import com.milly.venue.domain.valueobject.VenueRole;
 import com.milly.venue.infrastructure.adapter.outbound.persistence.VenueMembershipJpaRepository;

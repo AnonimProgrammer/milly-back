@@ -4,7 +4,7 @@ import com.milly.billing.application.dto.BillSummaryResponse;
 import com.milly.billing.domain.entity.PaymentEntity;
 import com.milly.billing.domain.valueobject.PaymentStatus;
 import com.milly.billing.infrastructure.adapter.outbound.persistence.PaymentJpaRepository;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.order.application.service.OrderTotalCalculator;
 import com.milly.order.domain.entity.OrderEntity;
 import com.milly.order.domain.entity.OrderItemEntity;
