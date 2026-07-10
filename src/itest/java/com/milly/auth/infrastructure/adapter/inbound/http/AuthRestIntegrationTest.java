@@ -9,6 +9,7 @@ import com.milly.auth.infrastructure.adapter.outbound.security.AuthCookieWriter;
 import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
 import com.milly.auth.infrastructure.adapter.inbound.http.dto.ContinueAuthApiResponse;
 import com.milly.auth.infrastructure.adapter.inbound.http.dto.CurrentUserApiResponse;
+import com.milly.auth.infrastructure.adapter.inbound.http.dto.IssueWsTicketApiResponse;
 import com.milly.config.domain.AbstractITest;
 import com.milly.config.infrastructure.adapter.RestTestClientAuth;
 import com.milly.config.infrastructure.adapter.RestTestClientAuth.AuthCookies;
@@ -337,6 +338,92 @@ class AuthRestIntegrationTest extends AbstractITest {
                 .jsonPath("$.status").isEqualTo(401)
                 .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED")
                 .jsonPath("$.message").isEqualTo(RefreshSessionFailedException.MESSAGE);
+    }
+
+    @Test
+    void logoutRevokesRefreshSession() {
+        // Arrange
+        AuthCookies cookies = continuePasswordUser(uniqueEmail(), DEFAULT_PASSWORD);
+        RestTestClient authenticatedClient = RestTestClientAuth.withAuthCookies(restClient, cookies);
+
+        // Act
+        authenticatedClient.post()
+                .uri("/api/v1/auth/logout")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(200)
+                .jsonPath("$.message").isEqualTo("Logged out.");
+
+        // Assert
+        RestTestClientAuth.withAuthCookies(restClient, cookies)
+                .post()
+                .uri("/api/v1/auth/refresh")
+                .exchange()
+                .expectStatus()
+                .isUnauthorized();
+
+        RestTestClientAuth.withSession(restClient, new AuthSession(
+                        UUID.randomUUID(),
+                        "unused@example.com",
+                        DEFAULT_PASSWORD,
+                        cookies.accessToken()))
+                .get()
+                .uri("/api/v1/auth/me")
+                .exchange()
+                .expectStatus()
+                .isOk();
+    }
+
+    @Test
+    void logoutWithoutCookiesReturnsOk() {
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/auth/logout")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(200)
+                .jsonPath("$.message").isEqualTo("Logged out.");
+    }
+
+    @Test
+    void authenticatedIssueWsTicketReturnsTicket() {
+        // Arrange
+        AuthSession user = authSessionPolluter.registerPasswordUser();
+        RestTestClient userClient = RestTestClientAuth.withSession(restClient, user);
+
+        // Act
+        IssueWsTicketApiResponse response = userClient.post()
+                .uri("/api/v1/ws-ticket")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(IssueWsTicketApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getMessage()).isEqualTo("WebSocket ticket issued.");
+        assertThat(response.getData().ticketId()).isNotNull();
+        assertThat(response.getData().expiresAt()).isNotNull();
+    }
+
+    @Test
+    void unauthenticatedIssueWsTicketReturnsUnauthorized() {
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/ws-ticket")
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(401)
+                .jsonPath("$.errorCode").isEqualTo("UNAUTHORIZED");
     }
 
     private AuthCookies continuePasswordUser(String email, String password) {
