@@ -14,6 +14,7 @@ public final class PaymentTestBuilder {
     private UUID id = UUID.randomUUID();
     private UUID orderId = UUID.randomUUID();
     private Money amount = Money.of("100.00");
+    private Money tipAmount = Money.of("0.00");
     private PaymentStatus status = PaymentStatus.COMPLETED;
     private PaymentProvider provider = PaymentProvider.APPLE;
     private PaymentType paymentType = PaymentType.FULL;
@@ -40,6 +41,11 @@ public final class PaymentTestBuilder {
         return this;
     }
 
+    public PaymentTestBuilder withTipAmount(Money tipAmount) {
+        this.tipAmount = tipAmount;
+        return this;
+    }
+
     public PaymentTestBuilder withStatus(PaymentStatus status) {
         this.status = status;
         return this;
@@ -57,7 +63,7 @@ public final class PaymentTestBuilder {
 
     public PaymentEntity build() {
         PaymentEntity payment = PaymentEntity.create(
-                orderId, amount, provider, paymentType, "ref_" + id, Collections.emptyMap());
+                orderId, amount, tipAmount, provider, paymentType, "ref_" + id, Collections.emptyMap());
         payment.setId(id);
         payment.setStatus(status);
         return payment;
