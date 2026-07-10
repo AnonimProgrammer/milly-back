@@ -2,6 +2,7 @@ package com.milly.order.application.usecase.builder;
 
 import com.milly.common.domain.valueobject.Money;
 import com.milly.menu.domain.entity.MenuItemEntity;
+import com.milly.menu.domain.valueobject.MenuItemCategory;
 import com.milly.menu.domain.valueobject.MenuItemStatus;
 
 import java.util.UUID;
@@ -42,7 +43,7 @@ public final class MenuItemTestBuilder {
     }
 
     public MenuItemEntity build() {
-        MenuItemEntity item = MenuItemEntity.create(venueId, name, null, price, 15, status);
+        MenuItemEntity item = MenuItemEntity.create(venueId, name, null, price, 15, MenuItemCategory.MAINS, status);
         item.setId(id);
         return item;
     }

@@ -1,6 +1,7 @@
 package com.milly.menu.application.dto;
 
 import com.milly.menu.domain.entity.MenuItemEntity;
+import com.milly.menu.domain.valueobject.MenuItemCategory;
 import com.milly.menu.domain.valueobject.MenuItemStatus;
 
 import java.math.BigDecimal;
@@ -14,6 +15,7 @@ public record MenuItemResponse(
         String description,
         BigDecimal price,
         int approximatePreparationMinutes,
+        MenuItemCategory category,
         MenuItemStatus status,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
@@ -26,6 +28,7 @@ public record MenuItemResponse(
                 menuItem.getDescription(),
                 menuItem.getPrice().amount(),
                 menuItem.getApproximatePreparationMinutes(),
+                menuItem.getCategory(),
                 menuItem.getStatus(),
                 menuItem.getCreatedAt(),
                 menuItem.getUpdatedAt());

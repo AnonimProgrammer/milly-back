@@ -2,6 +2,7 @@ package com.milly.billing.application.polluter;
 
 import com.milly.common.domain.valueobject.Money;
 import com.milly.menu.domain.entity.MenuItemEntity;
+import com.milly.menu.domain.valueobject.MenuItemCategory;
 import com.milly.menu.domain.valueobject.MenuItemStatus;
 import com.milly.menu.infrastructure.adapter.outbound.persistence.MenuItemJpaRepository;
 import com.milly.order.domain.entity.OrderEntity;
@@ -46,7 +47,7 @@ public class BillingPolluter {
         ManagedVenue venue = venuePolluter.createManagedVenue();
         var table = tableRepository.save(TableEntity.create(venue.venueId(), "Table 1", TableStatus.ACTIVE));
         var menuItem = menuItemRepository.save(MenuItemEntity.create(
-                venue.venueId(), "Burger", "Tasty", UNIT_PRICE, 15, MenuItemStatus.ACTIVE));
+                venue.venueId(), "Burger", "Tasty", UNIT_PRICE, 15, MenuItemCategory.MAINS, MenuItemStatus.ACTIVE));
         var order = orderRepository.save(OrderEntity.create(venue.venueId(), table.getId(), OrderStatus.APPROVED));
         orderItemRepository.save(OrderItemEntity.create(order.getId(), menuItem.getId(), QUANTITY, UNIT_PRICE));
 

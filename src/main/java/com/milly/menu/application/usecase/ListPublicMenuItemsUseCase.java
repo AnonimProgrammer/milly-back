@@ -26,7 +26,7 @@ public class ListPublicMenuItemsUseCase {
                 .filter(t -> t.getStatus() == TableStatus.ACTIVE)
                 .orElseThrow(ResourceNotFoundException::new);
 
-        return menuItemRepository.findByVenueIdAndStatusOrderByNameAsc(table.getVenueId(), MenuItemStatus.ACTIVE).stream()
+        return menuItemRepository.findByVenueIdAndStatusOrderByCategoryAscNameAsc(table.getVenueId(), MenuItemStatus.ACTIVE).stream()
                 .map(MenuItemResponse::of)
                 .toList();
     }

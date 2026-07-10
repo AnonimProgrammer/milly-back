@@ -5,6 +5,7 @@ import com.milly.common.application.exception.AccessDeniedException;
 import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.menu.application.dto.MenuItemResponse;
 import com.milly.menu.domain.entity.MenuItemEntity;
+import com.milly.menu.domain.valueobject.MenuItemCategory;
 import com.milly.menu.domain.valueobject.MenuItemStatus;
 import com.milly.menu.infrastructure.adapter.outbound.persistence.MenuItemJpaRepository;
 import com.milly.venue.application.service.VenueAuthorizationService;
@@ -55,7 +56,7 @@ class MenuItemQueryUseCasesTest {
         // Arrange
         MenuItemEntity item = menuItem(itemId, "Pizza", "Cheese");
         MenuItemEntity anotherItem = menuItem(anotherItemId, "Pasta", "Tomato");
-        when(menuItemRepository.findByVenueIdAndStatusOrderByNameAsc(venueId, MenuItemStatus.ACTIVE))
+        when(menuItemRepository.findByVenueIdAndStatusOrderByCategoryAscNameAsc(venueId, MenuItemStatus.ACTIVE))
                 .thenReturn(List.of(anotherItem, item));
 
         // Act
@@ -68,13 +69,13 @@ class MenuItemQueryUseCasesTest {
         assertThat(response).extracting(MenuItemResponse::status)
                 .containsExactly(MenuItemStatus.ACTIVE, MenuItemStatus.ACTIVE);
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
-        verify(menuItemRepository).findByVenueIdAndStatusOrderByNameAsc(venueId, MenuItemStatus.ACTIVE);
+        verify(menuItemRepository).findByVenueIdAndStatusOrderByCategoryAscNameAsc(venueId, MenuItemStatus.ACTIVE);
     }
 
     @Test
     void listReturnsEmptyListWhenVenueHasNoActiveItems() {
         // Arrange
-        when(menuItemRepository.findByVenueIdAndStatusOrderByNameAsc(venueId, MenuItemStatus.ACTIVE))
+        when(menuItemRepository.findByVenueIdAndStatusOrderByCategoryAscNameAsc(venueId, MenuItemStatus.ACTIVE))
                 .thenReturn(List.of());
 
         // Act
@@ -83,7 +84,7 @@ class MenuItemQueryUseCasesTest {
         // Assert
         assertThat(response).isEmpty();
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
-        verify(menuItemRepository).findByVenueIdAndStatusOrderByNameAsc(venueId, MenuItemStatus.ACTIVE);
+        verify(menuItemRepository).findByVenueIdAndStatusOrderByCategoryAscNameAsc(venueId, MenuItemStatus.ACTIVE);
     }
 
     @Test
@@ -152,7 +153,7 @@ class MenuItemQueryUseCasesTest {
 
     private MenuItemEntity menuItem(UUID id, String name, String description) {
         MenuItemEntity item = MenuItemEntity.create(
-                venueId, name, description, Money.of("12.50"), 15, MenuItemStatus.ACTIVE);
+                venueId, name, description, Money.of("12.50"), 15, MenuItemCategory.MAINS, MenuItemStatus.ACTIVE);
         item.setId(id);
         return item;
     }

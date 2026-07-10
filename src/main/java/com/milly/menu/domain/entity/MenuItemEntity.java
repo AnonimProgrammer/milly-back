@@ -2,6 +2,7 @@ package com.milly.menu.domain.entity;
 
 import com.github.f4b6a3.ulid.UlidCreator;
 import com.milly.common.domain.valueobject.Money;
+import com.milly.menu.domain.valueobject.MenuItemCategory;
 import com.milly.menu.domain.valueobject.MenuItemStatus;
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
@@ -51,6 +52,10 @@ public class MenuItemEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    private MenuItemCategory category;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private MenuItemStatus status;
 
     @CreationTimestamp
@@ -67,6 +72,7 @@ public class MenuItemEntity {
             String description,
             Money price,
             int approximatePreparationMinutes,
+            MenuItemCategory category,
             MenuItemStatus status) {
         MenuItemEntity menuItem = new MenuItemEntity();
         menuItem.setVenueId(venueId);
@@ -74,6 +80,7 @@ public class MenuItemEntity {
         menuItem.setDescription(normalizeDescription(description));
         menuItem.setPrice(price);
         menuItem.setApproximatePreparationMinutes(approximatePreparationMinutes);
+        menuItem.setCategory(category);
         menuItem.setStatus(status);
         return menuItem;
     }
@@ -92,6 +99,10 @@ public class MenuItemEntity {
 
     public void updateApproximatePreparationMinutes(int approximatePreparationMinutes) {
         this.approximatePreparationMinutes = approximatePreparationMinutes;
+    }
+
+    public void updateCategory(MenuItemCategory category) {
+        this.category = category;
     }
 
     public void delete() {
