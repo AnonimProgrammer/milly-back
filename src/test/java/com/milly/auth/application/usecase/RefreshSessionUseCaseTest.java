@@ -3,14 +3,14 @@ package com.milly.auth.application.usecase;
 import com.milly.auth.application.dto.RefreshSessionResponse;
 import com.milly.auth.application.exception.RefreshSessionFailedException;
 import com.milly.auth.application.port.outbound.RefreshTokenStore;
+import com.milly.auth.application.port.outbound.SessionTokenPort;
 import com.milly.auth.domain.entity.UserEntity;
 import com.milly.auth.domain.model.AuthUser;
 import com.milly.auth.domain.model.IssuedRefreshToken;
+import com.milly.auth.domain.model.ParsedRefreshToken;
 import com.milly.auth.domain.valueobject.RoleName;
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserJpaRepository;
-import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
-import com.milly.common.exception.InvalidCredentialsException;
-import io.jsonwebtoken.Claims;
+import com.milly.common.application.exception.InvalidCredentialsException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +24,6 @@ import java.util.UUID;
 import static com.milly.auth.application.usecase.builder.UserTestBuilder.aUser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -33,7 +32,7 @@ import static org.mockito.Mockito.when;
 class RefreshSessionUseCaseTest {
 
     @Mock
-    private JwtTokenService jwtTokenService;
+    private SessionTokenPort sessionTokenPort;
 
     @Mock
     private UserJpaRepository userRepository;
@@ -56,24 +55,21 @@ class RefreshSessionUseCaseTest {
     @BeforeEach
     void setUp() {
         refreshSessionUseCase = new RefreshSessionUseCase(
-                jwtTokenService, userRepository, loadAuthUserUseCase, refreshTokenStore);
+                sessionTokenPort, userRepository, loadAuthUserUseCase, refreshTokenStore);
     }
 
     @Test
     void issuesNewTokensWhenRefreshTokenIsValid() {
         // Arrange
-        Claims claims = mock(Claims.class);
         UserEntity user = aUser().withId(userId).build();
         AuthUser authUser = new AuthUser(userId, List.of(RoleName.USER));
         IssuedRefreshToken issuedRefreshToken = new IssuedRefreshToken(newRefreshTokenValue, newRefreshJti);
-        when(jwtTokenService.parseToken(refreshToken, true)).thenReturn(claims);
-        when(jwtTokenService.extractUserId(claims)).thenReturn(userId);
-        when(jwtTokenService.extractJti(claims)).thenReturn(jti);
+        when(sessionTokenPort.parseRefreshToken(refreshToken)).thenReturn(new ParsedRefreshToken(userId, jti));
         when(refreshTokenStore.consume(jti, userId)).thenReturn(true);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(loadAuthUserUseCase.execute(user)).thenReturn(authUser);
-        when(jwtTokenService.issueAccessToken(authUser)).thenReturn(accessToken);
-        when(jwtTokenService.issueRefreshToken(authUser)).thenReturn(issuedRefreshToken);
+        when(sessionTokenPort.issueAccessToken(authUser)).thenReturn(accessToken);
+        when(sessionTokenPort.issueRefreshToken(authUser)).thenReturn(issuedRefreshToken);
 
         // Act
         RefreshSessionResponse response = refreshSessionUseCase.execute(refreshToken);
@@ -91,7 +87,7 @@ class RefreshSessionUseCaseTest {
         assertThatThrownBy(() -> refreshSessionUseCase.execute(null))
                 .isInstanceOf(RefreshSessionFailedException.class);
 
-        verifyNoInteractions(jwtTokenService, userRepository, loadAuthUserUseCase, refreshTokenStore);
+        verifyNoInteractions(sessionTokenPort, userRepository, loadAuthUserUseCase, refreshTokenStore);
     }
 
     @Test
@@ -100,13 +96,13 @@ class RefreshSessionUseCaseTest {
         assertThatThrownBy(() -> refreshSessionUseCase.execute("   "))
                 .isInstanceOf(RefreshSessionFailedException.class);
 
-        verifyNoInteractions(jwtTokenService, userRepository, loadAuthUserUseCase, refreshTokenStore);
+        verifyNoInteractions(sessionTokenPort, userRepository, loadAuthUserUseCase, refreshTokenStore);
     }
 
     @Test
     void throwsWhenTokenCannotBeParsed() {
         // Arrange
-        when(jwtTokenService.parseToken(refreshToken, true))
+        when(sessionTokenPort.parseRefreshToken(refreshToken))
                 .thenThrow(new InvalidCredentialsException("Token is invalid."));
 
         // Act & Assert
@@ -119,10 +115,7 @@ class RefreshSessionUseCaseTest {
     @Test
     void throwsWhenRefreshTokenWasAlreadyConsumed() {
         // Arrange
-        Claims claims = mock(Claims.class);
-        when(jwtTokenService.parseToken(refreshToken, true)).thenReturn(claims);
-        when(jwtTokenService.extractUserId(claims)).thenReturn(userId);
-        when(jwtTokenService.extractJti(claims)).thenReturn(jti);
+        when(sessionTokenPort.parseRefreshToken(refreshToken)).thenReturn(new ParsedRefreshToken(userId, jti));
         when(refreshTokenStore.consume(jti, userId)).thenReturn(false);
 
         // Act & Assert
@@ -135,10 +128,7 @@ class RefreshSessionUseCaseTest {
     @Test
     void throwsWhenUserNotFound() {
         // Arrange
-        Claims claims = mock(Claims.class);
-        when(jwtTokenService.parseToken(refreshToken, true)).thenReturn(claims);
-        when(jwtTokenService.extractUserId(claims)).thenReturn(userId);
-        when(jwtTokenService.extractJti(claims)).thenReturn(jti);
+        when(sessionTokenPort.parseRefreshToken(refreshToken)).thenReturn(new ParsedRefreshToken(userId, jti));
         when(refreshTokenStore.consume(jti, userId)).thenReturn(true);
         when(userRepository.findById(userId)).thenReturn(Optional.empty());
 
@@ -152,9 +142,8 @@ class RefreshSessionUseCaseTest {
     @Test
     void throwsWhenExtractingUserIdFails() {
         // Arrange
-        Claims claims = mock(Claims.class);
-        when(jwtTokenService.parseToken(refreshToken, true)).thenReturn(claims);
-        when(jwtTokenService.extractUserId(claims)).thenThrow(new IllegalArgumentException("Invalid subject"));
+        when(sessionTokenPort.parseRefreshToken(refreshToken))
+                .thenThrow(new IllegalArgumentException("Invalid subject"));
 
         // Act & Assert
         assertThatThrownBy(() -> refreshSessionUseCase.execute(refreshToken))

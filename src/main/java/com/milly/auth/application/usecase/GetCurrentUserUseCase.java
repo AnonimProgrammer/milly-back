@@ -5,7 +5,7 @@ import com.milly.auth.domain.entity.UserEntity;
 import com.milly.auth.domain.model.AuthUser;
 import com.milly.auth.domain.valueobject.RoleName;
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserJpaRepository;
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

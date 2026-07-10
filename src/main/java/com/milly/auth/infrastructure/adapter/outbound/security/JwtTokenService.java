@@ -1,10 +1,13 @@
 package com.milly.auth.infrastructure.adapter.outbound.security;
 
+import com.milly.auth.application.port.outbound.SessionTokenPort;
 import com.milly.auth.domain.model.AuthUser;
 import com.milly.auth.domain.model.IssuedRefreshToken;
+import com.milly.auth.domain.model.ParsedAccessToken;
+import com.milly.auth.domain.model.ParsedRefreshToken;
 import com.milly.auth.domain.valueobject.RoleName;
 import com.milly.auth.infrastructure.config.AuthProperties;
-import com.milly.common.exception.InvalidCredentialsException;
+import com.milly.common.application.exception.InvalidCredentialsException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -20,12 +23,11 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
-public class JwtTokenService {
+public class JwtTokenService implements SessionTokenPort {
 
-    public static final String INVALID_TOKEN_MESSAGE = "Token is invalid.";
-    public static final String ROLES_CLAIM = "roles";
-    public static final String TOKEN_TYPE_CLAIM = "type";
-    public static final String REFRESH_TOKEN_TYPE = "refresh";
+    private static final String ROLES_CLAIM = "roles";
+    private static final String TOKEN_TYPE_CLAIM = "type";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
 
     private final SecretKey signingKey;
     private final Duration accessTtl;
@@ -37,6 +39,7 @@ public class JwtTokenService {
         this.refreshTtl = Duration.ofSeconds(authProperties.jwt().refreshTtlSeconds());
     }
 
+    @Override
     public String issueAccessToken(AuthUser user) {
         Instant now = Instant.now();
         List<String> roles = user.roles().stream().map(RoleName::name).toList();
@@ -50,6 +53,7 @@ public class JwtTokenService {
                 .compact();
     }
 
+    @Override
     public IssuedRefreshToken issueRefreshToken(AuthUser user) {
         Instant now = Instant.now();
         String jti = UUID.randomUUID().toString();
@@ -66,7 +70,29 @@ public class JwtTokenService {
         return new IssuedRefreshToken(token, jti);
     }
 
-    public Claims parseToken(String token, boolean expectRefresh) {
+    @Override
+    public boolean isValidAccessToken(String token) {
+        try {
+            parseAccessToken(token);
+            return true;
+        } catch (InvalidCredentialsException exception) {
+            return false;
+        }
+    }
+
+    @Override
+    public ParsedAccessToken parseAccessToken(String token) {
+        Claims claims = parseToken(token, false);
+        return new ParsedAccessToken(extractUserId(claims), extractRoles(claims));
+    }
+
+    @Override
+    public ParsedRefreshToken parseRefreshToken(String token) {
+        Claims claims = parseToken(token, true);
+        return new ParsedRefreshToken(extractUserId(claims), extractJti(claims));
+    }
+
+    private Claims parseToken(String token, boolean expectRefresh) {
         try {
             Claims claims = parseClaims(token);
             boolean isRefresh = REFRESH_TOKEN_TYPE.equals(claims.get(TOKEN_TYPE_CLAIM, String.class));
@@ -78,25 +104,27 @@ public class JwtTokenService {
         throw new InvalidCredentialsException(INVALID_TOKEN_MESSAGE);
     }
 
-    public boolean isValidToken(String token) {
-        try {
-            parseToken(token, false);
-            return true;
-        } catch (InvalidCredentialsException exception) {
-            return false;
-        }
-    }
-
-    public UUID extractUserId(Claims claims) {
+    private UUID extractUserId(Claims claims) {
         return UUID.fromString(claims.getSubject());
     }
 
-    public String extractJti(Claims claims) {
+    private String extractJti(Claims claims) {
         String jti = claims.getId();
         if (jti == null || jti.isBlank()) {
             throw new InvalidCredentialsException(INVALID_TOKEN_MESSAGE);
         }
         return jti;
+    }
+
+    private List<String> extractRoles(Claims claims) {
+        Object value = claims.get(ROLES_CLAIM);
+        if (!(value instanceof List<?> roles)) {
+            return List.of();
+        }
+        return roles.stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .toList();
     }
 
     private Claims parseClaims(String token) {

@@ -10,7 +10,7 @@ import com.milly.auth.application.usecase.GetCurrentUserUseCase;
 import com.milly.auth.application.usecase.LogoutUseCase;
 import com.milly.auth.application.usecase.RefreshSessionUseCase;
 import com.milly.auth.infrastructure.adapter.outbound.security.AuthCookieWriter;
-import com.milly.common.web.ApiResponse;
+import com.milly.common.application.dto.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
