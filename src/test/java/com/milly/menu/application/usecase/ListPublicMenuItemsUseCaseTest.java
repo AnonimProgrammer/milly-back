@@ -4,6 +4,7 @@ import com.milly.common.domain.valueobject.Money;
 import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.menu.application.dto.MenuItemResponse;
 import com.milly.menu.domain.entity.MenuItemEntity;
+import com.milly.menu.domain.valueobject.MenuItemCategory;
 import com.milly.menu.domain.valueobject.MenuItemStatus;
 import com.milly.menu.infrastructure.adapter.outbound.persistence.MenuItemJpaRepository;
 import com.milly.table.application.usecase.builder.TableTestBuilder;
@@ -54,7 +55,7 @@ class ListPublicMenuItemsUseCaseTest {
         MenuItemEntity pasta = menuItem(anotherItemId, "Pasta", "Tomato");
         MenuItemEntity pizza = menuItem(itemId, "Pizza", "Cheese");
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(table));
-        when(menuItemRepository.findByVenueIdAndStatusOrderByNameAsc(venueId, MenuItemStatus.ACTIVE))
+        when(menuItemRepository.findByVenueIdAndStatusOrderByCategoryAscNameAsc(venueId, MenuItemStatus.ACTIVE))
                 .thenReturn(List.of(pasta, pizza));
 
         // Act
@@ -68,14 +69,14 @@ class ListPublicMenuItemsUseCaseTest {
         assertThat(response).extracting(MenuItemResponse::status)
                 .containsExactly(MenuItemStatus.ACTIVE, MenuItemStatus.ACTIVE);
         verify(tableRepository).findById(tableId);
-        verify(menuItemRepository).findByVenueIdAndStatusOrderByNameAsc(venueId, MenuItemStatus.ACTIVE);
+        verify(menuItemRepository).findByVenueIdAndStatusOrderByCategoryAscNameAsc(venueId, MenuItemStatus.ACTIVE);
     }
 
     @Test
     void returnsEmptyListWhenActiveTableVenueHasNoActiveItems() {
         // Arrange
         when(tableRepository.findById(tableId)).thenReturn(Optional.of(activeTable()));
-        when(menuItemRepository.findByVenueIdAndStatusOrderByNameAsc(venueId, MenuItemStatus.ACTIVE))
+        when(menuItemRepository.findByVenueIdAndStatusOrderByCategoryAscNameAsc(venueId, MenuItemStatus.ACTIVE))
                 .thenReturn(List.of());
 
         // Act
@@ -84,7 +85,7 @@ class ListPublicMenuItemsUseCaseTest {
         // Assert
         assertThat(response).isEmpty();
         verify(tableRepository).findById(tableId);
-        verify(menuItemRepository).findByVenueIdAndStatusOrderByNameAsc(venueId, MenuItemStatus.ACTIVE);
+        verify(menuItemRepository).findByVenueIdAndStatusOrderByCategoryAscNameAsc(venueId, MenuItemStatus.ACTIVE);
     }
 
     @Test
@@ -128,7 +129,7 @@ class ListPublicMenuItemsUseCaseTest {
 
     private MenuItemEntity menuItem(UUID id, String name, String description) {
         MenuItemEntity item = MenuItemEntity.create(
-                venueId, name, description, Money.of("12.50"), 15, MenuItemStatus.ACTIVE);
+                venueId, name, description, Money.of("12.50"), 15, MenuItemCategory.MAINS, MenuItemStatus.ACTIVE);
         item.setId(id);
         return item;
     }
