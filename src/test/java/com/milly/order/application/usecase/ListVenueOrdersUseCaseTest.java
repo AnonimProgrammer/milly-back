@@ -79,6 +79,7 @@ class ListVenueOrdersUseCaseTest {
                 .thenReturn(new PageImpl<>(List.of(pendingOrder), PageRequest.of(0, 1), 2));
         when(orderItemRepository.findAllByOrderIdIn(List.of(orderId))).thenReturn(List.of(lineItem));
         when(paymentSummaryPort.paidAmountsFor(List.of(orderId))).thenReturn(Map.of(orderId, BigDecimal.ZERO));
+        when(paymentSummaryPort.tipAmountsFor(List.of(orderId))).thenReturn(Map.of(orderId, BigDecimal.ZERO));
 
         // Act
         // signature: execute(UUID venueId, UUID userId, OrderStatus status,
@@ -115,6 +116,7 @@ class ListVenueOrdersUseCaseTest {
                 .thenReturn(new PageImpl<>(List.of(approvedOrder), PageRequest.of(0, 10), 1));
         when(orderItemRepository.findAllByOrderIdIn(List.of(orderId))).thenReturn(List.of());
         when(paymentSummaryPort.paidAmountsFor(List.of(orderId))).thenReturn(Map.of(orderId, BigDecimal.ZERO));
+        when(paymentSummaryPort.tipAmountsFor(List.of(orderId))).thenReturn(Map.of(orderId, BigDecimal.ZERO));
 
         // Act
         PageResponse<StaffOrderResponse> response = listVenueOrdersUseCase.execute(venueId, userId, OrderStatus.APPROVED, from, to, null, 10);

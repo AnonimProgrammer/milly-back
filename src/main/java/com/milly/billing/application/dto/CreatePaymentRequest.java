@@ -24,7 +24,9 @@ public record CreatePaymentRequest(
 
         ProviderDetails providerDetails,
 
-        Integer splitPeople
+        Integer splitPeople,
+
+        BigDecimal tipAmount
 ) {
 
     public record ProviderDetails(

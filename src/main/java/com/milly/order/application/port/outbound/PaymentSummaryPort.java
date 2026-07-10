@@ -14,4 +14,8 @@ public interface PaymentSummaryPort {
     BigDecimal paidAmountFor(UUID orderId);
 
     Map<UUID, BigDecimal> paidAmountsFor(List<UUID> orderIds);
+
+    BigDecimal tipAmountFor(UUID orderId);
+
+    Map<UUID, BigDecimal> tipAmountsFor(List<UUID> orderIds);
 }

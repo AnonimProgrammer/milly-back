@@ -31,6 +31,7 @@ public class GetVenueOrderUseCase {
                 .orElseThrow(ResourceNotFoundException::new);
 
         BigDecimal paidAmount = paymentSummaryPort.paidAmountFor(order.getId());
-        return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()), paidAmount);
+        BigDecimal totalTipAmount = paymentSummaryPort.tipAmountFor(order.getId());
+        return StaffOrderResponse.of(order, orderItemRepository.findAllByOrderId(order.getId()), paidAmount, totalTipAmount);
     }
 }

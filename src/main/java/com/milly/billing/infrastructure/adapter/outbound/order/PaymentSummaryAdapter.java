@@ -1,6 +1,7 @@
 package com.milly.billing.infrastructure.adapter.outbound.order;
 
 import com.milly.billing.infrastructure.adapter.outbound.persistence.OrderPaidAmountProjection;
+import com.milly.billing.infrastructure.adapter.outbound.persistence.OrderTipAmountProjection;
 import com.milly.billing.infrastructure.adapter.outbound.persistence.PaymentJpaRepository;
 import com.milly.order.application.port.outbound.PaymentSummaryPort;
 import lombok.RequiredArgsConstructor;
@@ -37,5 +38,21 @@ public class PaymentSummaryAdapter implements PaymentSummaryPort {
                 .collect(Collectors.toMap(
                         OrderPaidAmountProjection::getOrderId,
                         OrderPaidAmountProjection::getPaidAmount));
+    }
+
+    @Override
+    public BigDecimal tipAmountFor(UUID orderId) {
+        return paymentRepository.sumCompletedTipAmountByOrderId(orderId);
+    }
+
+    @Override
+    public Map<UUID, BigDecimal> tipAmountsFor(List<UUID> orderIds) {
+        if (orderIds.isEmpty()) {
+            return Map.of();
+        }
+        return paymentRepository.sumCompletedTipAmountsByOrderIds(orderIds).stream()
+                .collect(Collectors.toMap(
+                        OrderTipAmountProjection::getOrderId,
+                        OrderTipAmountProjection::getTipAmount));
     }
 }

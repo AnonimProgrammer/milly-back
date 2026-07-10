@@ -46,6 +46,12 @@ public class PaymentEntity {
     })
     private Money amount;
 
+    @Embedded
+    @AttributeOverrides({
+            @AttributeOverride(name = "amount", column = @Column(name = "tip_amount", nullable = false, precision = 12, scale = 2))
+    })
+    private Money tipAmount;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PaymentStatus status;
@@ -86,6 +92,7 @@ public class PaymentEntity {
     public static PaymentEntity create(
             UUID orderId,
             Money amount,
+            Money tipAmount,
             PaymentProvider provider,
             PaymentType paymentType,
             String providerReference,
@@ -93,6 +100,7 @@ public class PaymentEntity {
         PaymentEntity payment = new PaymentEntity();
         payment.setOrderId(orderId);
         payment.setAmount(amount);
+        payment.setTipAmount(tipAmount);
         payment.setStatus(PaymentStatus.COMPLETED);
         payment.setProvider(provider);
         payment.setPaymentType(paymentType);

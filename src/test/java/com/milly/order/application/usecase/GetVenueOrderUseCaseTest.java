@@ -67,6 +67,7 @@ class GetVenueOrderUseCaseTest {
         when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(pendingOrder));
         when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of(lineItem));
         when(paymentSummaryPort.paidAmountFor(orderId)).thenReturn(BigDecimal.ZERO);
+        when(paymentSummaryPort.tipAmountFor(orderId)).thenReturn(BigDecimal.ZERO);
 
         // Act
         StaffOrderResponse response = getVenueOrderUseCase.execute(venueId, userId, orderId);

@@ -71,6 +71,7 @@ class CloseOrderUseCaseTest {
         when(orderRepository.findByIdAndVenueId(orderId, venueId)).thenReturn(Optional.of(approvedOrder));
         when(orderItemRepository.findAllByOrderId(orderId)).thenReturn(List.of());
         when(paymentSummaryPort.paidAmountFor(orderId)).thenReturn(BigDecimal.ZERO);
+        when(paymentSummaryPort.tipAmountFor(orderId)).thenReturn(BigDecimal.ZERO);
 
         // Act
         StaffOrderResponse response = closeOrderUseCase.execute(venueId, userId, orderId);

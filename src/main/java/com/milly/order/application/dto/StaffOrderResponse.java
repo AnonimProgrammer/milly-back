@@ -22,10 +22,15 @@ public record StaffOrderResponse(
         String estimatedPreparationDisplay,
         List<OrderItemResponse> items,
         BigDecimal paidAmount,
-        BigDecimal remaining
+        BigDecimal remaining,
+        BigDecimal totalTipAmount
 ) {
 
-    public static StaffOrderResponse of(OrderEntity order, List<OrderItemEntity> items, BigDecimal paidAmount) {
+    public static StaffOrderResponse of(
+            OrderEntity order,
+            List<OrderItemEntity> items,
+            BigDecimal paidAmount,
+            BigDecimal totalTipAmount) {
         BigDecimal orderTotal = OrderTotalCalculator.totalOf(items);
         BigDecimal remaining = orderTotal.subtract(paidAmount).max(BigDecimal.ZERO);
         return new StaffOrderResponse(
@@ -40,7 +45,8 @@ public record StaffOrderResponse(
                 order.getEstimatedPreparationDisplay(),
                 items.stream().map(OrderItemResponse::of).toList(),
                 paidAmount,
-                remaining
+                remaining,
+                totalTipAmount
         );
     }
 
