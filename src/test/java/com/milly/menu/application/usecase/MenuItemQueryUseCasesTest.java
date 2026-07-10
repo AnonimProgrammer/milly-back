@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.doThrow;
@@ -41,6 +42,7 @@ class MenuItemQueryUseCasesTest {
     private final UUID userId = UUID.randomUUID();
     private final UUID venueId = UUID.randomUUID();
     private final UUID itemId = UUID.randomUUID();
+    private final UUID anotherItemId = UUID.randomUUID();
 
     @BeforeEach
     void setUp() {
@@ -50,21 +52,47 @@ class MenuItemQueryUseCasesTest {
 
     @Test
     void listReturnsOnlyRepositoryActiveItems() {
-        MenuItemEntity item = menuItem();
+        // Arrange
+        MenuItemEntity item = menuItem(itemId, "Pizza", "Cheese");
+        MenuItemEntity anotherItem = menuItem(anotherItemId, "Pasta", "Tomato");
         when(menuItemRepository.findByVenueIdAndStatusOrderByNameAsc(venueId, MenuItemStatus.ACTIVE))
-                .thenReturn(List.of(item));
+                .thenReturn(List.of(anotherItem, item));
 
+        // Act
         List<MenuItemResponse> response = listMenuItemsUseCase.execute(userId, venueId);
 
-        assertEquals(List.of(item.getId()), response.stream().map(MenuItemResponse::id).toList());
+        // Assert
+        assertThat(response).hasSize(2);
+        assertThat(response).extracting(MenuItemResponse::id).containsExactly(anotherItemId, itemId);
+        assertThat(response).extracting(MenuItemResponse::name).containsExactly("Pasta", "Pizza");
+        assertThat(response).extracting(MenuItemResponse::status)
+                .containsExactly(MenuItemStatus.ACTIVE, MenuItemStatus.ACTIVE);
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(menuItemRepository).findByVenueIdAndStatusOrderByNameAsc(venueId, MenuItemStatus.ACTIVE);
+    }
+
+    @Test
+    void listReturnsEmptyListWhenVenueHasNoActiveItems() {
+        // Arrange
+        when(menuItemRepository.findByVenueIdAndStatusOrderByNameAsc(venueId, MenuItemStatus.ACTIVE))
+                .thenReturn(List.of());
+
+        // Act
+        List<MenuItemResponse> response = listMenuItemsUseCase.execute(userId, venueId);
+
+        // Assert
+        assertThat(response).isEmpty();
+        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(menuItemRepository).findByVenueIdAndStatusOrderByNameAsc(venueId, MenuItemStatus.ACTIVE);
     }
 
     @Test
     void listStopsWhenManagerAuthorizationFails() {
+        // Arrange
         doThrow(new AccessDeniedException())
                 .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
 
+        // Act & Assert
         assertThrows(AccessDeniedException.class, () -> listMenuItemsUseCase.execute(userId, venueId));
 
         verifyNoInteractions(menuItemRepository);
@@ -72,30 +100,46 @@ class MenuItemQueryUseCasesTest {
 
     @Test
     void getReturnsActiveItemFromRequestedVenue() {
-        MenuItemEntity item = menuItem();
+        // Arrange
+        MenuItemEntity item = menuItem(itemId, "Pizza", "Cheese");
         when(menuItemRepository.findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE))
                 .thenReturn(Optional.of(item));
 
+        // Act
         MenuItemResponse response = getMenuItemUseCase.execute(userId, venueId, itemId);
 
-        assertEquals(item.getId(), response.id());
+        // Assert
+        assertThat(response.id()).isEqualTo(itemId);
+        assertThat(response.venueId()).isEqualTo(venueId);
+        assertThat(response.name()).isEqualTo("Pizza");
+        assertThat(response.description()).isEqualTo("Cheese");
+        assertThat(response.price()).isEqualByComparingTo("12.50");
+        assertThat(response.status()).isEqualTo(MenuItemStatus.ACTIVE);
         verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
     }
 
     @Test
     void getReturnsNotFoundForMissingCrossVenueOrDeletedItem() {
+        // Arrange
         when(menuItemRepository.findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE))
                 .thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThrows(ResourceNotFoundException.class,
                 () -> getMenuItemUseCase.execute(userId, venueId, itemId));
+
+        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
     }
 
     @Test
     void getStopsWhenManagerAuthorizationFails() {
+        // Arrange
         doThrow(new AccessDeniedException())
                 .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
 
+        // Act & Assert
         assertThrows(AccessDeniedException.class,
                 () -> getMenuItemUseCase.execute(userId, venueId, itemId));
 
@@ -103,9 +147,13 @@ class MenuItemQueryUseCasesTest {
     }
 
     private MenuItemEntity menuItem() {
+        return menuItem(itemId, "Pizza", "Cheese");
+    }
+
+    private MenuItemEntity menuItem(UUID id, String name, String description) {
         MenuItemEntity item = MenuItemEntity.create(
-                venueId, "Pizza", "Cheese", Money.of("12.50"), MenuItemStatus.ACTIVE);
-        item.setId(itemId);
+                venueId, name, description, Money.of("12.50"), 15, MenuItemStatus.ACTIVE);
+        item.setId(id);
         return item;
     }
 }
