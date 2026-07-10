@@ -2,6 +2,7 @@ package com.milly.menu.application.polluter;
 
 import com.milly.common.domain.valueobject.Money;
 import com.milly.menu.domain.entity.MenuItemEntity;
+import com.milly.menu.domain.valueobject.MenuItemCategory;
 import com.milly.menu.domain.valueobject.MenuItemStatus;
 import com.milly.menu.infrastructure.adapter.outbound.persistence.MenuItemJpaRepository;
 import com.milly.table.domain.entity.TableEntity;
@@ -39,6 +40,7 @@ public class MenuItemPolluter {
                 description,
                 Money.of(price),
                 15,
+                MenuItemCategory.MAINS,
                 status));
     }
 
