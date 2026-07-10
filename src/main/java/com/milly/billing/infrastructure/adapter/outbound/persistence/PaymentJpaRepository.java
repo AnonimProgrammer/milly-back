@@ -22,6 +22,13 @@ public interface PaymentJpaRepository extends JpaRepository<PaymentEntity, UUID>
     BigDecimal sumCompletedAmountByOrderId(@Param("orderId") UUID orderId);
 
     @Query("""
+            SELECT COALESCE(SUM(p.tipAmount.amount), 0)
+            FROM PaymentEntity p
+            WHERE p.orderId = :orderId AND p.status = com.milly.billing.domain.valueobject.PaymentStatus.COMPLETED
+            """)
+    BigDecimal sumCompletedTipAmountByOrderId(@Param("orderId") UUID orderId);
+
+    @Query("""
             SELECT p.orderId AS orderId, COALESCE(SUM(p.amount.amount), 0) AS paidAmount
             FROM PaymentEntity p
             WHERE p.status = com.milly.billing.domain.valueobject.PaymentStatus.COMPLETED
@@ -29,4 +36,13 @@ public interface PaymentJpaRepository extends JpaRepository<PaymentEntity, UUID>
             GROUP BY p.orderId
             """)
     List<OrderPaidAmountProjection> sumCompletedAmountsByOrderIds(@Param("orderIds") List<UUID> orderIds);
+
+    @Query("""
+            SELECT p.orderId AS orderId, COALESCE(SUM(p.tipAmount.amount), 0) AS tipAmount
+            FROM PaymentEntity p
+            WHERE p.status = com.milly.billing.domain.valueobject.PaymentStatus.COMPLETED
+              AND p.orderId IN :orderIds
+            GROUP BY p.orderId
+            """)
+    List<OrderTipAmountProjection> sumCompletedTipAmountsByOrderIds(@Param("orderIds") List<UUID> orderIds);
 }
