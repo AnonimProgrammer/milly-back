@@ -10,11 +10,14 @@ import com.milly.auth.domain.model.AuthUser;
 import com.milly.auth.domain.model.ExternalIdentity;
 import com.milly.auth.domain.model.IdentityResolution;
 import com.milly.auth.domain.model.IssuedRefreshToken;
+import com.milly.auth.domain.valueobject.AuthProviderType;
 import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ContinueAuthUseCase {
@@ -27,18 +30,24 @@ public class ContinueAuthUseCase {
 
     @Transactional
     public ContinueAuthResponse execute(ContinueAuthRequest request) {
-        AuthProvider provider = providerFactory.get(request.provider());
+        AuthProviderType providerType = request.provider();
+        log.info("Authentication attempt. provider={}", providerType);
+
+        AuthProvider provider = providerFactory.get(providerType);
         ExternalIdentity identity = provider.authenticate(request.credentials());
 
         String rawPassword = Credentials.optionalRaw(request.credentials(), "password");
 
-        IdentityResolution resolution = resolveIdentityUseCase.execute(identity, request.profile(), rawPassword);
+        IdentityResolution resolution =
+                resolveIdentityUseCase.execute(identity, request.profile(), rawPassword);
 
         AuthUser authUser = loadAuthUserUseCase.execute(resolution.user());
 
         String accessToken = jwtTokenService.issueAccessToken(authUser);
         IssuedRefreshToken refreshToken = jwtTokenService.issueRefreshToken(authUser);
         refreshTokenStore.register(refreshToken.jti(), authUser.id());
+
+        log.info("Authentication succeeded. provider={} userId={}", providerType, authUser.id());
 
         return new ContinueAuthResponse(accessToken, refreshToken.token(), resolution.newUser());
     }
