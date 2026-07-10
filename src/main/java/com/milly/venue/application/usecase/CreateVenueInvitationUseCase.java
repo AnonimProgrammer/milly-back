@@ -1,6 +1,6 @@
 package com.milly.venue.application.usecase;
 
-import com.milly.common.exception.ResourceNotFoundException;
+import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.venue.application.dto.CreateVenueInvitationRequest;
 import com.milly.venue.application.dto.CreateVenueInvitationResponse;
 import com.milly.venue.application.port.outbound.VenueInvitationStore;
