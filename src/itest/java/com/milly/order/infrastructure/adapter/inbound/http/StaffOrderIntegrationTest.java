@@ -1,4 +1,4 @@
-﻿package com.milly.order.infrastructure.adapter.inbound.http;
+package com.milly.order.infrastructure.adapter.inbound.http;
 
 import com.milly.auth.application.polluter.AuthSession;
 import com.milly.auth.application.polluter.AuthSessionPolluter;
@@ -318,6 +318,40 @@ class StaffOrderIntegrationTest extends AbstractITest {
         // Assert
         assertThat(response).isNotNull();
         assertThat(response.getData().status()).isEqualTo(OrderStatus.APPROVED);
+    }
+
+    @Test
+    void memberGetsOrderWithTotalTipAmountAfterPayment() {
+        // Arrange
+        OrderTestFixture fixture = orderPolluter.createOrderableTable();
+        UUID orderId = placeOrder(fixture);
+        approveOrder(RestTestClientAuth.withSession(restClient, fixture.venue().manager()), fixture, orderId);
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", fixture.tableId(), orderId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "amount", "12.50",
+                        "tipAmount", "2.50",
+                        "paymentType", "FULL",
+                        "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isCreated();
+
+        // Act
+        StaffOrderApiResponse response = RestTestClientAuth.withSession(restClient, fixture.venue().manager()).get()
+                .uri("/api/v1/venues/{venueId}/orders/{orderId}", fixture.venue().venueId(), orderId)
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(StaffOrderApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getData().paidAmount()).isEqualByComparingTo("12.50");
+        assertThat(response.getData().totalTipAmount()).isEqualByComparingTo("2.50");
     }
 
     @Test

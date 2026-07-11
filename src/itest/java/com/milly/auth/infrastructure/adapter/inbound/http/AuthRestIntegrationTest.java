@@ -4,6 +4,7 @@ import com.milly.auth.application.exception.RefreshSessionFailedException;
 import com.milly.auth.application.polluter.AuthSession;
 import com.milly.auth.application.polluter.AuthSessionPolluter;
 import com.milly.auth.domain.valueobject.AuthProviderType;
+import com.milly.auth.infrastructure.adapter.outbound.auth.AppleJwtTokenService;
 import com.milly.auth.infrastructure.adapter.outbound.auth.GoogleJwtTokenService;
 import com.milly.auth.infrastructure.adapter.outbound.security.AuthCookieWriter;
 import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
@@ -20,6 +21,8 @@ import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.web.servlet.client.EntityExchangeResult;
 import org.springframework.test.web.servlet.client.RestTestClient;
+
+import com.nimbusds.jwt.JWTClaimsSet;
 
 import java.util.Map;
 import java.util.UUID;
@@ -40,6 +43,9 @@ class AuthRestIntegrationTest extends AbstractITest {
 
     @Autowired
     private GoogleJwtTokenService googleJwtTokenService;
+
+    @Autowired
+    private AppleJwtTokenService appleJwtTokenService;
 
     @Test
     void passwordContinueRegistersNewUserAndSetsAuthCookies() {
@@ -193,6 +199,40 @@ class AuthRestIntegrationTest extends AbstractITest {
                         "credentials", Map.of("idToken", "google-id-token"),
                         "profile", Map.of(
                                 "firstName", "Google",
+                                "lastName", "User",
+                                "email", email)))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(ContinueAuthApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getData().newUser()).isTrue();
+    }
+
+    @Test
+    void appleContinueRegistersNewUser() {
+        // Arrange
+        String email = uniqueEmail();
+        String appleSubject = "apple-" + UUID.randomUUID();
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .subject(appleSubject)
+                .claim("email", email)
+                .build();
+        when(appleJwtTokenService.decodeIdentityToken("apple-id-token")).thenReturn(claims);
+
+        // Act
+        ContinueAuthApiResponse response = restClient.post()
+                .uri("/api/v1/auth/continue")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "provider", AuthProviderType.APPLE.name(),
+                        "credentials", Map.of("idToken", "apple-id-token"),
+                        "profile", Map.of(
+                                "firstName", "Apple",
                                 "lastName", "User",
                                 "email", email)))
                 .exchange()
