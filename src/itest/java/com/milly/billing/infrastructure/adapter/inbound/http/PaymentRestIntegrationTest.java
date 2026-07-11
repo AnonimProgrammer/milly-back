@@ -391,7 +391,42 @@ class PaymentRestIntegrationTest extends AbstractITest {
         assertThat(response.getData().orderTotal()).isEqualByComparingTo(order.orderTotal());
         assertThat(response.getData().paidAmount()).isEqualByComparingTo("42.50");
         assertThat(response.getData().remaining()).isEqualByComparingTo("57.50");
+        assertThat(response.getData().totalTipAmount()).isZero();
         assertThat(response.getData().payments()).hasSize(1);
+    }
+
+    @Test
+    void getBillReturnsTotalTipAmountAfterTippedPayment() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+        restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "amount", "40.00",
+                        "tipAmount", "6.00",
+                        "paymentType", "FULL",
+                        "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isCreated();
+
+        // Act
+        BillSummaryApiResponse response = restClient.get()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/bill", order.tableId(), order.orderId())
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(BillSummaryApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getData().paidAmount()).isEqualByComparingTo("40.00");
+        assertThat(response.getData().totalTipAmount()).isEqualByComparingTo("6.00");
+        assertThat(response.getData().payments()).singleElement()
+                .satisfies(payment -> assertThat(payment.tipAmount()).isEqualByComparingTo("6.00"));
     }
 
     @Test
