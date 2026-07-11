@@ -1,4 +1,4 @@
-﻿package com.milly.venue.infrastructure.adapter.inbound.http;
+package com.milly.venue.infrastructure.adapter.inbound.http;
 
 import com.milly.auth.application.polluter.AuthSession;
 import com.milly.auth.application.polluter.AuthSessionPolluter;
@@ -355,5 +355,44 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
         assertThat(response.getStatus()).isEqualTo(404);
         assertThat(response.getMessage()).isEqualTo("Invitation is invalid or has expired.");
         assertThat(response.getErrorCode()).isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void retryingCreateInvitationWithSameIdempotencyKeyReplaysResponse() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = RestTestClientAuth.withSession(restClient, venue.manager());
+        String idempotencyKey = UUID.randomUUID().toString();
+
+        // Act
+        CreateVenueInvitationApiResponse first = managerClient.post()
+                .uri("/api/v1/venues/{venueId}/invitations", venue.venueId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(IdempotencyAspect.IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+                .body(Map.of("role", "WAITER"))
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody(CreateVenueInvitationApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        CreateVenueInvitationApiResponse second = managerClient.post()
+                .uri("/api/v1/venues/{venueId}/invitations", venue.venueId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .header(IdempotencyAspect.IDEMPOTENCY_KEY_HEADER, idempotencyKey)
+                .body(Map.of("role", "WAITER"))
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody(CreateVenueInvitationApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(first).isNotNull();
+        assertThat(second).isNotNull();
+        assertThat(second.getData().token()).isEqualTo(first.getData().token());
+        assertThat(second.getData().inviteUrl()).isEqualTo(first.getData().inviteUrl());
     }
 }
