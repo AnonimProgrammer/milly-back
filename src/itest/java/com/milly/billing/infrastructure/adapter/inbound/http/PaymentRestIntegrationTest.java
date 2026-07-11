@@ -9,6 +9,7 @@ import com.milly.billing.infrastructure.adapter.inbound.http.dto.ProcessPaymentA
 import com.milly.billing.infrastructure.adapter.outbound.persistence.PaymentJpaRepository;
 import com.milly.common.infrastructure.adapter.inbound.idempotency.IdempotencyAspect;
 import com.milly.config.domain.AbstractITest;
+import com.milly.config.infrastructure.adapter.dto.ErrorApiResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -140,6 +141,36 @@ class PaymentRestIntegrationTest extends AbstractITest {
         assertThat(paymentRepository.findById(paymentId))
                 .hasValueSatisfying(payment -> assertThat(payment.getReceiptUrl())
                         .isEqualTo(response.getData().payment().receiptUrl()));
+    }
+
+    @Test
+    void processPaymentRejectsTipExceedingPaymentAmount() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+
+        // Act
+        ErrorApiResponse response = restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "amount", "10.00",
+                        "tipAmount", "15.00",
+                        "paymentType", "FULL",
+                        "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(422)
+                .expectBody(ErrorApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(422);
+        assertThat(response.getMessage()).isEqualTo("Tip amount exceeds the payment amount.");
+        assertThat(response.getErrorCode()).isEqualTo("UNPROCESSABLE_ENTITY");
+        assertThat(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(order.orderId(), PaymentStatus.COMPLETED))
+                .isEmpty();
     }
 
     @Test
