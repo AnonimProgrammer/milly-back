@@ -79,6 +79,70 @@ class PaymentRestIntegrationTest extends AbstractITest {
     }
 
     @Test
+    void processPaymentWithTipUpdatesPaymentAndBillTotals() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+
+        // Act
+        ProcessPaymentApiResponse response = restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "amount", "50.00",
+                        "tipAmount", "5.00",
+                        "paymentType", "FULL",
+                        "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody(ProcessPaymentApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getData().payment().amount()).isEqualByComparingTo("50.00");
+        assertThat(response.getData().payment().tipAmount()).isEqualByComparingTo("5.00");
+        assertThat(response.getData().bill().paidAmount()).isEqualByComparingTo("50.00");
+        assertThat(response.getData().bill().remaining()).isEqualByComparingTo("50.00");
+        assertThat(response.getData().bill().totalTipAmount()).isEqualByComparingTo("5.00");
+        assertThat(paymentRepository.findAllByOrderIdAndStatusOrderByCreatedAtAsc(order.orderId(), PaymentStatus.COMPLETED))
+                .singleElement()
+                .satisfies(payment -> assertThat(payment.getTipAmount().amount()).isEqualByComparingTo("5.00"));
+    }
+
+    @Test
+    void processPaymentReturnsReceiptUrl() {
+        // Arrange
+        PayableOrder order = billingPolluter.createApprovedOrder();
+
+        // Act
+        ProcessPaymentApiResponse response = restClient.post()
+                .uri("/api/v1/public/tables/{tableId}/orders/{orderId}/payments", order.tableId(), order.orderId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "amount", "25.00",
+                        "paymentType", "FULL",
+                        "provider", "APPLE"))
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody(ProcessPaymentApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        UUID paymentId = response.getData().payment().id();
+        assertThat(response.getData().payment().receiptUrl())
+                .isEqualTo("https://storage.local/venues/%s/orders/%s/payments/%s/receipt.pdf"
+                        .formatted(order.venueId(), order.orderId(), paymentId));
+        assertThat(paymentRepository.findById(paymentId))
+                .hasValueSatisfying(payment -> assertThat(payment.getReceiptUrl())
+                        .isEqualTo(response.getData().payment().receiptUrl()));
+    }
+
+    @Test
     void processWalletPaymentRequiresNoCardDetails() {
         // Arrange
         PayableOrder order = billingPolluter.createApprovedOrder();
