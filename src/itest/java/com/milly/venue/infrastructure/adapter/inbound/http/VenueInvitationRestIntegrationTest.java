@@ -184,4 +184,176 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
         assertThat(response.getMessage()).isEqualTo("Role is required.");
         assertThat(response.getErrorCode()).isEqualTo("BAD_REQUEST");
     }
+
+    @Test
+    void authenticatedUserRedeemsInvitationAndBecomesMember() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = RestTestClientAuth.withSession(restClient, venue.manager());
+        CreateVenueInvitationApiResponse invitation = managerClient.post()
+                .uri("/api/v1/venues/{venueId}/invitations", venue.venueId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("role", "WAITER"))
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody(CreateVenueInvitationApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+        assertThat(invitation).isNotNull();
+
+        AuthSession invitee = authSessionPolluter.registerPasswordUser();
+        RestTestClient inviteeClient = RestTestClientAuth.withSession(restClient, invitee);
+
+        // Act
+        VenueMembershipApiResponse response = inviteeClient.post()
+                .uri("/api/v1/invitations/redeem")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("token", invitation.getData().token()))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(VenueMembershipApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getMessage()).isEqualTo("Invitation redeemed successfully.");
+        assertThat(response.getData().venueId()).isEqualTo(venue.venueId());
+        assertThat(response.getData().venueName()).isEqualTo("Integration Test Venue");
+        assertThat(response.getData().role()).isEqualTo(VenueRole.WAITER);
+        assertThat(venueMembershipRepository.findByUserIdAndVenueId(invitee.userId(), venue.venueId()))
+                .hasValueSatisfying(membership -> assertThat(membership.getRole()).isEqualTo(VenueRole.WAITER));
+    }
+
+    @Test
+    void unauthenticatedRedeemReturnsUnauthorized() {
+        // Act
+        ErrorApiResponse response = restClient.post()
+                .uri("/api/v1/invitations/redeem")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("token", UUID.randomUUID()))
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody(ErrorApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(response.getErrorCode()).isEqualTo("UNAUTHORIZED");
+    }
+
+    @Test
+    void redeemReturnsNotFoundForInvalidToken() {
+        // Arrange
+        AuthSession user = authSessionPolluter.registerPasswordUser();
+        RestTestClient userClient = RestTestClientAuth.withSession(restClient, user);
+
+        // Act
+        ErrorApiResponse response = userClient.post()
+                .uri("/api/v1/invitations/redeem")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("token", UUID.randomUUID()))
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody(ErrorApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(404);
+        assertThat(response.getMessage()).isEqualTo("Invitation is invalid or has expired.");
+        assertThat(response.getErrorCode()).isEqualTo("NOT_FOUND");
+    }
+
+    @Test
+    void redeemReturnsConflictWhenUserAlreadyMember() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = RestTestClientAuth.withSession(restClient, venue.manager());
+        CreateVenueInvitationApiResponse invitation = managerClient.post()
+                .uri("/api/v1/venues/{venueId}/invitations", venue.venueId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("role", "WAITER"))
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody(CreateVenueInvitationApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+        assertThat(invitation).isNotNull();
+
+        // Act
+        ErrorApiResponse response = RestTestClientAuth.withSession(restClient, venue.manager()).post()
+                .uri("/api/v1/invitations/redeem")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("token", invitation.getData().token()))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(409)
+                .expectBody(ErrorApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(409);
+        assertThat(response.getMessage()).isEqualTo("You are already a member of this venue.");
+        assertThat(response.getErrorCode()).isEqualTo("CONFLICT");
+    }
+
+    @Test
+    void redeemReturnsNotFoundWhenTokenAlreadyClaimed() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = RestTestClientAuth.withSession(restClient, venue.manager());
+        CreateVenueInvitationApiResponse invitation = managerClient.post()
+                .uri("/api/v1/venues/{venueId}/invitations", venue.venueId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("role", "WAITER"))
+                .exchange()
+                .expectStatus()
+                .isCreated()
+                .expectBody(CreateVenueInvitationApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+        assertThat(invitation).isNotNull();
+
+        AuthSession firstInvitee = authSessionPolluter.registerPasswordUser();
+        RestTestClientAuth.withSession(restClient, firstInvitee).post()
+                .uri("/api/v1/invitations/redeem")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("token", invitation.getData().token()))
+                .exchange()
+                .expectStatus()
+                .isOk();
+
+        AuthSession secondInvitee = authSessionPolluter.registerPasswordUser();
+        RestTestClient secondInviteeClient = RestTestClientAuth.withSession(restClient, secondInvitee);
+
+        // Act
+        ErrorApiResponse response = secondInviteeClient.post()
+                .uri("/api/v1/invitations/redeem")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("token", invitation.getData().token()))
+                .exchange()
+                .expectStatus()
+                .isNotFound()
+                .expectBody(ErrorApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(404);
+        assertThat(response.getMessage()).isEqualTo("Invitation is invalid or has expired.");
+        assertThat(response.getErrorCode()).isEqualTo("NOT_FOUND");
+    }
 }
