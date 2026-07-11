@@ -12,7 +12,7 @@ public record AuthProperties(
 
     public AuthProperties {
         if (google == null) {
-            google = new Google("");
+            google = new Google("", "");
         }
         if (apple == null) {
             apple = new Apple("");
@@ -37,7 +37,7 @@ public record AuthProperties(
         }
     }
 
-    public record Google(String clientId) {}
+    public record Google(String clientId, String issuer) {}
 
     public record Apple(String clientId) {}
 

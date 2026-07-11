@@ -42,10 +42,10 @@ dependencies {
     // ============================================================
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
-    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
-    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
-    implementation 'com.nimbusds:nimbus-jose-jwt:9.47'
+    implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
+    implementation 'com.nimbusds:nimbus-jose-jwt:10.9.1'
 
     // ============================================================
     // Database
@@ -75,13 +75,13 @@ dependencies {
     // Third-party
     // ============================================================
     implementation 'com.github.f4b6a3:ulid-creator:5.2.4'
-    implementation 'com.google.zxing:core:3.5.3'
-    implementation 'com.google.zxing:javase:3.5.3'
+    implementation 'com.google.zxing:core:3.5.4'
+    implementation 'com.google.zxing:javase:3.5.4'
 
     // ============================================================
     // AI (LangChain4j)
     // ============================================================
-    implementation platform('dev.langchain4j:langchain4j-bom:1.0.0')
+    implementation platform('dev.langchain4j:langchain4j-bom:1.17.2')
     implementation 'dev.langchain4j:langchain4j'
     implementation 'dev.langchain4j:langchain4j-open-ai'
 
@@ -89,6 +89,11 @@ dependencies {
     // Resilience4j (Spring Cloud Circuit Breaker)
     // ============================================================
     implementation 'org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j'
+
+    // ============================================================
+    // PDF
+    // ============================================================
+    implementation 'com.github.librepdf:openpdf:3.0.5'
 
     // ============================================================
     // Storage

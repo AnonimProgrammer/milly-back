@@ -1,6 +1,7 @@
 package com.milly.billing.application.usecase;
 
 import com.milly.billing.application.dto.CreatePaymentRequest;
+import com.milly.billing.application.service.PaymentReceiptService;
 import com.milly.billing.application.dto.ProcessPaymentResponse;
 import com.milly.billing.domain.entity.PaymentEntity;
 import com.milly.billing.domain.valueobject.PaymentProvider;
@@ -62,6 +63,9 @@ class ProcessPaymentUseCaseTest {
     @Mock
     private OrderEventNotifier orderEventNotifier;
 
+    @Mock
+    private PaymentReceiptService paymentReceiptService;
+
     @Captor
     private ArgumentCaptor<PaymentEntity> paymentCaptor;
 
@@ -74,7 +78,12 @@ class ProcessPaymentUseCaseTest {
     @BeforeEach
     void setUp() {
         processPaymentUseCase = new ProcessPaymentUseCase(
-                tableRepository, orderRepository, orderItemRepository, paymentRepository, orderEventNotifier);
+                tableRepository,
+                orderRepository,
+                orderItemRepository,
+                paymentRepository,
+                paymentReceiptService,
+                orderEventNotifier);
     }
 
     @Test
@@ -95,14 +104,18 @@ class ProcessPaymentUseCaseTest {
         assertThat(response.bill().orderTotal()).isEqualByComparingTo("100.00");
         assertThat(response.bill().paidAmount()).isEqualByComparingTo("50.00");
         assertThat(response.bill().payments()).hasSize(1);
+        assertThat(response.payment().receiptUrl()).isEqualTo("https://storage.local/receipt.pdf");
 
-        verify(paymentRepository).save(paymentCaptor.capture());
-        PaymentEntity savedPayment = paymentCaptor.getValue();
+        verify(paymentRepository, times(2)).save(paymentCaptor.capture());
+        List<PaymentEntity> savedPayments = paymentCaptor.getAllValues();
+        PaymentEntity savedPayment = savedPayments.getFirst();
         assertThat(savedPayment.getOrderId()).isEqualTo(orderId);
         assertThat(savedPayment.getAmount().amount()).isEqualByComparingTo("50.00");
         assertThat(savedPayment.getTipAmount().amount()).isZero();
         assertThat(savedPayment.getProvider()).isEqualTo(PaymentProvider.APPLE);
         assertThat(savedPayment.getProviderReference()).startsWith("pay_");
+        assertThat(savedPayments.get(1).getReceiptUrl()).isEqualTo("https://storage.local/receipt.pdf");
+        verify(paymentReceiptService).generateAndStore(savedPayments.getFirst(), venueId);
         verify(orderEventNotifier).paymentReceived(orderId, venueId, tableId);
     }
 
@@ -157,8 +170,8 @@ class ProcessPaymentUseCaseTest {
         processPaymentUseCase.execute(tableId, orderId, request);
 
         // Assert
-        verify(paymentRepository).save(paymentCaptor.capture());
-        assertThat(paymentCaptor.getValue().getProviderMetadata())
+        verify(paymentRepository, times(2)).save(paymentCaptor.capture());
+        assertThat(paymentCaptor.getAllValues().getFirst().getProviderMetadata())
                 .containsEntry("last4", "4242")
                 .containsEntry("brand", "Visa")
                 .containsEntry("expiryMonth", 12)
@@ -178,9 +191,10 @@ class ProcessPaymentUseCaseTest {
         processPaymentUseCase.execute(tableId, orderId, request);
 
         // Assert
-        verify(paymentRepository).save(paymentCaptor.capture());
-        assertThat(paymentCaptor.getValue().getProviderMetadata()).containsEntry("splitPeople", 3);
+        verify(paymentRepository, times(2)).save(paymentCaptor.capture());
+        assertThat(paymentCaptor.getAllValues().getFirst().getProviderMetadata()).containsEntry("splitPeople", 3);
     }
+
     @Test
     void throwsResourceNotFoundWhenTableNotFound() {
         // Arrange
@@ -219,6 +233,7 @@ class ProcessPaymentUseCaseTest {
                 .isInstanceOf(ResourceNotFoundException.class);
         verifyNoInteractions(paymentRepository, orderEventNotifier);
     }
+
     @Test
     void throwsPaymentValidationExceptionWhenOrderIsNotApproved() {
         // Arrange
@@ -235,6 +250,7 @@ class ProcessPaymentUseCaseTest {
                 .hasMessage("Order is not open for payment.");
         verifyNoInteractions(paymentRepository, orderEventNotifier);
     }
+
     @ParameterizedTest
     @MethodSource("invalidAmounts")
     void throwsPaymentValidationExceptionForNonPositiveAmount(BigDecimal amount) {
@@ -341,6 +357,8 @@ class ProcessPaymentUseCaseTest {
             savedPayment.setId(UUID.randomUUID());
             return savedPayment;
         });
+        when(paymentReceiptService.generateAndStore(any(PaymentEntity.class), any(UUID.class)))
+                .thenReturn("https://storage.local/receipt.pdf");
     }
 
     private static CreatePaymentRequest walletPaymentRequest(String amount) {

@@ -5,6 +5,7 @@ import com.milly.billing.application.dto.BillSummaryResponse;
 import com.milly.billing.application.dto.CreatePaymentRequest;
 import com.milly.billing.application.dto.PaymentResponse;
 import com.milly.billing.application.dto.ProcessPaymentResponse;
+import com.milly.billing.application.service.PaymentReceiptService;
 import com.milly.billing.domain.entity.PaymentEntity;
 import com.milly.billing.domain.valueobject.PaymentProvider;
 import com.milly.billing.domain.valueobject.PaymentStatus;
@@ -42,6 +43,7 @@ public class ProcessPaymentUseCase {
     private final OrderJpaRepository orderRepository;
     private final OrderItemJpaRepository orderItemRepository;
     private final PaymentJpaRepository paymentRepository;
+    private final PaymentReceiptService paymentReceiptService;
     private final OrderEventNotifier orderEventNotifier;
 
     @Transactional
@@ -94,7 +96,13 @@ public class ProcessPaymentUseCase {
                 request.paymentType(),
                 generateProviderReference(),
                 buildProviderMetadata(request));
+
         PaymentEntity savedPayment = paymentRepository.save(payment);
+
+        String receiptUrl = paymentReceiptService.generateAndStore(savedPayment, table.getVenueId());
+        savedPayment.setReceiptUrl(receiptUrl);
+        savedPayment = paymentRepository.save(savedPayment);
+
         orderEventNotifier.paymentReceived(order.getId(), table.getVenueId(), table.getId());
 
         List<PaymentEntity> allPayments = new ArrayList<>(existingPayments);

@@ -19,16 +19,15 @@ import java.util.Objects;
 @Service
 public class GoogleJwtTokenService {
 
-    private static final String GOOGLE_ISSUER = "https://accounts.google.com";
-
     private final String googleClientId;
     private final NimbusJwtDecoder jwtDecoder;
 
     public GoogleJwtTokenService(AuthProperties authProperties) {
         this.googleClientId = authProperties.google().clientId();
-        this.jwtDecoder = NimbusJwtDecoder.withIssuerLocation(GOOGLE_ISSUER).build();
+        String googleIssuer = authProperties.google().issuer();
+        this.jwtDecoder = NimbusJwtDecoder.withIssuerLocation(googleIssuer).build();
         this.jwtDecoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(
-                new JwtTimestampValidator(), new JwtIssuerValidator(GOOGLE_ISSUER), audienceValidator()));
+                new JwtTimestampValidator(), new JwtIssuerValidator(googleIssuer), audienceValidator()));
     }
 
     public Jwt decodeIdentityToken(String idToken) {
