@@ -4,23 +4,11 @@ import com.milly.auth.application.port.outbound.AuthProvider;
 import com.milly.auth.domain.Credentials;
 import com.milly.auth.domain.model.ExternalIdentity;
 import com.milly.auth.domain.valueobject.AuthProviderType;
-import com.milly.auth.infrastructure.config.AuthProperties;
 import com.milly.common.application.exception.InvalidCredentialsException;
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.jwk.source.JWKSourceBuilder;
-import com.nimbusds.jose.proc.BadJOSEException;
-import com.nimbusds.jose.proc.JWSKeySelector;
-import com.nimbusds.jose.proc.JWSVerificationKeySelector;
-import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
-import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
-import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.net.URI;
 import java.text.ParseException;
 import java.util.Map;
 
@@ -28,11 +16,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AppleAuthProvider implements AuthProvider {
 
-    private static final URI APPLE_JWKS_URI = URI.create("https://appleid.apple.com/auth/keys");
-    private static final String APPLE_ISSUER = "https://appleid.apple.com";
-
-    private final AuthProperties authProperties;
-    private volatile ConfigurableJWTProcessor<SecurityContext> jwtProcessor;
+    private final AppleJwtTokenService appleJwtTokenService;
 
     @Override
     public AuthProviderType getType() {
@@ -41,13 +25,8 @@ public class AppleAuthProvider implements AuthProvider {
 
     @Override
     public ExternalIdentity authenticate(Map<String, Object> credentials) {
-        String clientId = authProperties.apple().clientId();
-        if (clientId == null || clientId.isBlank()) {
-            throw new UnsupportedOperationException("Apple authentication is not configured.");
-        }
-
         String idToken = Credentials.requiredRaw(credentials, "idToken", "identityToken", "token");
-        JWTClaimsSet claims = verifyToken(idToken, clientId);
+        JWTClaimsSet claims = appleJwtTokenService.decodeIdentityToken(idToken);
 
         String providerUserId = claims.getSubject();
         if (providerUserId == null || providerUserId.isBlank()) {
@@ -63,49 +42,6 @@ public class AppleAuthProvider implements AuthProvider {
             return normalize(claims.getStringClaim("email"));
         } catch (ParseException exception) {
             return null;
-        }
-    }
-
-    private JWTClaimsSet verifyToken(String idToken, String clientId) {
-        try {
-            SignedJWT signedJwt = SignedJWT.parse(idToken);
-            JWTClaimsSet claims = processor().process(signedJwt, null);
-
-            if (!APPLE_ISSUER.equals(claims.getIssuer())) {
-                throw new InvalidCredentialsException("Invalid Apple identity token issuer.");
-            }
-
-            if (claims.getAudience() == null || !claims.getAudience().contains(clientId)) {
-                throw new InvalidCredentialsException("Invalid Apple identity token audience.");
-            }
-
-            return claims;
-        } catch (ParseException | BadJOSEException | JOSEException exception) {
-            throw new InvalidCredentialsException("Invalid Apple identity token.");
-        }
-    }
-
-    private ConfigurableJWTProcessor<SecurityContext> processor() {
-        if (jwtProcessor == null) {
-            synchronized (this) {
-                if (jwtProcessor == null) {
-                    jwtProcessor = buildProcessor();
-                }
-            }
-        }
-        return jwtProcessor;
-    }
-
-    private ConfigurableJWTProcessor<SecurityContext> buildProcessor() {
-        try {
-            JWSKeySelector<SecurityContext> keySelector = new JWSVerificationKeySelector<>(
-                    JWSAlgorithm.RS256,
-                    JWKSourceBuilder.create(APPLE_JWKS_URI.toURL()).build());
-            DefaultJWTProcessor<SecurityContext> processor = new DefaultJWTProcessor<>();
-            processor.setJWSKeySelector(keySelector);
-            return processor;
-        } catch (java.net.MalformedURLException exception) {
-            throw new IllegalStateException("Invalid Apple JWKS URI.", exception);
         }
     }
 
