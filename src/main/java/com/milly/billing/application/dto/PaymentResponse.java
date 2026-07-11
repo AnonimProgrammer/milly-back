@@ -19,7 +19,8 @@ public record PaymentResponse(
         PaymentType paymentType,
         String providerReference,
         Map<String, Object> providerMetadata,
-        OffsetDateTime createdAt
+        OffsetDateTime createdAt,
+        String receiptUrl
 ) {
 
     public static PaymentResponse of(PaymentEntity payment) {
@@ -32,6 +33,7 @@ public record PaymentResponse(
                 payment.getPaymentType(),
                 payment.getProviderReference(),
                 payment.getProviderMetadata(),
-                payment.getCreatedAt());
+                payment.getCreatedAt(),
+                payment.getReceiptUrl());
     }
 }
