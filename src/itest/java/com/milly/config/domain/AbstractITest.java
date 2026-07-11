@@ -2,6 +2,7 @@ package com.milly.config.domain;
 
 import com.milly.Application;
 import com.milly.config.infrastructure.adapter.DataSourceInitializer;
+import com.milly.auth.infrastructure.adapter.outbound.auth.AppleJwtTokenService;
 import com.milly.auth.infrastructure.adapter.outbound.auth.GoogleJwtTokenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,9 @@ public abstract class AbstractITest {
 
     @MockitoBean
     private GoogleJwtTokenService googleJwtTokenService;
+
+    @MockitoBean
+    private AppleJwtTokenService appleJwtTokenService;
 
     @BeforeEach
     void clearAuthCookies() {
