@@ -1,5 +1,7 @@
 package com.milly.chatbot.application.dto;
 
 public enum ChatMessageType {
-    WELCOME
+    WELCOME,
+    ASSISTANT_REPLY,
+    ERROR
 }

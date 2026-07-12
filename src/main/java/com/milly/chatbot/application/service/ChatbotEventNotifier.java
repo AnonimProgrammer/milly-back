@@ -18,7 +18,19 @@ public class ChatbotEventNotifier {
     private final WsEventPublisher wsEventPublisher;
 
     public void welcome(UUID tableId) {
-        ChatMessageEvent event = new ChatMessageEvent(ChatMessageType.WELCOME, WELCOME_TEXT);
+        publish(tableId, ChatMessageType.WELCOME, WELCOME_TEXT);
+    }
+
+    public void assistantReply(UUID tableId, String text) {
+        publish(tableId, ChatMessageType.ASSISTANT_REPLY, text);
+    }
+
+    public void error(UUID tableId, String text) {
+        publish(tableId, ChatMessageType.ERROR, text);
+    }
+
+    private void publish(UUID tableId, ChatMessageType type, String text) {
+        ChatMessageEvent event = new ChatMessageEvent(type, text);
         wsEventPublisher.publish(StompTopics.tableChatTopic(tableId), event);
     }
 }
