@@ -1,0 +1,75 @@
+name: Production CD
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run-unit-tests:
+    uses: ./.github/workflows/utest.yml
+
+  run-integration-tests:
+    uses: ./.github/workflows/itest.yml
+
+  deploy:
+    name: Deploy to Render
+    needs: [run-unit-tests, run-integration-tests]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Trigger Render Deploy Hook
+        id: trigger
+        run: |
+          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            echo "::error::Missing RENDER_DEPLOY_HOOK repository secret."
+            exit 1
+          fi
+          curl -s -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+          echo "Deployment triggered successfully."
+
+      - name: Verify Application Health
+        env:
+          APP_URL: ${{ secrets.RENDER_APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "::error::Missing RENDER_APP_URL repository secret."
+            exit 1
+          fi
+
+          BASE_URL="${APP_URL%/}"
+          HEALTH_URL="${BASE_URL}/actuator/health"
+          
+          echo "Polling health endpoint: $HEALTH_URL"
+          
+          MAX_ATTEMPTS=30
+          POLL_INTERVAL=15
+          
+          for i in $(seq 1 $MAX_ATTEMPTS); do
+            echo "Attempt $i/$MAX_ATTEMPTS..."
+            
+            if response=$(curl -fsS --max-time 10 "$HEALTH_URL" 2>/dev/null); then
+              if echo "$response" | jq -e '.status == "UP"' >/dev/null 2>&1; then
+                echo "Success: Application is UP and responsive!"
+                echo "$response" | jq .
+                exit 0
+              fi
+              echo "App responded, but status is not UP yet."
+            else
+              echo "App or endpoint is unreachable (Render may be swapping containers)."
+            fi
+            
+            sleep $POLL_INTERVAL
+          done
+
+          echo "::error::Deployment verification timed out. App did not return status UP."
+          exit 1
+
+      - name: Generate Deployment Summary
+        if: success()
+        run: |
+          echo "### Production Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "Both Unit & Integration Tests passed. The application health check returned \`{\"status\":\"UP\"}\`." >> $GITHUB_STEP_SUMMARY

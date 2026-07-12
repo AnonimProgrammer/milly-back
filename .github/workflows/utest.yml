@@ -3,6 +3,7 @@ name: Unit tests
 on:
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
