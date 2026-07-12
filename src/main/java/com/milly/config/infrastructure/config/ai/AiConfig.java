@@ -1,6 +1,5 @@
 package com.milly.config.infrastructure.config.ai;
 
-import com.milly.config.infrastructure.adapter.outbound.ai.langchain4j.MillyAssistant;
 import com.milly.config.infrastructure.adapter.outbound.ai.langchain4j.OrderPreparationAnalyzer;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
@@ -50,14 +49,6 @@ public class AiConfig {
         }
 
         return builder.build();
-    }
-
-    @Bean
-    @ConditionalOnProperty(prefix = "milly.ai", name = "enabled", havingValue = "true")
-    MillyAssistant millyAssistant(ChatModel chatModel) {
-        return AiServices.builder(MillyAssistant.class)
-                .chatModel(chatModel)
-                .build();
     }
 
     @Bean
