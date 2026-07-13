@@ -8,6 +8,7 @@ import com.milly.auth.domain.valueobject.RoleName;
 import com.milly.auth.domain.valueobject.UserStatus;
 import com.milly.common.application.dto.ApiResponse;
 import com.milly.common.application.dto.PageResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -61,7 +62,7 @@ public class AdminUserRestAdapter {
     @PatchMapping("/{userId}")
     public ResponseEntity<ApiResponse<AdminUserResponse>> updateUser(
             @PathVariable UUID userId,
-            @RequestBody UpdateAdminUserRequest request,
+            @Valid @RequestBody UpdateAdminUserRequest request,
             @AuthenticationPrincipal UUID actorUserId) {
         return ResponseEntity.ok(ApiResponse.success(
                 updateAdminUserUseCase.execute(actorUserId, userId, request),
