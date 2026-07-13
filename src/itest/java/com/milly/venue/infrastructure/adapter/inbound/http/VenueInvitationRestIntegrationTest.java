@@ -37,7 +37,7 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
     private VenueMembershipJpaRepository venueMembershipRepository;
 
     @Test
-    void managerCreatesInvitationForWaiterRole() {
+    void managerCreatesInvitationForEmployeeRole() {
         // Arrange
         ManagedVenue venue = venuePolluter.createManagedVenue();
         RestTestClient managerClient = RestTestClientAuth.withSession(restClient, venue.manager());
@@ -46,7 +46,7 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
         CreateVenueInvitationApiResponse response = managerClient.post()
                 .uri("/api/v1/venues/{venueId}/invitations", venue.venueId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("role", "WAITER"))
+                .body(Map.of("role", "EMPLOYEE"))
                 .exchange()
                 .expectStatus()
                 .isCreated()
@@ -59,7 +59,7 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
         assertThat(response.getStatus()).isEqualTo(201);
         assertThat(response.getMessage()).isEqualTo("Invitation created successfully.");
         assertThat(response.getData().token()).isNotNull();
-        assertThat(response.getData().role()).isEqualTo(VenueRole.WAITER);
+        assertThat(response.getData().role()).isEqualTo(VenueRole.EMPLOYEE);
         assertThat(response.getData().inviteUrl())
                 .isEqualTo("http://localhost:3000/join-venue/invite/" + response.getData().token());
     }
@@ -70,7 +70,7 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
         ErrorApiResponse response = restClient.post()
                 .uri("/api/v1/venues/{venueId}/invitations", UUID.randomUUID())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("role", "WAITER"))
+                .body(Map.of("role", "EMPLOYEE"))
                 .exchange()
                 .expectStatus()
                 .isUnauthorized()
@@ -85,17 +85,17 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
     }
 
     @Test
-    void waiterCannotCreateInvitation() {
+    void employeeCannotCreateInvitation() {
         // Arrange
         ManagedVenue venue = venuePolluter.createManagedVenue();
-        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.WAITER);
-        RestTestClient waiterClient = RestTestClientAuth.withSession(restClient, waiter);
+        AuthSession employee = venuePolluter.addMember(venue.venueId(), VenueRole.EMPLOYEE);
+        RestTestClient employeeClient = RestTestClientAuth.withSession(restClient, employee);
 
         // Act
-        ErrorApiResponse response = waiterClient.post()
+        ErrorApiResponse response = employeeClient.post()
                 .uri("/api/v1/venues/{venueId}/invitations", venue.venueId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("role", "WAITER"))
+                .body(Map.of("role", "EMPLOYEE"))
                 .exchange()
                 .expectStatus()
                 .isForbidden()
@@ -121,7 +121,7 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
         ErrorApiResponse response = outsiderClient.post()
                 .uri("/api/v1/venues/{venueId}/invitations", venue.venueId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("role", "WAITER"))
+                .body(Map.of("role", "EMPLOYEE"))
                 .exchange()
                 .expectStatus()
                 .isForbidden()
@@ -146,7 +146,7 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
         ErrorApiResponse response = managerClient.post()
                 .uri("/api/v1/venues/{venueId}/invitations", missingVenueId)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("role", "WAITER"))
+                .body(Map.of("role", "EMPLOYEE"))
                 .exchange()
                 .expectStatus()
                 .isForbidden()
@@ -193,7 +193,7 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
         CreateVenueInvitationApiResponse invitation = managerClient.post()
                 .uri("/api/v1/venues/{venueId}/invitations", venue.venueId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("role", "WAITER"))
+                .body(Map.of("role", "EMPLOYEE"))
                 .exchange()
                 .expectStatus()
                 .isCreated()
@@ -223,9 +223,9 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
         assertThat(response.getMessage()).isEqualTo("Invitation redeemed successfully.");
         assertThat(response.getData().venueId()).isEqualTo(venue.venueId());
         assertThat(response.getData().venueName()).isEqualTo("Integration Test Venue");
-        assertThat(response.getData().role()).isEqualTo(VenueRole.WAITER);
+        assertThat(response.getData().role()).isEqualTo(VenueRole.EMPLOYEE);
         assertThat(venueMembershipRepository.findByUserIdAndVenueId(invitee.userId(), venue.venueId()))
-                .hasValueSatisfying(membership -> assertThat(membership.getRole()).isEqualTo(VenueRole.WAITER));
+                .hasValueSatisfying(membership -> assertThat(membership.getRole()).isEqualTo(VenueRole.EMPLOYEE));
     }
 
     @Test
@@ -281,7 +281,7 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
         CreateVenueInvitationApiResponse invitation = managerClient.post()
                 .uri("/api/v1/venues/{venueId}/invitations", venue.venueId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("role", "WAITER"))
+                .body(Map.of("role", "EMPLOYEE"))
                 .exchange()
                 .expectStatus()
                 .isCreated()
@@ -317,7 +317,7 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
         CreateVenueInvitationApiResponse invitation = managerClient.post()
                 .uri("/api/v1/venues/{venueId}/invitations", venue.venueId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(Map.of("role", "WAITER"))
+                .body(Map.of("role", "EMPLOYEE"))
                 .exchange()
                 .expectStatus()
                 .isCreated()
@@ -369,7 +369,7 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
                 .uri("/api/v1/venues/{venueId}/invitations", venue.venueId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(IdempotencyAspect.IDEMPOTENCY_KEY_HEADER, idempotencyKey)
-                .body(Map.of("role", "WAITER"))
+                .body(Map.of("role", "EMPLOYEE"))
                 .exchange()
                 .expectStatus()
                 .isCreated()
@@ -381,7 +381,7 @@ class VenueInvitationRestIntegrationTest extends AbstractITest {
                 .uri("/api/v1/venues/{venueId}/invitations", venue.venueId())
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(IdempotencyAspect.IDEMPOTENCY_KEY_HEADER, idempotencyKey)
-                .body(Map.of("role", "WAITER"))
+                .body(Map.of("role", "EMPLOYEE"))
                 .exchange()
                 .expectStatus()
                 .isCreated()
