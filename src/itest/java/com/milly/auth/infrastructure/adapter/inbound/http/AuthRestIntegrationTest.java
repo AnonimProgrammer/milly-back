@@ -3,14 +3,18 @@ package com.milly.auth.infrastructure.adapter.inbound.http;
 import com.milly.auth.application.exception.RefreshSessionFailedException;
 import com.milly.auth.application.polluter.AuthSession;
 import com.milly.auth.application.polluter.AuthSessionPolluter;
+import com.milly.auth.domain.entity.UserEntity;
 import com.milly.auth.domain.valueobject.AuthProviderType;
+import com.milly.auth.domain.valueobject.UserStatus;
 import com.milly.auth.infrastructure.adapter.outbound.auth.AppleJwtTokenService;
 import com.milly.auth.infrastructure.adapter.outbound.auth.GoogleJwtTokenService;
+import com.milly.auth.infrastructure.adapter.outbound.persistence.UserJpaRepository;
 import com.milly.auth.infrastructure.adapter.outbound.security.AuthCookieWriter;
 import com.milly.auth.infrastructure.adapter.outbound.security.JwtTokenService;
 import com.milly.auth.infrastructure.adapter.inbound.http.dto.ContinueAuthApiResponse;
 import com.milly.auth.infrastructure.adapter.inbound.http.dto.CurrentUserApiResponse;
 import com.milly.auth.infrastructure.adapter.inbound.http.dto.IssueWsTicketApiResponse;
+import com.milly.common.application.exception.UserAccountInactiveException;
 import com.milly.config.domain.AbstractITest;
 import com.milly.config.infrastructure.adapter.RestTestClientAuth;
 import com.milly.config.infrastructure.adapter.RestTestClientAuth.AuthCookies;
@@ -40,6 +44,9 @@ class AuthRestIntegrationTest extends AbstractITest {
 
     @Autowired
     private AuthSessionPolluter authSessionPolluter;
+
+    @Autowired
+    private UserJpaRepository userRepository;
 
     @Autowired
     private GoogleJwtTokenService googleJwtTokenService;
@@ -451,6 +458,89 @@ class AuthRestIntegrationTest extends AbstractITest {
         assertThat(response.getMessage()).isEqualTo("WebSocket ticket issued.");
         assertThat(response.getData().ticketId()).isNotNull();
         assertThat(response.getData().expiresAt()).isNotNull();
+    }
+
+    @Test
+    void refreshForSuspendedUserReturnsForbiddenAndClearsCookies() {
+        // Arrange
+        String email = uniqueEmail();
+        AuthCookies cookies = continuePasswordUser(email, DEFAULT_PASSWORD);
+        UUID userId = RestTestClientAuth.withAuthCookies(restClient, cookies)
+                .get()
+                .uri("/api/v1/auth/me")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(CurrentUserApiResponse.class)
+                .returnResult()
+                .getResponseBody()
+                .getData()
+                .id();
+        UserEntity user = userRepository.findById(userId).orElseThrow();
+        user.setStatus(UserStatus.SUSPENDED);
+        userRepository.save(user);
+
+        // Act & Assert
+        RestTestClientAuth.withAuthCookies(restClient, cookies)
+                .post()
+                .uri("/api/v1/auth/refresh")
+                .exchange()
+                .expectStatus()
+                .isForbidden()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(403)
+                .jsonPath("$.errorCode").isEqualTo("ACCOUNT_INACTIVE")
+                .jsonPath("$.message").isEqualTo(UserAccountInactiveException.MESSAGE);
+
+        RestTestClientAuth.withAuthCookies(restClient, cookies)
+                .post()
+                .uri("/api/v1/auth/refresh")
+                .exchange()
+                .expectStatus()
+                .isUnauthorized();
+    }
+
+    @Test
+    void authenticatedGetMeForSuspendedUserReturnsForbiddenAndClearsCookies() {
+        // Arrange
+        AuthSession user = authSessionPolluter.registerPasswordUser();
+        UserEntity storedUser = userRepository.findById(user.userId()).orElseThrow();
+        storedUser.setStatus(UserStatus.INACTIVE);
+        userRepository.save(storedUser);
+        RestTestClient userClient = RestTestClientAuth.withSession(restClient, user);
+
+        // Act & Assert
+        userClient.get()
+                .uri("/api/v1/auth/me")
+                .exchange()
+                .expectStatus()
+                .isForbidden()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(403)
+                .jsonPath("$.errorCode").isEqualTo("ACCOUNT_INACTIVE")
+                .jsonPath("$.message").isEqualTo(UserAccountInactiveException.MESSAGE);
+    }
+
+    @Test
+    void passwordContinueForSuspendedUserReturnsForbidden() {
+        // Arrange
+        AuthSession existingUser = authSessionPolluter.registerPasswordUser();
+        UserEntity user = userRepository.findById(existingUser.userId()).orElseThrow();
+        user.setStatus(UserStatus.SUSPENDED);
+        userRepository.save(user);
+
+        // Act & Assert
+        restClient.post()
+                .uri("/api/v1/auth/continue")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(passwordContinueBody(existingUser.email(), existingUser.password()))
+                .exchange()
+                .expectStatus()
+                .isForbidden()
+                .expectBody()
+                .jsonPath("$.status").isEqualTo(403)
+                .jsonPath("$.errorCode").isEqualTo("ACCOUNT_INACTIVE")
+                .jsonPath("$.message").isEqualTo(UserAccountInactiveException.MESSAGE);
     }
 
     @Test
