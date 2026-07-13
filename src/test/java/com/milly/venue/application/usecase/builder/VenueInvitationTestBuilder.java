@@ -9,7 +9,7 @@ public final class VenueInvitationTestBuilder {
 
     private UUID token = UUID.randomUUID();
     private UUID venueId = UUID.randomUUID();
-    private VenueRole role = VenueRole.WAITER;
+    private VenueRole role = VenueRole.EMPLOYEE;
     private UUID createdByUserId = UUID.randomUUID();
 
     private VenueInvitationTestBuilder() {

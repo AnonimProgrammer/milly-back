@@ -61,7 +61,7 @@ class CreateVenueInvitationUseCaseTest {
     }
 
     @ParameterizedTest
-    @EnumSource(VenueRole.class)
+    @EnumSource(value = VenueRole.class, names = {"MANAGER", "EMPLOYEE"})
     void createsInvitationWithSelectedRole(VenueRole role) {
         // Arrange
         when(venueRepository.findById(venueId)).thenReturn(Optional.of(VenueTestBuilder.aVenue().withId(venueId).build()));
@@ -76,7 +76,7 @@ class CreateVenueInvitationUseCaseTest {
         assertThat(response.token()).isNotNull();
         assertThat(response.role()).isEqualTo(role);
         assertThat(response.inviteUrl()).isEqualTo("http://localhost:3000/join-venue/invite/" + response.token());
-        verify(venueAuthorizationService).requireRole(managerId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(managerId, venueId, VenueRole.MANAGER);
         ArgumentCaptor<VenueInvitation> captor = ArgumentCaptor.forClass(VenueInvitation.class);
         verify(venueInvitationStore).register(captor.capture());
         assertThat(captor.getValue().token()).isEqualTo(response.token());
@@ -86,14 +86,25 @@ class CreateVenueInvitationUseCaseTest {
     }
 
     @Test
+    void rejectsOwnerRoleInvitation() {
+        // Act & Assert
+        assertThatThrownBy(() -> createVenueInvitationUseCase.execute(
+                managerId, venueId, new CreateVenueInvitationRequest(VenueRole.OWNER)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("owner");
+
+        verifyNoInteractions(venueRepository, venueInvitationStore, venueInvitationUrlBuilder);
+    }
+
+    @Test
     void throwsAccessDeniedWhenUserIsNotManager() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireRole(managerId, venueId, VenueRole.MANAGER);
+                .when(venueAuthorizationService).requireAtLeastRole(managerId, venueId, VenueRole.MANAGER);
 
         // Act & Assert
         assertThatThrownBy(() -> createVenueInvitationUseCase.execute(
-                managerId, venueId, new CreateVenueInvitationRequest(VenueRole.WAITER)))
+                managerId, venueId, new CreateVenueInvitationRequest(VenueRole.EMPLOYEE)))
                 .isInstanceOf(AccessDeniedException.class);
 
         verifyNoInteractions(venueRepository, venueInvitationStore, venueInvitationUrlBuilder);
@@ -106,7 +117,7 @@ class CreateVenueInvitationUseCaseTest {
 
         // Act & Assert
         assertThatThrownBy(() -> createVenueInvitationUseCase.execute(
-                managerId, venueId, new CreateVenueInvitationRequest(VenueRole.WAITER)))
+                managerId, venueId, new CreateVenueInvitationRequest(VenueRole.EMPLOYEE)))
                 .isInstanceOf(ResourceNotFoundException.class);
 
         verifyNoInteractions(venueInvitationStore, venueInvitationUrlBuilder);
