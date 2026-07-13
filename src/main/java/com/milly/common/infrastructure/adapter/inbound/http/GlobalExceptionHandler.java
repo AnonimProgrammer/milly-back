@@ -80,6 +80,10 @@ public class GlobalExceptionHandler {
         String message = exception.getBindingResult().getFieldErrors().stream()
                 .findFirst().filter(error -> error.getDefaultMessage() != null)
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
+                .or(() -> exception.getBindingResult().getGlobalErrors().stream()
+                        .findFirst()
+                        .filter(error -> error.getDefaultMessage() != null)
+                        .map(DefaultMessageSourceResolvable::getDefaultMessage))
                 .orElse("Validation failed.");
         return HttpErrorResponses.of(HttpStatus.BAD_REQUEST, ErrorCode.BAD_REQUEST, message);
     }
