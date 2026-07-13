@@ -49,10 +49,13 @@ class S3BlobStorageTest {
 
     @Test
     void uploadStoresObjectAndReturnsPublicUrl() {
+        // Arrange
         byte[] content = "png-bytes".getBytes(StandardCharsets.UTF_8);
 
+        // Act
         BlobObject result = blobStorage.upload(KEY, content, "image/png");
 
+        // Assert
         ArgumentCaptor<PutObjectRequest> requestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
         verify(s3Client).putObject(requestCaptor.capture(), any(RequestBody.class));
 
@@ -68,17 +71,21 @@ class S3BlobStorageTest {
 
     @Test
     void uploadUsesConfiguredPublicBaseUrlWhenPresent() {
+        // Arrange
         StorageProperties properties = new StorageProperties(
                 new StorageProperties.S3(BUCKET, REGION, "access-key", "secret-key", "https://cdn.example.com/"));
         S3BlobStorage storage = new S3BlobStorage(s3Client, properties);
 
+        // Act
         BlobObject result = storage.upload(KEY, new byte[] {1}, "image/png");
 
+        // Assert
         assertThat(result.url()).isEqualTo("https://cdn.example.com/" + KEY);
     }
 
     @Test
     void downloadReturnsBlobObject() throws Exception {
+        // Arrange
         byte[] content = "png-bytes".getBytes(StandardCharsets.UTF_8);
         GetObjectResponse response = GetObjectResponse.builder()
                 .contentType("image/png")
@@ -89,8 +96,10 @@ class S3BlobStorageTest {
 
         when(s3Client.getObject(any(GetObjectRequest.class))).thenReturn(responseStream);
 
+        // Act
         BlobObject result = blobStorage.download(KEY);
 
+        // Assert
         assertThat(result.key()).isEqualTo(KEY);
         assertThat(result.content()).isEqualTo(content);
         assertThat(result.mimeType()).isEqualTo("image/png");
@@ -99,16 +108,20 @@ class S3BlobStorageTest {
 
     @Test
     void downloadThrowsNotFoundWhenObjectMissing() {
+        // Arrange
         when(s3Client.getObject(any(GetObjectRequest.class))).thenThrow(NoSuchKeyException.builder().build());
 
+        // Act & Assert
         assertThatThrownBy(() -> blobStorage.download(KEY))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
     void deleteRemovesObjectFromBucket() {
+        // Act
         blobStorage.delete(KEY);
 
+        // Assert
         ArgumentCaptor<DeleteObjectRequest> requestCaptor = ArgumentCaptor.forClass(DeleteObjectRequest.class);
         verify(s3Client).deleteObject(requestCaptor.capture());
 
