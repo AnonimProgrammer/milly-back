@@ -1,6 +1,5 @@
 package com.milly.config.infrastructure.config.cache;
 
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCache;
@@ -12,12 +11,11 @@ import java.util.List;
 
 @Configuration
 @EnableCaching
-@EnableConfigurationProperties(CacheProperties.class)
 public class CacheConfig {
 
     @Bean
-    CaffeineCacheFactory caffeineCacheFactory(CacheProperties properties) {
-        return new CaffeineCacheFactory(properties);
+    CaffeineCacheFactory caffeineCacheFactory() {
+        return new CaffeineCacheFactory();
     }
 
     @Bean
