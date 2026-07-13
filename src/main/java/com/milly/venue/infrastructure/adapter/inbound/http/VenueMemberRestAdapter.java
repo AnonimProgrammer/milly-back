@@ -8,6 +8,7 @@ import com.milly.venue.application.usecase.ListVenueMembersUseCase;
 import com.milly.venue.application.usecase.UpdateVenueMemberUseCase;
 import com.milly.venue.domain.valueobject.MemberListStatusFilter;
 import com.milly.venue.domain.valueobject.VenueRole;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -52,7 +53,7 @@ public class VenueMemberRestAdapter {
     public ResponseEntity<ApiResponse<VenueMemberResponse>> updateMember(
             @PathVariable UUID venueId,
             @PathVariable UUID memberId,
-            @RequestBody UpdateVenueMemberRequest request,
+            @Valid @RequestBody UpdateVenueMemberRequest request,
             @AuthenticationPrincipal UUID userId) {
         return ResponseEntity.ok(ApiResponse.success(
                 updateVenueMemberUseCase.execute(venueId, userId, memberId, request),
