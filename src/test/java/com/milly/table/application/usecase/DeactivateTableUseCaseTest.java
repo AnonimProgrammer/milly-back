@@ -57,7 +57,7 @@ class DeactivateTableUseCaseTest {
 
         // Assert
         assertThat(table.getStatus()).isEqualTo(TableStatus.INACTIVE);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(tableRepository).save(table);
     }
 
@@ -73,7 +73,7 @@ class DeactivateTableUseCaseTest {
 
         // Assert
         assertThat(inactiveTable.getStatus()).isEqualTo(TableStatus.INACTIVE);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(tableRepository).save(inactiveTable);
     }
 
@@ -91,7 +91,7 @@ class DeactivateTableUseCaseTest {
         // Assert
         assertThat(tableWithQr.getStatus()).isEqualTo(TableStatus.INACTIVE);
         assertThat(tableWithQr.getQrImageUrl()).isEqualTo(existingQrImageUrl);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(tableRepository).save(tableWithQr);
     }
 
@@ -111,7 +111,7 @@ class DeactivateTableUseCaseTest {
     void throwsAccessDeniedWhenUserIsNotManager() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+                .when(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         // Act & Assert
         assertThatThrownBy(() -> deactivateTableUseCase.execute(userId, venueId, tableId))

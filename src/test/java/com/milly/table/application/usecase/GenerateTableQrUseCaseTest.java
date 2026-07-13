@@ -89,7 +89,7 @@ class GenerateTableQrUseCaseTest {
         assertThat(response.customerUrl()).isEqualTo(customerUrl);
         assertThat(response.qrImageUrl()).isEqualTo(qrImageUrl);
         assertThat(table.getQrImageUrl()).isEqualTo(qrImageUrl);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(tableCustomerUrlBuilder).build(tableId);
         verify(qrCodeGenerator).generatePngBytes(customerUrl);
         verify(blobStorage).upload(storageKey, qrImageBytes, QR_IMAGE_MIME_TYPE);
@@ -113,7 +113,7 @@ class GenerateTableQrUseCaseTest {
         // Assert
         assertThat(response.qrImageUrl()).isEqualTo(qrImageUrl);
         assertThat(tableWithExistingQr.getQrImageUrl()).isEqualTo(qrImageUrl);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(qrCodeGenerator).generatePngBytes(customerUrl);
         verify(blobStorage).upload(storageKey, qrImageBytes, QR_IMAGE_MIME_TYPE);
         verify(tableRepository).save(tableWithExistingQr);
@@ -151,7 +151,7 @@ class GenerateTableQrUseCaseTest {
     void throwsAccessDeniedWhenUserIsNotManager() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+                .when(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         // Act & Assert
         assertThatThrownBy(() -> generateTableQrUseCase.execute(userId, venueId, tableId))
