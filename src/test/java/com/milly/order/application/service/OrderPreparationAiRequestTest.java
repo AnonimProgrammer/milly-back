@@ -19,6 +19,7 @@ class OrderPreparationAiRequestTest {
 
     @Test
     void payloadMatchesPromptSchema() throws Exception {
+        // Arrange
         UUID orderId = UUID.fromString("3f2a9c1e-8b4d-4f1a-9c2e-1a2b3c4d5e6f");
         var payload = new OrderPreparationAnalysisPayload(
                 orderId,
@@ -30,8 +31,10 @@ class OrderPreparationAiRequestTest {
                         new OrderPreparationAnalysisPayload.Item("Salad", 1, 15),
                         new OrderPreparationAnalysisPayload.Item("Soup", 3, 15)));
 
+        // Act
         JsonNode json = objectMapper.readTree(objectMapper.writeValueAsString(payload));
 
+        // Assert
         assertThat(json.get("orderId").asText()).isEqualTo(orderId.toString());
         assertThat(json.get("lineItemCount").asInt()).isEqualTo(4);
         assertThat(json.get("totalQuantity").asInt()).isEqualTo(6);
@@ -42,18 +45,22 @@ class OrderPreparationAiRequestTest {
 
     @Test
     void mapperParsesPlainJsonResponse() {
+        // Act
         OrderPreparationAiResult result = mapper.toResult(
                 new AiResponse("{\"minutes\":90,\"value\":\"1 hour 30 minutes\"}"));
 
+        // Assert
         assertThat(result.minutes()).isEqualTo(90);
         assertThat(result.value()).isEqualTo("1 hour 30 minutes");
     }
 
     @Test
     void mapperParsesMarkdownWrappedJsonResponse() {
+        // Act
         OrderPreparationAiResult result = mapper.toResult(
                 new AiResponse("```json\n{\"minutes\":15,\"value\":\"15 minutes\"}\n```"));
 
+        // Assert
         assertThat(result.minutes()).isEqualTo(15);
         assertThat(result.value()).isEqualTo("15 minutes");
     }

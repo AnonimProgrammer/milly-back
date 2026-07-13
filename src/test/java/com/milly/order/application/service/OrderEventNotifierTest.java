@@ -28,12 +28,15 @@ class OrderEventNotifierTest {
 
     @Test
     void orderPlacedPublishesToVenueStaffTopicOnly() {
+        // Arrange
         UUID orderId = UUID.randomUUID();
         UUID venueId = UUID.randomUUID();
         UUID tableId = UUID.randomUUID();
 
+        // Act
         orderEventNotifier.orderPlaced(orderId, venueId, tableId);
 
+        // Assert
         ArgumentCaptor<String> destinationCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<OrderEvent> eventCaptor = ArgumentCaptor.forClass(OrderEvent.class);
         verify(wsEventPublisher).publishAfterCommit(destinationCaptor.capture(), eventCaptor.capture());
@@ -44,12 +47,15 @@ class OrderEventNotifierTest {
 
     @Test
     void orderApprovedPublishesToTableAndVenueStaffTopics() {
+        // Arrange
         UUID orderId = UUID.randomUUID();
         UUID venueId = UUID.randomUUID();
         UUID tableId = UUID.randomUUID();
 
+        // Act
         orderEventNotifier.orderApproved(orderId, venueId, tableId);
 
+        // Assert
         ArgumentCaptor<String> destinationCaptor = ArgumentCaptor.forClass(String.class);
         verify(wsEventPublisher, times(2)).publishAfterCommit(destinationCaptor.capture(), org.mockito.ArgumentMatchers.any());
         assertThat(destinationCaptor.getAllValues()).containsExactly(
@@ -59,12 +65,15 @@ class OrderEventNotifierTest {
 
     @Test
     void paymentReceivedPublishesToTableAndVenueStaffTopics() {
+        // Arrange
         UUID orderId = UUID.randomUUID();
         UUID venueId = UUID.randomUUID();
         UUID tableId = UUID.randomUUID();
 
+        // Act
         orderEventNotifier.paymentReceived(orderId, venueId, tableId);
 
+        // Assert
         ArgumentCaptor<String> destinationCaptor = ArgumentCaptor.forClass(String.class);
         verify(wsEventPublisher, times(2)).publishAfterCommit(destinationCaptor.capture(), org.mockito.ArgumentMatchers.any());
         assertThat(destinationCaptor.getAllValues()).containsExactly(
