@@ -1,0 +1,15 @@
+meta {
+  name: Activate table
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/api/v1/venues/{{venueId}}/tables/{{tableId}}/activate
+  body: none
+  auth: none
+}
+
+headers {
+  Accept: application/json
+}

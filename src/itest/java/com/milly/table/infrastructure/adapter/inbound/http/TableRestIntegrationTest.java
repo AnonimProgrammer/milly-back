@@ -54,6 +54,10 @@ class TableRestIntegrationTest extends AbstractITest {
         return tablePath(venueId, tableId) + "/deactivate";
     }
 
+    private String activateTablePath(UUID venueId, UUID tableId) {
+        return tablePath(venueId, tableId) + "/activate";
+    }
+
     private String qrPath(UUID venueId, UUID tableId) {
         return tablePath(venueId, tableId) + "/qr";
     }
@@ -222,6 +226,24 @@ class TableRestIntegrationTest extends AbstractITest {
     }
 
     @Test
+    void managerActivatesTableAndPersistsActiveStatus() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = managerClientFor(venue);
+        TableTestFixture fixture = tablePolluter.createInactiveTable(venue, "Table 1");
+
+        // Act & Assert
+        managerClient.post()
+                .uri(activateTablePath(venue.venueId(), fixture.tableId()))
+                .exchange()
+                .expectStatus()
+                .isNoContent();
+
+        assertThat(tableRepository.findById(fixture.tableId()))
+                .hasValueSatisfying(stored -> assertThat(stored.getStatus()).isEqualTo(TableStatus.ACTIVE));
+    }
+
+    @Test
     void managerGeneratesQrForActiveTable() {
         // Arrange
         ManagedVenue venue = venuePolluter.createManagedVenue();
@@ -303,6 +325,20 @@ class TableRestIntegrationTest extends AbstractITest {
         // Act & Assert
         managerClient.post()
                 .uri(deactivateTablePath(venue.venueId(), UUID.randomUUID()))
+                .exchange()
+                .expectStatus()
+                .isNotFound();
+    }
+
+    @Test
+    void activateTableReturnsNotFoundWhenTableDoesNotExist() {
+        // Arrange
+        ManagedVenue venue = venuePolluter.createManagedVenue();
+        RestTestClient managerClient = managerClientFor(venue);
+
+        // Act & Assert
+        managerClient.post()
+                .uri(activateTablePath(venue.venueId(), UUID.randomUUID()))
                 .exchange()
                 .expectStatus()
                 .isNotFound();

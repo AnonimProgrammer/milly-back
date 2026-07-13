@@ -5,6 +5,7 @@ import com.milly.table.application.dto.CreateTableRequest;
 import com.milly.table.application.dto.TableResponse;
 import com.milly.table.application.dto.UpdateTableLabelRequest;
 import com.milly.table.application.dto.TableQrResponse;
+import com.milly.table.application.usecase.ActivateTableUseCase;
 import com.milly.table.application.usecase.CreateTableUseCase;
 import com.milly.table.application.usecase.DeactivateTableUseCase;
 import com.milly.table.application.usecase.GenerateTableQrUseCase;
@@ -13,6 +14,7 @@ import com.milly.table.application.usecase.ListTablesUseCase;
 import com.milly.table.application.usecase.UpdateTableLabelUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,6 +38,7 @@ public class TableRestAdapter {
     private final GetTableUseCase getTableUseCase;
     private final UpdateTableLabelUseCase updateTableLabelUseCase;
     private final DeactivateTableUseCase deactivateTableUseCase;
+    private final ActivateTableUseCase activateTableUseCase;
     private final GenerateTableQrUseCase generateTableQrUseCase;
 
     @GetMapping
@@ -52,7 +55,8 @@ public class TableRestAdapter {
             @PathVariable UUID venueId,
             @Valid @RequestBody CreateTableRequest request) {
         TableResponse table = createTableUseCase.execute(userId, venueId, request);
-        return ResponseEntity.status(201).body(ApiResponse.created(table, "Table created successfully."));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(table, "Table created successfully."));
     }
 
     @GetMapping("/{tableId}")
@@ -80,6 +84,15 @@ public class TableRestAdapter {
             @PathVariable UUID venueId,
             @PathVariable UUID tableId) {
         deactivateTableUseCase.execute(userId, venueId, tableId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{tableId}/activate")
+    public ResponseEntity<Void> activateTable(
+            @AuthenticationPrincipal UUID userId,
+            @PathVariable UUID venueId,
+            @PathVariable UUID tableId) {
+        activateTableUseCase.execute(userId, venueId, tableId);
         return ResponseEntity.noContent().build();
     }
 

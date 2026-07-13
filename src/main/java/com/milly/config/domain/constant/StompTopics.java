@@ -26,10 +26,6 @@ public final class StompTopics {
         return "/topic/table/" + tableId + "/chat";
     }
 
-    public static String tableChatSendDestination(UUID tableId) {
-        return "/app/table/" + tableId + "/chat";
-    }
-
     public static String venueStaffTopic(UUID venueId) {
         return "/topic/venue/" + venueId + "/staff";
     }
