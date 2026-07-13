@@ -7,6 +7,8 @@ import com.milly.venue.application.port.outbound.UserProfilePort;
 import com.milly.venue.application.port.outbound.UserProfilePort.UserProfileSummary;
 import com.milly.venue.application.service.VenueAuthorizationService;
 import com.milly.venue.domain.entity.VenueMembershipEntity;
+import com.milly.venue.domain.valueobject.MemberListStatusFilter;
+import com.milly.venue.domain.valueobject.MemberStatus;
 import com.milly.venue.domain.valueobject.VenueRole;
 import com.milly.venue.infrastructure.adapter.outbound.persistence.VenueMembershipJpaRepository;
 import lombok.RequiredArgsConstructor;
@@ -33,15 +35,18 @@ public class ListVenueMembersUseCase {
             UUID venueId,
             UUID userId,
             String cursor,
-            int limit) {
-        venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER);
+            int limit,
+            MemberListStatusFilter statusFilter,
+            VenueRole roleFilter) {
+        venueAuthorizationService.requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         int safeLimit = Math.max(1, limit);
         int page = parseCursor(cursor);
         Pageable pageable = PageRequest.of(page, safeLimit);
 
-        Page<VenueMembershipEntity> memberships = venueMembershipRepository
-                .findAllByVenueIdOrderByCreatedAtAsc(venueId, pageable);
+        MemberStatus status = resolveStatusFilter(statusFilter);
+        Page<VenueMembershipEntity> memberships = venueMembershipRepository.findByVenueWithFilters(
+                venueId, status, roleFilter, pageable);
 
         List<VenueMembershipEntity> membershipContent = memberships.getContent();
         Map<UUID, UserProfileSummary> profilesByUserId = userProfilePort.findByIds(
@@ -59,6 +64,18 @@ public class ListVenueMembersUseCase {
                 memberships.hasNext(),
                 memberships.hasPrevious(),
                 safeLimit));
+    }
+
+    private MemberStatus resolveStatusFilter(MemberListStatusFilter statusFilter) {
+        MemberListStatusFilter effectiveFilter = statusFilter == null
+                ? MemberListStatusFilter.ACTIVE
+                : statusFilter;
+
+        return switch (effectiveFilter) {
+            case ACTIVE -> MemberStatus.ACTIVE;
+            case INACTIVE -> MemberStatus.INACTIVE;
+            case ALL -> null;
+        };
     }
 
     private int parseCursor(String cursor) {
