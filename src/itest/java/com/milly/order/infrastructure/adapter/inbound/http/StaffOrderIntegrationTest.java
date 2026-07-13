@@ -304,7 +304,7 @@ class StaffOrderIntegrationTest extends AbstractITest {
     void waiterCanApproveOrder() {
         // Arrange
         OrderTestFixture fixture = orderPolluter.createOrderableTable();
-        AuthSession waiter = venuePolluter.addMember(fixture.venue().venueId(), VenueRole.WAITER);
+        AuthSession waiter = venuePolluter.addMember(fixture.venue().venueId(), VenueRole.EMPLOYEE);
         UUID orderId = placeOrder(fixture);
         // Act
         StaffOrderApiResponse response = RestTestClientAuth.withSession(restClient, waiter).post()
