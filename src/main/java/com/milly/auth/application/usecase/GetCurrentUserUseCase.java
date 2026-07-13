@@ -30,6 +30,7 @@ public class GetCurrentUserUseCase {
                 user.getEmail(),
                 user.getFirstName(),
                 user.getLastName(),
+                user.getPhoneNumber(),
                 authUser.roles().stream()
                         .map(RoleName::name)
                         .toList()

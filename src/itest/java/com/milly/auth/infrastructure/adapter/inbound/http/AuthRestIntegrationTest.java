@@ -18,6 +18,7 @@ import com.milly.common.application.exception.UserAccountInactiveException;
 import com.milly.config.domain.AbstractITest;
 import com.milly.config.infrastructure.adapter.RestTestClientAuth;
 import com.milly.config.infrastructure.adapter.RestTestClientAuth.AuthCookies;
+import com.milly.config.infrastructure.adapter.dto.ErrorApiResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -96,6 +97,7 @@ class AuthRestIntegrationTest extends AbstractITest {
         assertThat(currentUser.getData().email()).isEqualTo(email);
         assertThat(currentUser.getData().firstName()).isEqualTo("Test");
         assertThat(currentUser.getData().lastName()).isEqualTo("User");
+        assertThat(currentUser.getData().phoneNumber()).isNull();
         assertThat(currentUser.getData().roles()).containsExactly("USER");
     }
 
@@ -278,7 +280,117 @@ class AuthRestIntegrationTest extends AbstractITest {
         assertThat(response.getData().email()).isEqualTo(user.email());
         assertThat(response.getData().firstName()).isEqualTo("Test");
         assertThat(response.getData().lastName()).isEqualTo("User");
+        assertThat(response.getData().phoneNumber()).isNull();
         assertThat(response.getData().roles()).containsExactly("USER");
+    }
+
+    @Test
+    void authenticatedPatchMeUpdatesProfileFields() {
+        // Arrange
+        AuthSession user = authSessionPolluter.registerPasswordUser();
+        RestTestClient userClient = RestTestClientAuth.withSession(restClient, user);
+
+        // Act
+        CurrentUserApiResponse response = userClient.patch()
+                .uri("/api/v1/auth/me")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "firstName", "Omar",
+                        "lastName", "Ismailov",
+                        "phoneNumber", "+994551234567"))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(CurrentUserApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getMessage()).isEqualTo("Profile updated successfully.");
+        assertThat(response.getData().id()).isEqualTo(user.userId());
+        assertThat(response.getData().email()).isEqualTo(user.email());
+        assertThat(response.getData().firstName()).isEqualTo("Omar");
+        assertThat(response.getData().lastName()).isEqualTo("Ismailov");
+        assertThat(response.getData().phoneNumber()).isEqualTo("+994551234567");
+        assertThat(response.getData().roles()).containsExactly("USER");
+
+        UserEntity persisted = userRepository.findById(user.userId()).orElseThrow();
+        assertThat(persisted.getFirstName()).isEqualTo("Omar");
+        assertThat(persisted.getLastName()).isEqualTo("Ismailov");
+        assertThat(persisted.getPhoneNumber()).isEqualTo("+994551234567");
+    }
+
+    @Test
+    void unauthenticatedPatchMeReturnsUnauthorized() {
+        // Act
+        ErrorApiResponse response = restClient.patch()
+                .uri("/api/v1/auth/me")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("firstName", "Omar"))
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody(ErrorApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(response.getErrorCode()).isEqualTo("UNAUTHORIZED");
+        assertThat(response.getMessage()).isEqualTo("No authentication details were provided.");
+    }
+
+    @Test
+    void authenticatedPatchMeWithBlankFirstNameReturnsBadRequest() {
+        // Arrange
+        AuthSession user = authSessionPolluter.registerPasswordUser();
+        RestTestClient userClient = RestTestClientAuth.withSession(restClient, user);
+
+        // Act
+        ErrorApiResponse response = userClient.patch()
+                .uri("/api/v1/auth/me")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("firstName", "   "))
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody(ErrorApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(400);
+        assertThat(response.getErrorCode()).isEqualTo("BAD_REQUEST");
+        assertThat(response.getMessage()).isEqualTo("First name must not be blank.");
+    }
+
+    @Test
+    void authenticatedPatchMeWithInvalidPhoneNumberReturnsBadRequest() {
+        // Arrange
+        AuthSession user = authSessionPolluter.registerPasswordUser();
+        RestTestClient userClient = RestTestClientAuth.withSession(restClient, user);
+
+        // Act
+        ErrorApiResponse response = userClient.patch()
+                .uri("/api/v1/auth/me")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("phoneNumber", "not-a-phone"))
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody(ErrorApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(400);
+        assertThat(response.getErrorCode()).isEqualTo("BAD_REQUEST");
+        assertThat(response.getMessage()).isEqualTo("Phone number must be a valid international number.");
     }
 
     @Test

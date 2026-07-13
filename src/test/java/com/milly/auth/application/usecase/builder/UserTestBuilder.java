@@ -11,6 +11,7 @@ public final class UserTestBuilder {
     private String firstName = "Jane";
     private String lastName = "Doe";
     private String email = "jane.doe@example.com";
+    private String phoneNumber;
     private UserStatus status = UserStatus.ACTIVE;
 
     private UserTestBuilder() {
@@ -40,6 +41,11 @@ public final class UserTestBuilder {
         return this;
     }
 
+    public UserTestBuilder withPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+        return this;
+    }
+
     public UserTestBuilder withStatus(UserStatus status) {
         this.status = status;
         return this;
@@ -48,6 +54,7 @@ public final class UserTestBuilder {
     public UserEntity build() {
         UserEntity user = UserEntity.createActive(firstName, lastName, email);
         user.setId(id);
+        user.setPhoneNumber(phoneNumber);
         user.setStatus(status);
         return user;
     }
