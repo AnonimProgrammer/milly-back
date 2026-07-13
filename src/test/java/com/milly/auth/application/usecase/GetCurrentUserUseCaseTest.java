@@ -62,6 +62,7 @@ class GetCurrentUserUseCaseTest {
         assertThat(response.email()).isEqualTo("jane.doe@example.com");
         assertThat(response.firstName()).isEqualTo("Jane");
         assertThat(response.lastName()).isEqualTo("Doe");
+        assertThat(response.phoneNumber()).isNull();
         assertThat(response.roles()).containsExactly("USER", "ADMIN");
         verify(loadAuthUserUseCase).execute(user);
     }
