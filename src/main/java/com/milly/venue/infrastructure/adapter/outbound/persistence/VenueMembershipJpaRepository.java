@@ -19,11 +19,7 @@ public interface VenueMembershipJpaRepository extends JpaRepository<VenueMembers
 
     Optional<VenueMembershipEntity> findByIdAndVenueId(UUID id, UUID venueId);
 
-    boolean existsByVenueIdAndUserIdAndRoleIn(UUID venueId, UUID userId, List<VenueRole> roles);
-
     List<VenueMembershipEntity> findAllByUserId(UUID userId);
-
-    Page<VenueMembershipEntity> findAllByVenueIdOrderByCreatedAtAsc(UUID venueId, Pageable pageable);
 
     @Query("""
             SELECT m FROM VenueMembershipEntity m
