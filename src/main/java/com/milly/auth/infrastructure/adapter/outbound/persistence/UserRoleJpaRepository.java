@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,4 +19,13 @@ public interface UserRoleJpaRepository extends JpaRepository<UserRoleEntity, Use
             WHERE ur.userId = :userId
             """)
     List<RoleName> findRoleNamesByUserId(@Param("userId") UUID userId);
+
+    @Query("""
+            SELECT ur.userId, r.name FROM UserRoleEntity ur
+            JOIN RoleEntity r ON ur.roleId = r.id
+            WHERE ur.userId IN :userIds
+            """)
+    List<Object[]> findRoleNamesByUserIds(@Param("userIds") Collection<UUID> userIds);
+
+    void deleteByUserId(UUID userId);
 }

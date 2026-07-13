@@ -1,5 +1,6 @@
 package com.milly.config.infrastructure.config.security;
 
+import com.milly.config.infrastructure.adapter.inbound.http.AccessDeniedHandlerImpl;
 import com.milly.config.infrastructure.adapter.inbound.http.AuthenticationEntryPointImpl;
 import com.milly.config.infrastructure.adapter.inbound.http.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +19,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final AuthenticationEntryPointImpl authenticationEntryPoint;
+    private final AccessDeniedHandlerImpl accessDeniedHandler;
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -34,8 +36,11 @@ public class SecurityConfig {
                                 "/actuator/**",
                                 "/ws/**")
                         .permitAll()
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
-                .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
