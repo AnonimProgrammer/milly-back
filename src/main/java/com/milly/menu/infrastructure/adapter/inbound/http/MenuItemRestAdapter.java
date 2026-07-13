@@ -11,6 +11,7 @@ import com.milly.menu.application.usecase.ListMenuItemsUseCase;
 import com.milly.menu.application.usecase.UpdateMenuItemUseCase;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -50,7 +51,8 @@ public class MenuItemRestAdapter {
             @PathVariable UUID venueId,
             @Valid @RequestBody CreateMenuItemRequest request) {
         MenuItemResponse menuItem = createMenuItemUseCase.execute(userId, venueId, request);
-        return ResponseEntity.status(201).body(ApiResponse.created(menuItem, "Menu item created successfully."));
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.created(menuItem, "Menu item created successfully."));
     }
 
     @GetMapping("/{itemId}")
