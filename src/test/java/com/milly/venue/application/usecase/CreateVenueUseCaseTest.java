@@ -47,15 +47,15 @@ class CreateVenueUseCaseTest {
     }
 
     @Test
-    void createsActiveVenueAndManagerMembership() {
+    void createsActiveVenueAndOwnerMembership() {
         // Arrange
-        VenueMembershipEntity membership = VenueMembershipEntity.create(venueId, userId, VenueRole.MANAGER);
+        VenueMembershipEntity membership = VenueMembershipEntity.create(venueId, userId, VenueRole.OWNER);
         when(venueRepository.save(any(VenueEntity.class))).thenAnswer(invocation -> {
             VenueEntity savedVenue = invocation.getArgument(0);
             savedVenue.setId(venueId);
             return savedVenue;
         });
-        when(assignVenueMembershipUseCase.execute(venueId, userId, VenueRole.MANAGER)).thenReturn(membership);
+        when(assignVenueMembershipUseCase.execute(venueId, userId, VenueRole.OWNER)).thenReturn(membership);
 
         // Act
         CreateVenueResponse response = createVenueUseCase.execute(
@@ -65,12 +65,12 @@ class CreateVenueUseCaseTest {
         assertThat(response.id()).isEqualTo(venueId);
         assertThat(response.name()).isEqualTo("Milly Bistro");
         assertThat(response.location()).isEqualTo("Barcelona, Spain");
-        assertThat(response.role()).isEqualTo(VenueRole.MANAGER);
+        assertThat(response.role()).isEqualTo(VenueRole.OWNER);
         verify(venueRepository).save(venueCaptor.capture());
         assertThat(venueCaptor.getValue().getName()).isEqualTo("Milly Bistro");
         assertThat(venueCaptor.getValue().getLocation()).isEqualTo("Barcelona, Spain");
         assertThat(venueCaptor.getValue().getStatus()).isEqualTo(VenueStatus.ACTIVE);
-        verify(assignVenueMembershipUseCase).execute(venueId, userId, VenueRole.MANAGER);
+        verify(assignVenueMembershipUseCase).execute(venueId, userId, VenueRole.OWNER);
     }
 
     @Test
@@ -81,7 +81,7 @@ class CreateVenueUseCaseTest {
             savedVenue.setId(venueId);
             return savedVenue;
         });
-        when(assignVenueMembershipUseCase.execute(venueId, userId, VenueRole.MANAGER))
+        when(assignVenueMembershipUseCase.execute(venueId, userId, VenueRole.OWNER))
                 .thenThrow(new AccessDeniedException());
 
         // Act & Assert
@@ -90,6 +90,6 @@ class CreateVenueUseCaseTest {
                 .isInstanceOf(AccessDeniedException.class);
 
         verify(venueRepository).save(any(VenueEntity.class));
-        verify(assignVenueMembershipUseCase).execute(venueId, userId, VenueRole.MANAGER);
+        verify(assignVenueMembershipUseCase).execute(venueId, userId, VenueRole.OWNER);
     }
 }
