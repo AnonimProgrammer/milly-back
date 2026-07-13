@@ -105,10 +105,10 @@ class RedeemVenueInvitationUseCaseTest {
     @Test
     void throwsAlreadyMemberWithoutConsumingToken() {
         // Arrange
-        VenueInvitation invitation = aStoredInvitation(VenueRole.WAITER);
+        VenueInvitation invitation = aStoredInvitation(VenueRole.EMPLOYEE);
         when(venueInvitationStore.find(token)).thenReturn(Optional.of(invitation));
         when(venueMembershipRepository.findByUserIdAndVenueId(userId, venueId))
-                .thenReturn(Optional.of(VenueMembershipEntity.create(venueId, userId, VenueRole.WAITER)));
+                .thenReturn(Optional.of(VenueMembershipEntity.create(venueId, userId, VenueRole.EMPLOYEE)));
 
         // Act & Assert
         assertThatThrownBy(() -> redeemVenueInvitationUseCase.execute(
@@ -122,7 +122,7 @@ class RedeemVenueInvitationUseCaseTest {
     @Test
     void throwsInvalidInvitationWhenTokenWasAlreadyUsed() {
         // Arrange
-        VenueInvitation invitation = aStoredInvitation(VenueRole.WAITER);
+        VenueInvitation invitation = aStoredInvitation(VenueRole.EMPLOYEE);
         when(venueInvitationStore.find(token)).thenReturn(Optional.of(invitation));
         when(venueMembershipRepository.findByUserIdAndVenueId(userId, venueId)).thenReturn(Optional.empty());
         when(venueInvitationStore.claim(token)).thenReturn(Optional.empty());
