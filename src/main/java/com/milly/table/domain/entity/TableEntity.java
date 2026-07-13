@@ -60,4 +60,8 @@ public class TableEntity {
     public void deactivate() {
         this.status = TableStatus.INACTIVE;
     }
+
+    public void activate() {
+        this.status = TableStatus.ACTIVE;
+    }
 }
