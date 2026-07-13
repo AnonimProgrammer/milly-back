@@ -21,7 +21,7 @@ public class ListMenuItemsUseCase {
 
     @Transactional(readOnly = true)
     public List<MenuItemResponse> execute(UUID userId, UUID venueId) {
-        venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER);
+        venueAuthorizationService.requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         return menuItemRepository.findByVenueIdAndStatusOrderByCategoryAscNameAsc(venueId, MenuItemStatus.ACTIVE).stream()
                 .map(MenuItemResponse::of)

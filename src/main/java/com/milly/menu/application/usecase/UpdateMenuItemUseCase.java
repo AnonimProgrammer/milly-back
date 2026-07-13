@@ -24,7 +24,7 @@ public class UpdateMenuItemUseCase {
 
     @Transactional
     public MenuItemResponse execute(UUID userId, UUID venueId, UUID itemId, UpdateMenuItemRequest request) {
-        venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER);
+        venueAuthorizationService.requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         MenuItemEntity menuItem = menuItemRepository
                 .findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE)

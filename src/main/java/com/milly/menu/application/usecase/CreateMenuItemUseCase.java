@@ -23,7 +23,7 @@ public class CreateMenuItemUseCase {
 
     @Transactional
     public MenuItemResponse execute(UUID userId, UUID venueId, CreateMenuItemRequest request) {
-        venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER);
+        venueAuthorizationService.requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         MenuItemEntity menuItem = MenuItemEntity.create(
                 venueId,
