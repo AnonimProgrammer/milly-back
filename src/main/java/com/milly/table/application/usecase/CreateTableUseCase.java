@@ -22,7 +22,7 @@ public class CreateTableUseCase {
 
     @Transactional
     public TableResponse execute(UUID userId, UUID venueId, CreateTableRequest request) {
-        venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER);
+        venueAuthorizationService.requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         TableEntity table = TableEntity.create(venueId, request.label(), TableStatus.ACTIVE);
         return TableResponse.of(tableRepository.save(table));

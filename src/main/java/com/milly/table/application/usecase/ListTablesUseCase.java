@@ -20,7 +20,7 @@ public class ListTablesUseCase {
 
     @Transactional(readOnly = true)
     public List<TableResponse> execute(UUID userId, UUID venueId) {
-        venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER);
+        venueAuthorizationService.requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         return tableRepository.findByVenueIdOrderByLabelAsc(venueId).stream()
                 .map(TableResponse::of)

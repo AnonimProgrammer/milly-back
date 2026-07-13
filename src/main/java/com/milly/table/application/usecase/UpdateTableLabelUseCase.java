@@ -22,7 +22,7 @@ public class UpdateTableLabelUseCase {
 
     @Transactional
     public TableResponse execute(UUID userId, UUID venueId, UUID tableId, UpdateTableLabelRequest request) {
-        venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER);
+        venueAuthorizationService.requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         TableEntity table = tableRepository.findByIdAndVenueId(tableId, venueId)
                 .orElseThrow(ResourceNotFoundException::new);
