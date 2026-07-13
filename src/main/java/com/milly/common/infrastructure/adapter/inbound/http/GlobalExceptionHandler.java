@@ -37,6 +37,12 @@ public class GlobalExceptionHandler {
         return HttpErrorResponses.of(HttpStatus.FORBIDDEN, ErrorCode.FORBIDDEN, AccessDeniedException.MESSAGE);
     }
 
+    @ExceptionHandler(InactiveMembershipException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInactiveMembership(InactiveMembershipException exception) {
+        return HttpErrorResponses.of(
+                HttpStatus.FORBIDDEN, ErrorCode.MEMBERSHIP_INACTIVE, InactiveMembershipException.MESSAGE);
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleResourceNotFound(ResourceNotFoundException exception) {
         return HttpErrorResponses.of(HttpStatus.NOT_FOUND, ErrorCode.NOT_FOUND, ResourceNotFoundException.MESSAGE);
