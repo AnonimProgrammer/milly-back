@@ -23,6 +23,7 @@ public class RefreshSessionUseCase {
     private final SessionTokenPort sessionTokenPort;
     private final UserJpaRepository userRepository;
     private final LoadAuthUserUseCase loadAuthUserUseCase;
+    private final EnsureActiveUserUseCase ensureActiveUserUseCase;
     private final RefreshTokenStore refreshTokenStore;
 
     @Transactional(readOnly = true)
@@ -42,6 +43,8 @@ public class RefreshSessionUseCase {
 
             UserEntity user = userRepository.findById(userId)
                     .orElseThrow(RefreshSessionFailedException::new);
+
+            ensureActiveUserUseCase.execute(user);
 
             AuthUser authUser = loadAuthUserUseCase.execute(user);
             String accessToken = sessionTokenPort.issueAccessToken(authUser);
