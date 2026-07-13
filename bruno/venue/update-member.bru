@@ -1,0 +1,17 @@
+meta {
+  name: Update member
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/api/v1/venues/{{testVenueId}}/members/{{testMemberId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "status": "inactive"
+  }
+}
