@@ -2,6 +2,7 @@ package com.milly.venue.application.dto;
 
 import com.milly.venue.domain.entity.VenueEntity;
 import com.milly.venue.domain.entity.VenueMembershipEntity;
+import com.milly.venue.domain.valueobject.MemberStatus;
 import com.milly.venue.domain.valueobject.VenueRole;
 
 import java.util.UUID;
@@ -10,7 +11,8 @@ public record VenueMembershipResponse(
         UUID venueId,
         String venueName,
         String location,
-        VenueRole role
+        VenueRole role,
+        MemberStatus status
 ) {
 
     public static VenueMembershipResponse of(
@@ -20,7 +22,8 @@ public record VenueMembershipResponse(
                 venue.getId(),
                 venue.getName(),
                 venue.getLocation(),
-                membership.getRole()
+                membership.getRole(),
+                membership.getStatus()
         );
     }
 }

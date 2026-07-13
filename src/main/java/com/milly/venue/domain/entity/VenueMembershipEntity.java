@@ -1,6 +1,7 @@
 package com.milly.venue.domain.entity;
 
 import com.github.f4b6a3.ulid.UlidCreator;
+import com.milly.venue.domain.valueobject.MemberStatus;
 import com.milly.venue.domain.valueobject.VenueRole;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,6 +38,10 @@ public class VenueMembershipEntity {
     @Column(nullable = false)
     private VenueRole role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private MemberStatus status = MemberStatus.ACTIVE;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt = OffsetDateTime.now();
@@ -46,6 +51,19 @@ public class VenueMembershipEntity {
         membership.setVenueId(venueId);
         membership.setUserId(userId);
         membership.setRole(role);
+        membership.setStatus(MemberStatus.ACTIVE);
         return membership;
+    }
+
+    public void activate() {
+        this.status = MemberStatus.ACTIVE;
+    }
+
+    public void deactivate() {
+        this.status = MemberStatus.INACTIVE;
+    }
+
+    public void changeRole(VenueRole role) {
+        this.role = role;
     }
 }

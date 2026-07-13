@@ -66,7 +66,7 @@ class CreateTableUseCaseTest {
         assertThat(response.venueId()).isEqualTo(venueId);
         assertThat(response.label()).isEqualTo("Patio 1");
         assertThat(response.status()).isEqualTo(TableStatus.ACTIVE);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(tableRepository).save(tableCaptor.capture());
         assertThat(tableCaptor.getValue().getVenueId()).isEqualTo(venueId);
         assertThat(tableCaptor.getValue().getLabel()).isEqualTo("Patio 1");
@@ -77,7 +77,7 @@ class CreateTableUseCaseTest {
     void throwsAccessDeniedWhenUserIsNotManager() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+                .when(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         // Act & Assert
         assertThatThrownBy(() -> createTableUseCase.execute(userId, venueId, new CreateTableRequest("Patio 1")))

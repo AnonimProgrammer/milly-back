@@ -25,7 +25,11 @@ public class CreateVenueInvitationUseCase {
 
     public CreateVenueInvitationResponse execute(
             UUID userId, UUID venueId, CreateVenueInvitationRequest request) {
-        venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER);
+        if (request.role() == VenueRole.OWNER) {
+            throw new IllegalArgumentException("Cannot invite members with the owner role.");
+        }
+
+        venueAuthorizationService.requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         venueRepository.findById(venueId).orElseThrow(ResourceNotFoundException::new);
 
         UUID token = UUID.randomUUID();

@@ -68,7 +68,7 @@ class MenuItemQueryUseCasesTest {
         assertThat(response).extracting(MenuItemResponse::name).containsExactly("Pasta", "Pizza");
         assertThat(response).extracting(MenuItemResponse::status)
                 .containsExactly(MenuItemStatus.ACTIVE, MenuItemStatus.ACTIVE);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(menuItemRepository).findByVenueIdAndStatusOrderByCategoryAscNameAsc(venueId, MenuItemStatus.ACTIVE);
     }
 
@@ -83,7 +83,7 @@ class MenuItemQueryUseCasesTest {
 
         // Assert
         assertThat(response).isEmpty();
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(menuItemRepository).findByVenueIdAndStatusOrderByCategoryAscNameAsc(venueId, MenuItemStatus.ACTIVE);
     }
 
@@ -91,7 +91,7 @@ class MenuItemQueryUseCasesTest {
     void listStopsWhenManagerAuthorizationFails() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+                .when(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         // Act & Assert
         assertThrows(AccessDeniedException.class, () -> listMenuItemsUseCase.execute(userId, venueId));
@@ -116,7 +116,7 @@ class MenuItemQueryUseCasesTest {
         assertThat(response.description()).isEqualTo("Cheese");
         assertThat(response.price()).isEqualByComparingTo("12.50");
         assertThat(response.status()).isEqualTo(MenuItemStatus.ACTIVE);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
     }
 
@@ -130,7 +130,7 @@ class MenuItemQueryUseCasesTest {
         assertThrows(ResourceNotFoundException.class,
                 () -> getMenuItemUseCase.execute(userId, venueId, itemId));
 
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
     }
 
@@ -138,7 +138,7 @@ class MenuItemQueryUseCasesTest {
     void getStopsWhenManagerAuthorizationFails() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+                .when(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         // Act & Assert
         assertThrows(AccessDeniedException.class,

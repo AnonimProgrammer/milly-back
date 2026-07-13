@@ -57,7 +57,7 @@ class ListTablesUseCaseTest {
         assertThat(response).hasSize(2);
         assertThat(response).extracting(TableResponse::status)
                 .containsExactly(TableStatus.ACTIVE, TableStatus.INACTIVE);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
     }
 
     @Test
@@ -70,14 +70,14 @@ class ListTablesUseCaseTest {
 
         // Assert
         assertThat(response).isEmpty();
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
     }
 
     @Test
     void throwsAccessDeniedWhenUserIsNotManager() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+                .when(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         // Act & Assert
         assertThatThrownBy(() -> listTablesUseCase.execute(userId, venueId))

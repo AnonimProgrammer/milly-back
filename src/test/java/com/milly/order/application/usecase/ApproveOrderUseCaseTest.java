@@ -83,7 +83,7 @@ class ApproveOrderUseCaseTest {
         assertThat(pendingOrder.getStatus()).isEqualTo(OrderStatus.APPROVED);
         assertThat(pendingOrder.getApprovedAt()).isNotNull();
         assertThat(response.status()).isEqualTo(OrderStatus.APPROVED);
-        verify(venueAuthorizationService).requireMember(userId, venueId);
+        verify(venueAuthorizationService).requireActiveMember(userId, venueId);
         verify(orderPreparationEstimator).tryEstimate(venueId, orderId, List.of());
         verify(orderEventNotifier).orderApproved(orderId, venueId, tableId);
     }
@@ -118,7 +118,7 @@ class ApproveOrderUseCaseTest {
     void throwsAccessDeniedWhenUserIsNotVenueMember() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireMember(userId, venueId);
+                .when(venueAuthorizationService).requireActiveMember(userId, venueId);
 
         // Act & Assert
         assertThatThrownBy(() -> approveOrderUseCase.execute(venueId, userId, orderId))

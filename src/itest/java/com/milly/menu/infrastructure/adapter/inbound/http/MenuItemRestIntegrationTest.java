@@ -116,7 +116,7 @@ class MenuItemRestIntegrationTest extends AbstractITest {
     void waiterListMenuItemsReturnsForbidden() {
         // Arrange
         ManagedVenue venue = venuePolluter.createManagedVenue();
-        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.WAITER);
+        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.EMPLOYEE);
         RestTestClient waiterClient = RestTestClientAuth.withSession(restClient, waiter);
 
         // Act & Assert
@@ -243,7 +243,7 @@ class MenuItemRestIntegrationTest extends AbstractITest {
     void waiterCreateMenuItemReturnsForbidden() {
         // Arrange
         ManagedVenue venue = venuePolluter.createManagedVenue();
-        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.WAITER);
+        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.EMPLOYEE);
         RestTestClient waiterClient = RestTestClientAuth.withSession(restClient, waiter);
         long itemCount = menuItemRepository.count();
 
@@ -434,7 +434,7 @@ class MenuItemRestIntegrationTest extends AbstractITest {
     void waiterGetMenuItemReturnsForbidden() {
         // Arrange
         ManagedVenue venue = venuePolluter.createManagedVenue();
-        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.WAITER);
+        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.EMPLOYEE);
         MenuItemEntity item = menuItemPolluter.createActiveItem(venue.venueId(), "Pizza");
         RestTestClient waiterClient = RestTestClientAuth.withSession(restClient, waiter);
 
@@ -575,7 +575,7 @@ class MenuItemRestIntegrationTest extends AbstractITest {
     void waiterUpdateMenuItemReturnsForbidden() {
         // Arrange
         ManagedVenue venue = venuePolluter.createManagedVenue();
-        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.WAITER);
+        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.EMPLOYEE);
         MenuItemEntity item = menuItemPolluter.createActiveItem(venue.venueId(), "Pizza");
         RestTestClient waiterClient = RestTestClientAuth.withSession(restClient, waiter);
 
@@ -766,7 +766,7 @@ class MenuItemRestIntegrationTest extends AbstractITest {
     void waiterDeleteMenuItemReturnsForbidden() {
         // Arrange
         ManagedVenue venue = venuePolluter.createManagedVenue();
-        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.WAITER);
+        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.EMPLOYEE);
         MenuItemEntity item = menuItemPolluter.createActiveItem(venue.venueId(), "Pizza");
         RestTestClient waiterClient = RestTestClientAuth.withSession(restClient, waiter);
 

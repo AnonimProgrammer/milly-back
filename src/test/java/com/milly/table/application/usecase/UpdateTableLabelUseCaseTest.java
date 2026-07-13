@@ -61,7 +61,7 @@ class UpdateTableLabelUseCaseTest {
 
         // Assert
         assertThat(response.label()).isEqualTo("Window 2");
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(tableRepository).save(table);
     }
 
@@ -80,7 +80,7 @@ class UpdateTableLabelUseCaseTest {
         // Assert
         assertThat(response.label()).isEqualTo("Archived 1");
         assertThat(response.status()).isEqualTo(TableStatus.INACTIVE);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
     }
 
     @Test
@@ -100,7 +100,7 @@ class UpdateTableLabelUseCaseTest {
     void throwsAccessDeniedWhenUserIsNotManager() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+                .when(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         // Act & Assert
         assertThatThrownBy(() -> updateTableLabelUseCase.execute(

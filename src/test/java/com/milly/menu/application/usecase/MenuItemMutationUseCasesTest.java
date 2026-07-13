@@ -80,7 +80,7 @@ class MenuItemMutationUseCasesTest {
         assertThat(response.approximatePreparationMinutes()).isEqualTo(20);
         assertThat(response.category()).isEqualTo(MenuItemCategory.MAINS);
         assertThat(response.status()).isEqualTo(MenuItemStatus.ACTIVE);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(menuItemRepository).save(any(MenuItemEntity.class));
     }
 
@@ -96,7 +96,7 @@ class MenuItemMutationUseCasesTest {
 
         // Assert
         assertThat(response.description()).isNull();
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(menuItemRepository).save(any(MenuItemEntity.class));
     }
 
@@ -129,7 +129,7 @@ class MenuItemMutationUseCasesTest {
         assertThat(response.name()).isEqualTo("Pasta");
         assertThat(response.description()).isEqualTo("Cheese");
         assertThat(response.price()).isEqualByComparingTo("12.50");
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
         verify(menuItemRepository).save(item);
     }
@@ -156,7 +156,7 @@ class MenuItemMutationUseCasesTest {
         assertThat(response.description()).isEqualTo("Tomato");
         assertThat(response.price()).isEqualByComparingTo("14.25");
         assertThat(response.status()).isEqualTo(MenuItemStatus.ACTIVE);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
         verify(menuItemRepository).save(item);
     }
@@ -171,7 +171,7 @@ class MenuItemMutationUseCasesTest {
         assertThrows(ResourceNotFoundException.class, () -> updateMenuItemUseCase.execute(
                 userId, venueId, itemId, new UpdateMenuItemRequest("Pasta", null, null, null, null)));
 
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
         verify(menuItemRepository, never()).save(any(MenuItemEntity.class));
     }
@@ -202,7 +202,7 @@ class MenuItemMutationUseCasesTest {
         // Assert
         ArgumentCaptor<MenuItemEntity> itemCaptor = ArgumentCaptor.forClass(MenuItemEntity.class);
         assertThat(item.getStatus()).isEqualTo(MenuItemStatus.DELETED);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
         verify(menuItemRepository).save(itemCaptor.capture());
         assertThat(itemCaptor.getValue().getId()).isEqualTo(itemId);
@@ -219,7 +219,7 @@ class MenuItemMutationUseCasesTest {
         assertThrows(ResourceNotFoundException.class,
                 () -> deleteMenuItemUseCase.execute(userId, venueId, itemId));
 
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
         verify(menuItemRepository).findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE);
         verify(menuItemRepository, never()).save(any(MenuItemEntity.class));
     }
@@ -238,7 +238,7 @@ class MenuItemMutationUseCasesTest {
 
     private void denyManager() {
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+                .when(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
     }
 
     private MenuItemEntity menuItem() {

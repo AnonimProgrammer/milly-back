@@ -60,7 +60,7 @@ class ListMyVenuesUseCaseTest {
     @Test
     void returnsMembershipsSortedByVenueName() {
         // Arrange
-        VenueMembershipEntity bistroMembership = VenueMembershipEntity.create(venueId, userId, VenueRole.WAITER);
+        VenueMembershipEntity bistroMembership = VenueMembershipEntity.create(venueId, userId, VenueRole.EMPLOYEE);
         VenueMembershipEntity atelierMembership = VenueMembershipEntity.create(
                 anotherVenueId, userId, VenueRole.MANAGER);
         VenueEntity bistro = VenueTestBuilder.aVenue()
@@ -89,7 +89,7 @@ class ListMyVenuesUseCaseTest {
         assertThat(response.get(1).venueId()).isEqualTo(venueId);
         assertThat(response.get(1).venueName()).isEqualTo("Milly Bistro");
         assertThat(response.get(1).location()).isEqualTo("Barcelona, Spain");
-        assertThat(response.get(1).role()).isEqualTo(VenueRole.WAITER);
+        assertThat(response.get(1).role()).isEqualTo(VenueRole.EMPLOYEE);
         verify(venueMembershipRepository).findAllByUserId(userId);
         verify(venueRepository).findAllById(List.of(venueId, anotherVenueId));
     }
@@ -97,7 +97,7 @@ class ListMyVenuesUseCaseTest {
     @Test
     void propagatesFailureWhenMembershipVenueIsMissingFromRepositoryResult() {
         // Arrange
-        VenueMembershipEntity membership = VenueMembershipEntity.create(venueId, userId, VenueRole.WAITER);
+        VenueMembershipEntity membership = VenueMembershipEntity.create(venueId, userId, VenueRole.EMPLOYEE);
         when(venueMembershipRepository.findAllByUserId(userId)).thenReturn(List.of(membership));
         when(venueRepository.findAllById(anyIterable())).thenReturn(List.of());
 

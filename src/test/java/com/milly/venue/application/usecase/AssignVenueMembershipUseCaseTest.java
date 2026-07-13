@@ -50,17 +50,17 @@ class AssignVenueMembershipUseCaseTest {
         });
 
         // Act
-        VenueMembershipEntity membership = assignVenueMembershipUseCase.execute(venueId, userId, VenueRole.WAITER);
+        VenueMembershipEntity membership = assignVenueMembershipUseCase.execute(venueId, userId, VenueRole.EMPLOYEE);
 
         // Assert
         assertThat(membership.getId()).isEqualTo(membershipId);
         assertThat(membership.getVenueId()).isEqualTo(venueId);
         assertThat(membership.getUserId()).isEqualTo(userId);
-        assertThat(membership.getRole()).isEqualTo(VenueRole.WAITER);
+        assertThat(membership.getRole()).isEqualTo(VenueRole.EMPLOYEE);
         verify(venueMembershipRepository).save(membershipCaptor.capture());
         assertThat(membershipCaptor.getValue().getVenueId()).isEqualTo(venueId);
         assertThat(membershipCaptor.getValue().getUserId()).isEqualTo(userId);
-        assertThat(membershipCaptor.getValue().getRole()).isEqualTo(VenueRole.WAITER);
+        assertThat(membershipCaptor.getValue().getRole()).isEqualTo(VenueRole.EMPLOYEE);
     }
 
     @Test

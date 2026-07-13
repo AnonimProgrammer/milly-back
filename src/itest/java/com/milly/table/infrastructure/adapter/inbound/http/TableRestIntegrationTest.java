@@ -72,7 +72,7 @@ class TableRestIntegrationTest extends AbstractITest {
     void waiterListTablesReturnsForbidden() {
         // Arrange
         ManagedVenue venue = venuePolluter.createManagedVenue();
-        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.WAITER);
+        AuthSession waiter = venuePolluter.addMember(venue.venueId(), VenueRole.EMPLOYEE);
         RestTestClient waiterClient = RestTestClientAuth.withSession(restClient, waiter);
 
         // Act & Assert

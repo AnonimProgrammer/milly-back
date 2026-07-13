@@ -62,7 +62,7 @@ public class TopicSubscriptionInterceptor implements ChannelInterceptor {
         }
 
         try {
-            venueAuthorizationService.requireMember(userId, venueId.get());
+            venueAuthorizationService.requireActiveMember(userId, venueId.get());
             return true;
         } catch (RuntimeException ex) {
             return false;

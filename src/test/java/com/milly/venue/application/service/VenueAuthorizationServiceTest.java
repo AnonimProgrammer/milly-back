@@ -1,6 +1,7 @@
 package com.milly.venue.application.service;
 
 import com.milly.common.application.exception.AccessDeniedException;
+import com.milly.common.application.exception.InactiveMembershipException;
 import com.milly.venue.domain.entity.VenueMembershipEntity;
 import com.milly.venue.domain.valueobject.VenueRole;
 import com.milly.venue.infrastructure.adapter.outbound.persistence.VenueMembershipJpaRepository;
@@ -31,23 +32,29 @@ class VenueAuthorizationServiceTest {
 
     private final UUID userId = UUID.randomUUID();
     private final UUID venueId = UUID.randomUUID();
+    private final UUID targetUserId = UUID.randomUUID();
 
     @Test
     void returnsMembershipWhenUserIsMember() {
-        VenueMembershipEntity membership = membership(VenueRole.WAITER);
+        // Arrange
+        VenueMembershipEntity membership = membership(userId, VenueRole.EMPLOYEE);
         when(venueMembershipRepository.findByUserIdAndVenueId(userId, venueId))
                 .thenReturn(Optional.of(membership));
 
+        // Act
         VenueMembershipEntity result = venueAuthorizationService.requireMember(userId, venueId);
 
+        // Assert
         assertThat(result).isSameAs(membership);
         verify(venueMembershipRepository).findByUserIdAndVenueId(userId, venueId);
     }
 
     @Test
     void throwsAccessDeniedWhenRequiredMembershipIsMissing() {
+        // Arrange
         when(venueMembershipRepository.findByUserIdAndVenueId(userId, venueId)).thenReturn(Optional.empty());
 
+        // Act & Assert
         assertThatThrownBy(() -> venueAuthorizationService.requireMember(userId, venueId))
                 .isInstanceOf(AccessDeniedException.class);
 
@@ -55,37 +62,103 @@ class VenueAuthorizationServiceTest {
     }
 
     @Test
-    void managerRoleIsAllowed() {
+    void inactiveMemberIsDeniedForActiveMembershipCheck() {
+        // Arrange
+        VenueMembershipEntity membership = membership(userId, VenueRole.EMPLOYEE);
+        membership.deactivate();
         when(venueMembershipRepository.findByUserIdAndVenueId(userId, venueId))
-                .thenReturn(Optional.of(membership(VenueRole.MANAGER)));
+                .thenReturn(Optional.of(membership));
 
-        assertDoesNotThrow(() -> venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER));
-
-        verify(venueMembershipRepository).findByUserIdAndVenueId(userId, venueId);
+        // Act & Assert
+        assertThrows(InactiveMembershipException.class,
+                () -> venueAuthorizationService.requireActiveMember(userId, venueId));
     }
 
     @Test
-    void waiterRoleIsDenied() {
+    void managerRoleIsAllowedForAtLeastManagerCheck() {
+        // Arrange
         when(venueMembershipRepository.findByUserIdAndVenueId(userId, venueId))
-                .thenReturn(Optional.of(membership(VenueRole.WAITER)));
+                .thenReturn(Optional.of(membership(userId, VenueRole.MANAGER)));
 
-        assertThrows(AccessDeniedException.class,
-                () -> venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER));
-
-        verify(venueMembershipRepository).findByUserIdAndVenueId(userId, venueId);
+        // Act & Assert
+        assertDoesNotThrow(() -> venueAuthorizationService.requireAtLeastRole(userId, venueId, VenueRole.MANAGER));
     }
 
     @Test
-    void missingMembershipIsDenied() {
-        when(venueMembershipRepository.findByUserIdAndVenueId(userId, venueId)).thenReturn(Optional.empty());
+    void ownerRoleIsAllowedForAtLeastManagerCheck() {
+        // Arrange
+        when(venueMembershipRepository.findByUserIdAndVenueId(userId, venueId))
+                .thenReturn(Optional.of(membership(userId, VenueRole.OWNER)));
 
-        assertThrows(AccessDeniedException.class,
-                () -> venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER));
-
-        verify(venueMembershipRepository).findByUserIdAndVenueId(userId, venueId);
+        // Act & Assert
+        assertDoesNotThrow(() -> venueAuthorizationService.requireAtLeastRole(userId, venueId, VenueRole.MANAGER));
     }
 
-    private VenueMembershipEntity membership(VenueRole role) {
-        return VenueMembershipEntity.create(venueId, userId, role);
+    @Test
+    void employeeRoleIsDeniedForAtLeastManagerCheck() {
+        // Arrange
+        when(venueMembershipRepository.findByUserIdAndVenueId(userId, venueId))
+                .thenReturn(Optional.of(membership(userId, VenueRole.EMPLOYEE)));
+
+        // Act & Assert
+        assertThrows(AccessDeniedException.class,
+                () -> venueAuthorizationService.requireAtLeastRole(userId, venueId, VenueRole.MANAGER));
+    }
+
+    @Test
+    void managerCanManageEmployee() {
+        // Arrange
+        VenueMembershipEntity actor = membership(userId, VenueRole.MANAGER);
+        VenueMembershipEntity target = membership(targetUserId, VenueRole.EMPLOYEE);
+
+        // Act & Assert
+        assertDoesNotThrow(() -> venueAuthorizationService.requireCanManageMember(actor, target));
+    }
+
+    @Test
+    void managerCannotManageAnotherManager() {
+        // Arrange
+        VenueMembershipEntity actor = membership(userId, VenueRole.MANAGER);
+        VenueMembershipEntity target = membership(targetUserId, VenueRole.MANAGER);
+
+        // Act & Assert
+        assertThrows(AccessDeniedException.class,
+                () -> venueAuthorizationService.requireCanManageMember(actor, target));
+    }
+
+    @Test
+    void ownerCanManageManager() {
+        // Arrange
+        VenueMembershipEntity actor = membership(userId, VenueRole.OWNER);
+        VenueMembershipEntity target = membership(targetUserId, VenueRole.MANAGER);
+
+        // Act & Assert
+        assertDoesNotThrow(() -> venueAuthorizationService.requireCanManageMember(actor, target));
+    }
+
+    @Test
+    void ownerCannotManageAnotherOwner() {
+        // Arrange
+        VenueMembershipEntity actor = membership(userId, VenueRole.OWNER);
+        VenueMembershipEntity target = membership(targetUserId, VenueRole.OWNER);
+
+        // Act & Assert
+        assertThrows(AccessDeniedException.class,
+                () -> venueAuthorizationService.requireCanManageMember(actor, target));
+    }
+
+    @Test
+    void cannotAssignOwnerRole() {
+        // Arrange
+        VenueMembershipEntity actor = membership(userId, VenueRole.OWNER);
+        VenueMembershipEntity target = membership(targetUserId, VenueRole.EMPLOYEE);
+
+        // Act & Assert
+        assertThrows(AccessDeniedException.class,
+                () -> venueAuthorizationService.requireCanAssignRole(actor, target, VenueRole.OWNER));
+    }
+
+    private VenueMembershipEntity membership(UUID memberUserId, VenueRole role) {
+        return VenueMembershipEntity.create(venueId, memberUserId, role);
     }
 }

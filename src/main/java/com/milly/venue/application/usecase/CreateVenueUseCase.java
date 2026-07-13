@@ -26,7 +26,7 @@ public class CreateVenueUseCase {
         VenueEntity savedVenue = venueRepository.save(venue);
 
         VenueMembershipEntity membership = assignVenueMembershipUseCase.execute(
-                savedVenue.getId(), userId, VenueRole.MANAGER);
+                savedVenue.getId(), userId, VenueRole.OWNER);
 
         return CreateVenueResponse.of(savedVenue, membership.getRole());
     }

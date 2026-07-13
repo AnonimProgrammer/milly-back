@@ -37,20 +37,25 @@ class TopicSubscriptionInterceptorTest {
 
     @Test
     void allowsAnonymousTableSubscriptionAndBindsTable() {
+        // Arrange
         UUID tableId = UUID.randomUUID();
         Map<String, Object> sessionAttributes = new HashMap<>();
 
+        // Act
         assertDoesNotThrow(() -> interceptor.preSend(subscribeMessage("/topic/table/" + tableId, sessionAttributes), null));
 
+        // Assert
         assertThatBoundTable(sessionAttributes, tableId);
     }
 
     @Test
     void rejectsAnonymousCrossTableSubscription() {
+        // Arrange
         UUID tableId = UUID.randomUUID();
         Map<String, Object> sessionAttributes = new HashMap<>();
         sessionAttributes.put(WebSocketSessionAttributes.BOUND_TABLE_ID, tableId);
 
+        // Act & Assert
         assertThrows(
                 AccessDeniedException.class,
                 () -> interceptor.preSend(
@@ -60,8 +65,10 @@ class TopicSubscriptionInterceptorTest {
 
     @Test
     void rejectsAnonymousStaffTopicSubscription() {
+        // Arrange
         UUID venueId = UUID.randomUUID();
 
+        // Act & Assert
         assertThrows(
                 AccessDeniedException.class,
                 () -> interceptor.preSend(
@@ -71,25 +78,30 @@ class TopicSubscriptionInterceptorTest {
 
     @Test
     void allowsStaffVenueSubscriptionForMember() {
+        // Arrange
         UUID userId = UUID.randomUUID();
         UUID venueId = UUID.randomUUID();
         Map<String, Object> sessionAttributes = Map.of(WebSocketSessionAttributes.USER_ID, userId);
 
+        // Act
         assertDoesNotThrow(() -> interceptor.preSend(
                 subscribeMessage("/topic/venue/" + venueId + "/staff", sessionAttributes),
                 null));
 
-        verify(venueAuthorizationService).requireMember(userId, venueId);
+        // Assert
+        verify(venueAuthorizationService).requireActiveMember(userId, venueId);
     }
 
     @Test
     void rejectsStaffCrossVenueSubscription() {
+        // Arrange
         UUID userId = UUID.randomUUID();
         UUID venueId = UUID.randomUUID();
         Map<String, Object> sessionAttributes = Map.of(WebSocketSessionAttributes.USER_ID, userId);
 
-        when(venueAuthorizationService.requireMember(userId, venueId)).thenThrow(new AccessDeniedException());
+        when(venueAuthorizationService.requireActiveMember(userId, venueId)).thenThrow(new AccessDeniedException());
 
+        // Act & Assert
         assertThrows(
                 AccessDeniedException.class,
                 () -> interceptor.preSend(

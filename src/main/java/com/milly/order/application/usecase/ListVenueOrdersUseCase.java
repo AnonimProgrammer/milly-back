@@ -46,7 +46,7 @@ public class ListVenueOrdersUseCase {
             OffsetDateTime to,
             String cursor,
             int limit) {
-        venueAuthorizationService.requireMember(userId, venueId);
+        venueAuthorizationService.requireActiveMember(userId, venueId);
 
         int safeLimit = Math.max(1, limit);
         int page = parseCursor(cursor);

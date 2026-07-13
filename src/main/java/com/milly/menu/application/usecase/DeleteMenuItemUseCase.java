@@ -21,7 +21,7 @@ public class DeleteMenuItemUseCase {
 
     @Transactional
     public void execute(UUID userId, UUID venueId, UUID itemId) {
-        venueAuthorizationService.requireRole(userId, venueId, VenueRole.MANAGER);
+        venueAuthorizationService.requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         MenuItemEntity menuItem = menuItemRepository
                 .findByIdAndVenueIdAndStatus(itemId, venueId, MenuItemStatus.ACTIVE)

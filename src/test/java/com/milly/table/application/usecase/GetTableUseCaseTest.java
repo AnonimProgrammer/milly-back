@@ -58,7 +58,7 @@ class GetTableUseCaseTest {
         assertThat(response.id()).isEqualTo(tableId);
         assertThat(response.venueId()).isEqualTo(venueId);
         assertThat(response.status()).isEqualTo(TableStatus.ACTIVE);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
     }
 
     @Test
@@ -73,7 +73,7 @@ class GetTableUseCaseTest {
 
         // Assert
         assertThat(response.status()).isEqualTo(TableStatus.INACTIVE);
-        verify(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+        verify(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
     }
 
     @Test
@@ -90,7 +90,7 @@ class GetTableUseCaseTest {
     void throwsAccessDeniedWhenUserIsNotManager() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireRole(userId, venueId, VenueRole.MANAGER);
+                .when(venueAuthorizationService).requireAtLeastRole(userId, venueId, VenueRole.MANAGER);
 
         // Act & Assert
         assertThatThrownBy(() -> getTableUseCase.execute(userId, venueId, tableId))
