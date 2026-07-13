@@ -96,6 +96,7 @@ class AuthRestIntegrationTest extends AbstractITest {
         assertThat(currentUser.getData().email()).isEqualTo(email);
         assertThat(currentUser.getData().firstName()).isEqualTo("Test");
         assertThat(currentUser.getData().lastName()).isEqualTo("User");
+        assertThat(currentUser.getData().phoneNumber()).isNull();
         assertThat(currentUser.getData().roles()).containsExactly("USER");
     }
 
@@ -278,8 +279,50 @@ class AuthRestIntegrationTest extends AbstractITest {
         assertThat(response.getData().email()).isEqualTo(user.email());
         assertThat(response.getData().firstName()).isEqualTo("Test");
         assertThat(response.getData().lastName()).isEqualTo("User");
+        assertThat(response.getData().phoneNumber()).isNull();
         assertThat(response.getData().roles()).containsExactly("USER");
     }
+
+    @Test
+    void authenticatedPatchMeUpdatesProfileFields() {
+        // Arrange
+        AuthSession user = authSessionPolluter.registerPasswordUser();
+        RestTestClient userClient = RestTestClientAuth.withSession(restClient, user);
+
+        // Act
+        CurrentUserApiResponse response = userClient.patch()
+                .uri("/api/v1/auth/me")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of(
+                        "firstName", "Omar",
+                        "lastName", "Ismailov",
+                        "phoneNumber", "+994551234567"))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody(CurrentUserApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(200);
+        assertThat(response.getMessage()).isEqualTo("Profile updated successfully.");
+        assertThat(response.getData().id()).isEqualTo(user.userId());
+        assertThat(response.getData().email()).isEqualTo(user.email());
+        assertThat(response.getData().firstName()).isEqualTo("Omar");
+        assertThat(response.getData().lastName()).isEqualTo("Ismailov");
+        assertThat(response.getData().phoneNumber()).isEqualTo("+994551234567");
+        assertThat(response.getData().roles()).containsExactly("USER");
+
+        UserEntity persisted = userRepository.findById(user.userId()).orElseThrow();
+        assertThat(persisted.getFirstName()).isEqualTo("Omar");
+        assertThat(persisted.getLastName()).isEqualTo("Ismailov");
+        assertThat(persisted.getPhoneNumber()).isEqualTo("+994551234567");
+    }
+
+
+
 
     @Test
     void unauthenticatedGetMeReturnsUnauthorized() {
