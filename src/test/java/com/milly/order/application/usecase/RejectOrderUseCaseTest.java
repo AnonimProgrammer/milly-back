@@ -71,7 +71,7 @@ class RejectOrderUseCaseTest {
         // Assert
         assertThat(pendingOrder.getStatus()).isEqualTo(OrderStatus.REJECTED);
         assertThat(response.status()).isEqualTo(OrderStatus.REJECTED);
-        verify(venueAuthorizationService).requireMember(userId, venueId);
+        verify(venueAuthorizationService).requireActiveMember(userId, venueId);
         verify(orderEventNotifier).orderRejected(orderId, venueId, tableId);
     }
 
@@ -105,7 +105,7 @@ class RejectOrderUseCaseTest {
     void throwsAccessDeniedWhenUserIsNotVenueMember() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireMember(userId, venueId);
+                .when(venueAuthorizationService).requireActiveMember(userId, venueId);
 
         // Act & Assert
         assertThatThrownBy(() -> rejectOrderUseCase.execute(venueId, userId, orderId))

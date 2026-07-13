@@ -81,7 +81,7 @@ class CloseOrderUseCaseTest {
         assertThat(approvedOrder.getClosedAt()).isNotNull();
         assertThat(response.status()).isEqualTo(OrderStatus.CLOSED);
         assertThat(response.closedAt()).isNotNull();
-        verify(venueAuthorizationService).requireMember(userId, venueId);
+        verify(venueAuthorizationService).requireActiveMember(userId, venueId);
         verify(orderEventNotifier).orderClosed(orderId, venueId, tableId);
     }
 
@@ -115,7 +115,7 @@ class CloseOrderUseCaseTest {
     void throwsAccessDeniedWhenUserIsNotVenueMember() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireMember(userId, venueId);
+                .when(venueAuthorizationService).requireActiveMember(userId, venueId);
 
         // Act & Assert
         assertThatThrownBy(() -> closeOrderUseCase.execute(venueId, userId, orderId))

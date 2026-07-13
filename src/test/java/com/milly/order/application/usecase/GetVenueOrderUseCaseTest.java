@@ -75,7 +75,7 @@ class GetVenueOrderUseCaseTest {
         // Assert
         assertThat(response.id()).isEqualTo(orderId);
         assertThat(response.tableId()).isEqualTo(tableId);
-        verify(venueAuthorizationService).requireMember(userId, venueId);
+        verify(venueAuthorizationService).requireActiveMember(userId, venueId);
     }
 
     @Test
@@ -92,7 +92,7 @@ class GetVenueOrderUseCaseTest {
     void throwsAccessDeniedWhenUserIsNotVenueMember() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireMember(userId, venueId);
+                .when(venueAuthorizationService).requireActiveMember(userId, venueId);
 
         // Act & Assert
         assertThatThrownBy(() -> getVenueOrderUseCase.execute(venueId, userId, orderId))

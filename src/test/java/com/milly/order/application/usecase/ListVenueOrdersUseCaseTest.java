@@ -93,7 +93,7 @@ class ListVenueOrdersUseCaseTest {
         assertThat(response.pagination().limit()).isEqualTo(1);
         assertThat(response.pagination().hasNext()).isTrue();
         assertThat(response.pagination().nextCursor()).isEqualTo("1");
-        verify(venueAuthorizationService).requireMember(userId, venueId);
+        verify(venueAuthorizationService).requireActiveMember(userId, venueId);
 
         ArgumentCaptor<OffsetDateTime> fromCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
         ArgumentCaptor<OffsetDateTime> toCaptor = ArgumentCaptor.forClass(OffsetDateTime.class);
@@ -123,14 +123,14 @@ class ListVenueOrdersUseCaseTest {
 
         // Assert
         assertThat(response.data().getFirst().status()).isEqualTo(OrderStatus.APPROVED);
-        verify(venueAuthorizationService).requireMember(userId, venueId);
+        verify(venueAuthorizationService).requireActiveMember(userId, venueId);
     }
 
     @Test
     void throwsAccessDeniedWhenUserIsNotVenueMember() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireMember(userId, venueId);
+                .when(venueAuthorizationService).requireActiveMember(userId, venueId);
 
         // Act & Assert
         assertThatThrownBy(() -> listVenueOrdersUseCase.execute(venueId, userId, null, null, null, null, 20))

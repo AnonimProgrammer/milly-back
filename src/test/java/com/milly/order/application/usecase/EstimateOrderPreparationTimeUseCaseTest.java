@@ -68,7 +68,7 @@ class EstimateOrderPreparationTimeUseCaseTest {
 
         // Assert
         assertThat(response).isEqualTo(new OrderPreparationEstimateResponse(orderId, 25, "25 minutes"));
-        verify(venueAuthorizationService).requireMember(userId, venueId);
+        verify(venueAuthorizationService).requireActiveMember(userId, venueId);
     }
 
     @Test
@@ -87,7 +87,7 @@ class EstimateOrderPreparationTimeUseCaseTest {
     void stopsWhenUserIsNotVenueMember() {
         // Arrange
         doThrow(new AccessDeniedException())
-                .when(venueAuthorizationService).requireMember(userId, venueId);
+                .when(venueAuthorizationService).requireActiveMember(userId, venueId);
 
         // Act & Assert
         assertThatThrownBy(() -> useCase.execute(venueId, userId, orderId))
