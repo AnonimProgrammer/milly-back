@@ -39,13 +39,6 @@ public class VenueAuthorizationService {
         return membership;
     }
 
-    public void requireRole(UUID userId, UUID venueId, VenueRole role) {
-        VenueMembershipEntity membership = requireActiveMember(userId, venueId);
-        if (membership.getRole() != role) {
-            throw new AccessDeniedException();
-        }
-    }
-
     public void requireCanManageMember(VenueMembershipEntity actor, VenueMembershipEntity target) {
         if (actor.getId().equals(target.getId())) {
             throw new AccessDeniedException();
