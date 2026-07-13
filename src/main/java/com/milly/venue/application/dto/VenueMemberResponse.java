@@ -22,6 +22,6 @@ public record VenueMemberResponse(
                 profile.lastName(),
                 profile.email(),
                 membership.getRole(),
-                profile.status());
+                membership.getStatus());
     }
 }
