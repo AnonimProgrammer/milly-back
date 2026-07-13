@@ -18,6 +18,7 @@ import com.milly.common.application.exception.UserAccountInactiveException;
 import com.milly.config.domain.AbstractITest;
 import com.milly.config.infrastructure.adapter.RestTestClientAuth;
 import com.milly.config.infrastructure.adapter.RestTestClientAuth.AuthCookies;
+import com.milly.config.infrastructure.adapter.dto.ErrorApiResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -321,8 +322,76 @@ class AuthRestIntegrationTest extends AbstractITest {
         assertThat(persisted.getPhoneNumber()).isEqualTo("+994551234567");
     }
 
+    @Test
+    void unauthenticatedPatchMeReturnsUnauthorized() {
+        // Act
+        ErrorApiResponse response = restClient.patch()
+                .uri("/api/v1/auth/me")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("firstName", "Omar"))
+                .exchange()
+                .expectStatus()
+                .isUnauthorized()
+                .expectBody(ErrorApiResponse.class)
+                .returnResult()
+                .getResponseBody();
 
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(401);
+        assertThat(response.getErrorCode()).isEqualTo("UNAUTHORIZED");
+        assertThat(response.getMessage()).isEqualTo("No authentication details were provided.");
+    }
 
+    @Test
+    void authenticatedPatchMeWithBlankFirstNameReturnsBadRequest() {
+        // Arrange
+        AuthSession user = authSessionPolluter.registerPasswordUser();
+        RestTestClient userClient = RestTestClientAuth.withSession(restClient, user);
+
+        // Act
+        ErrorApiResponse response = userClient.patch()
+                .uri("/api/v1/auth/me")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("firstName", "   "))
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody(ErrorApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(400);
+        assertThat(response.getErrorCode()).isEqualTo("BAD_REQUEST");
+        assertThat(response.getMessage()).isEqualTo("First name must not be blank.");
+    }
+
+    @Test
+    void authenticatedPatchMeWithInvalidPhoneNumberReturnsBadRequest() {
+        // Arrange
+        AuthSession user = authSessionPolluter.registerPasswordUser();
+        RestTestClient userClient = RestTestClientAuth.withSession(restClient, user);
+
+        // Act
+        ErrorApiResponse response = userClient.patch()
+                .uri("/api/v1/auth/me")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(Map.of("phoneNumber", "not-a-phone"))
+                .exchange()
+                .expectStatus()
+                .isBadRequest()
+                .expectBody(ErrorApiResponse.class)
+                .returnResult()
+                .getResponseBody();
+
+        // Assert
+        assertThat(response).isNotNull();
+        assertThat(response.getStatus()).isEqualTo(400);
+        assertThat(response.getErrorCode()).isEqualTo("BAD_REQUEST");
+        assertThat(response.getMessage()).isEqualTo("Phone number must be a valid international number.");
+    }
 
     @Test
     void unauthenticatedGetMeReturnsUnauthorized() {
