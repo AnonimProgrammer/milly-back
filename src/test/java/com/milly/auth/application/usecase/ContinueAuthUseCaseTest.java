@@ -13,7 +13,9 @@ import com.milly.auth.domain.model.IdentityResolution;
 import com.milly.auth.domain.model.IssuedRefreshToken;
 import com.milly.auth.domain.valueobject.AuthProviderType;
 import com.milly.auth.domain.valueobject.RoleName;
+import com.milly.auth.domain.valueobject.UserStatus;
 import com.milly.common.application.exception.InvalidCredentialsException;
+import com.milly.common.application.exception.UserAccountInactiveException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,6 +58,8 @@ class ContinueAuthUseCaseTest {
     @Mock
     private AuthProvider authProvider;
 
+    private final EnsureActiveUserUseCase ensureActiveUserUseCase = new EnsureActiveUserUseCase();
+
     @Captor
     private ArgumentCaptor<ExternalIdentity> identityCaptor;
 
@@ -76,6 +80,7 @@ class ContinueAuthUseCaseTest {
                 providerFactory,
                 resolveIdentityUseCase,
                 loadAuthUserUseCase,
+                ensureActiveUserUseCase,
                 sessionTokenPort,
                 refreshTokenStore);
     }
@@ -144,6 +149,23 @@ class ContinueAuthUseCaseTest {
         verify(authProvider).authenticate(request.credentials());
         verify(resolveIdentityUseCase).execute(identityCaptor.capture(), eq(profile), eq("secret-password"));
         assertThat(identityCaptor.getValue()).isEqualTo(identity);
+    }
+
+    @Test
+    void throwsWhenExistingUserAccountIsInactive() {
+        // Arrange
+        ContinueAuthRequest request = passwordRequest("secret-password");
+        UserEntity user = aUser().withId(userId).withStatus(UserStatus.SUSPENDED).build();
+        when(providerFactory.get(AuthProviderType.PASSWORD)).thenReturn(authProvider);
+        when(authProvider.authenticate(request.credentials())).thenReturn(identity);
+        when(resolveIdentityUseCase.execute(identity, profile, "secret-password"))
+                .thenReturn(new IdentityResolution(user, false));
+
+        // Act & Assert
+        assertThatThrownBy(() -> continueAuthUseCase.execute(request))
+                .isInstanceOf(UserAccountInactiveException.class);
+
+        verifyNoInteractions(loadAuthUserUseCase, sessionTokenPort, refreshTokenStore);
     }
 
     @Test

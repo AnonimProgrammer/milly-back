@@ -25,6 +25,7 @@ public class ContinueAuthUseCase {
     private final AuthProviderFactory providerFactory;
     private final ResolveIdentityUseCase resolveIdentityUseCase;
     private final LoadAuthUserUseCase loadAuthUserUseCase;
+    private final EnsureActiveUserUseCase ensureActiveUserUseCase;
     private final SessionTokenPort sessionTokenPort;
     private final RefreshTokenStore refreshTokenStore;
 
@@ -40,6 +41,8 @@ public class ContinueAuthUseCase {
 
         IdentityResolution resolution =
                 resolveIdentityUseCase.execute(identity, request.profile(), rawPassword);
+
+        ensureActiveUserUseCase.execute(resolution.user());
 
         AuthUser authUser = loadAuthUserUseCase.execute(resolution.user());
 

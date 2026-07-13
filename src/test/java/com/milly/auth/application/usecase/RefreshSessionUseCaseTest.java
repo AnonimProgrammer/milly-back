@@ -9,8 +9,10 @@ import com.milly.auth.domain.model.AuthUser;
 import com.milly.auth.domain.model.IssuedRefreshToken;
 import com.milly.auth.domain.model.ParsedRefreshToken;
 import com.milly.auth.domain.valueobject.RoleName;
+import com.milly.auth.domain.valueobject.UserStatus;
 import com.milly.auth.infrastructure.adapter.outbound.persistence.UserJpaRepository;
 import com.milly.common.application.exception.InvalidCredentialsException;
+import com.milly.common.application.exception.UserAccountInactiveException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +42,8 @@ class RefreshSessionUseCaseTest {
     @Mock
     private LoadAuthUserUseCase loadAuthUserUseCase;
 
+    private final EnsureActiveUserUseCase ensureActiveUserUseCase = new EnsureActiveUserUseCase();
+
     @Mock
     private RefreshTokenStore refreshTokenStore;
 
@@ -55,7 +59,7 @@ class RefreshSessionUseCaseTest {
     @BeforeEach
     void setUp() {
         refreshSessionUseCase = new RefreshSessionUseCase(
-                sessionTokenPort, userRepository, loadAuthUserUseCase, refreshTokenStore);
+                sessionTokenPort, userRepository, loadAuthUserUseCase, ensureActiveUserUseCase, refreshTokenStore);
     }
 
     @Test
@@ -135,6 +139,21 @@ class RefreshSessionUseCaseTest {
         // Act & Assert
         assertThatThrownBy(() -> refreshSessionUseCase.execute(refreshToken))
                 .isInstanceOf(RefreshSessionFailedException.class);
+
+        verifyNoInteractions(loadAuthUserUseCase);
+    }
+
+    @Test
+    void throwsWhenUserAccountIsInactive() {
+        // Arrange
+        UserEntity user = aUser().withId(userId).withStatus(UserStatus.SUSPENDED).build();
+        when(sessionTokenPort.parseRefreshToken(refreshToken)).thenReturn(new ParsedRefreshToken(userId, jti));
+        when(refreshTokenStore.consume(jti, userId)).thenReturn(true);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        // Act & Assert
+        assertThatThrownBy(() -> refreshSessionUseCase.execute(refreshToken))
+                .isInstanceOf(UserAccountInactiveException.class);
 
         verifyNoInteractions(loadAuthUserUseCase);
     }

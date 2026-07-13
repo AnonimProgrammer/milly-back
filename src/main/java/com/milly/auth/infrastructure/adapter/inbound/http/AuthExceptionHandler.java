@@ -3,6 +3,7 @@ package com.milly.auth.infrastructure.adapter.inbound.http;
 import com.milly.auth.application.exception.RefreshSessionFailedException;
 import com.milly.auth.infrastructure.adapter.outbound.security.AuthCookieWriter;
 import com.milly.common.application.dto.ApiResponse;
+import com.milly.common.application.exception.UserAccountInactiveException;
 import com.milly.common.infrastructure.adapter.inbound.http.ErrorCode;
 import com.milly.common.infrastructure.adapter.inbound.http.HttpErrorResponses;
 import jakarta.servlet.http.HttpServletResponse;
@@ -25,5 +26,14 @@ public class AuthExceptionHandler {
         AuthCookieWriter.clearAuthCookies(response, secureCookies);
         return HttpErrorResponses.of(
                 HttpStatus.UNAUTHORIZED, ErrorCode.UNAUTHORIZED, RefreshSessionFailedException.MESSAGE);
+    }
+
+    @ExceptionHandler(UserAccountInactiveException.class)
+    public ResponseEntity<ApiResponse<Void>> handleUserAccountInactive(
+            UserAccountInactiveException exception,
+            HttpServletResponse response) {
+        AuthCookieWriter.clearAuthCookies(response, secureCookies);
+        return HttpErrorResponses.of(
+                HttpStatus.FORBIDDEN, ErrorCode.ACCOUNT_INACTIVE, UserAccountInactiveException.MESSAGE);
     }
 }
