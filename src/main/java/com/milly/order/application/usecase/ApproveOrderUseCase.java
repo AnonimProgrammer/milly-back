@@ -30,7 +30,7 @@ public class ApproveOrderUseCase {
 
     @Transactional
     public StaffOrderResponse execute(UUID venueId, UUID userId, UUID orderId) {
-        venueAuthorizationService.requireMember(userId, venueId);
+        venueAuthorizationService.requireActiveMember(userId, venueId);
 
         OrderEntity order = orderRepository.findByIdAndVenueId(orderId, venueId)
                 .orElseThrow(ResourceNotFoundException::new);
