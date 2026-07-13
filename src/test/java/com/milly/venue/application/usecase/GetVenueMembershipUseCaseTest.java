@@ -1,14 +1,15 @@
 package com.milly.venue.application.usecase;
 
 import com.milly.common.application.exception.AccessDeniedException;
+import com.milly.common.application.exception.InactiveMembershipException;
 import com.milly.common.application.exception.ResourceNotFoundException;
 import com.milly.venue.application.dto.VenueMembershipResponse;
+import com.milly.venue.application.service.VenueAuthorizationService;
 import com.milly.venue.application.usecase.builder.VenueTestBuilder;
 import com.milly.venue.domain.entity.VenueEntity;
 import com.milly.venue.domain.entity.VenueMembershipEntity;
 import com.milly.venue.domain.valueobject.VenueRole;
 import com.milly.venue.infrastructure.adapter.outbound.persistence.VenueJpaRepository;
-import com.milly.venue.infrastructure.adapter.outbound.persistence.VenueMembershipJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +32,7 @@ class GetVenueMembershipUseCaseTest {
     private VenueJpaRepository venueRepository;
 
     @Mock
-    private VenueMembershipJpaRepository venueMembershipRepository;
+    private VenueAuthorizationService venueAuthorizationService;
 
     private GetVenueMembershipUseCase getVenueMembershipUseCase;
 
@@ -40,11 +41,11 @@ class GetVenueMembershipUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        getVenueMembershipUseCase = new GetVenueMembershipUseCase(venueRepository, venueMembershipRepository);
+        getVenueMembershipUseCase = new GetVenueMembershipUseCase(venueRepository, venueAuthorizationService);
     }
 
     @Test
-    void returnsMembershipWhenVenueExistsAndUserIsMember() {
+    void returnsMembershipWhenVenueExistsAndUserIsActiveMember() {
         // Arrange
         VenueEntity venue = VenueTestBuilder.aVenue()
                 .withId(venueId)
@@ -53,7 +54,7 @@ class GetVenueMembershipUseCaseTest {
                 .build();
         VenueMembershipEntity membership = VenueMembershipEntity.create(venueId, userId, VenueRole.MANAGER);
         when(venueRepository.findById(venueId)).thenReturn(Optional.of(venue));
-        when(venueMembershipRepository.findByUserIdAndVenueId(userId, venueId)).thenReturn(Optional.of(membership));
+        when(venueAuthorizationService.requireActiveMember(userId, venueId)).thenReturn(membership);
 
         // Act
         VenueMembershipResponse response = getVenueMembershipUseCase.execute(venueId, userId);
@@ -64,7 +65,7 @@ class GetVenueMembershipUseCaseTest {
         assertThat(response.location()).isEqualTo("Barcelona, Spain");
         assertThat(response.role()).isEqualTo(VenueRole.MANAGER);
         verify(venueRepository).findById(venueId);
-        verify(venueMembershipRepository).findByUserIdAndVenueId(userId, venueId);
+        verify(venueAuthorizationService).requireActiveMember(userId, venueId);
     }
 
     @Test
@@ -77,7 +78,7 @@ class GetVenueMembershipUseCaseTest {
                 .isInstanceOf(ResourceNotFoundException.class);
 
         verify(venueRepository).findById(venueId);
-        verifyNoInteractions(venueMembershipRepository);
+        verifyNoInteractions(venueAuthorizationService);
     }
 
     @Test
@@ -85,13 +86,30 @@ class GetVenueMembershipUseCaseTest {
         // Arrange
         VenueEntity venue = VenueTestBuilder.aVenue().withId(venueId).build();
         when(venueRepository.findById(venueId)).thenReturn(Optional.of(venue));
-        when(venueMembershipRepository.findByUserIdAndVenueId(userId, venueId)).thenReturn(Optional.empty());
+        when(venueAuthorizationService.requireActiveMember(userId, venueId))
+                .thenThrow(new AccessDeniedException());
 
         // Act & Assert
         assertThatThrownBy(() -> getVenueMembershipUseCase.execute(venueId, userId))
                 .isInstanceOf(AccessDeniedException.class);
 
         verify(venueRepository).findById(venueId);
-        verify(venueMembershipRepository).findByUserIdAndVenueId(userId, venueId);
+        verify(venueAuthorizationService).requireActiveMember(userId, venueId);
+    }
+
+    @Test
+    void throwsInactiveMembershipWhenUserIsBlocked() {
+        // Arrange
+        VenueEntity venue = VenueTestBuilder.aVenue().withId(venueId).build();
+        when(venueRepository.findById(venueId)).thenReturn(Optional.of(venue));
+        when(venueAuthorizationService.requireActiveMember(userId, venueId))
+                .thenThrow(new InactiveMembershipException());
+
+        // Act & Assert
+        assertThatThrownBy(() -> getVenueMembershipUseCase.execute(venueId, userId))
+                .isInstanceOf(InactiveMembershipException.class);
+
+        verify(venueRepository).findById(venueId);
+        verify(venueAuthorizationService).requireActiveMember(userId, venueId);
     }
 }
