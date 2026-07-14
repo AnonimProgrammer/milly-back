@@ -1,14 +1,12 @@
 # Billing & Payment Flow
 
-**Author:** Omar Ismayilov
-
 ---
 
 ## Summary
 
 Describes how Milly handles **mock payments** for the customer table flow: per-order partial payments, provider abstraction, validation rules, and the billing module API. Payments are **not** real charges — the backend records payment attempts after validation.
 
-Payment progress is independent of order lifecycle: customers pay against an **approved** order; staff still **close** the order manually when ready. For public endpoint security see [security-flow.md](./security-flow.md). For module layout see [system-design.md](./system-design.md).
+Payment progress is independent of order lifecycle: customers pay against an **approved** order; staff still **close** the order manually when ready. For public endpoint security see [public-vs-protected-endpoints.md](./security/public-vs-protected-endpoints.md). For module layout see [system-design.md](./system-design.md).
 
 ---
 
@@ -33,13 +31,15 @@ Current scaffold (`PaymentEntity`) is extended for provider metadata:
 |-------|------|-------|
 | `id` | UUID | Primary key (ULID-based) |
 | `orderId` | UUID | FK → `orders.id` |
-| `amount` | Money | Payment amount |
+| `amount` | Money | Order payment amount (excl. tip) |
+| `tipAmount` | Money | Tip amount (may be zero) |
 | `status` | PaymentStatus | `PENDING`, `COMPLETED`, `FAILED` |
 | `provider` | PaymentProvider | `CARD`, `APPLE`, `GOOGLE` |
 | `paymentType` | PaymentType | `FULL`, `CUSTOM`, `SPLIT` |
 | `providerReference` | String | Generated transaction reference (e.g. `pay_x7k2`) |
 | `providerMetadata` | JSONB | Safe display data: `{ last4, brand, splitPeople }` |
 | `failureReason` | String? | Set when status = FAILED |
+| `receiptUrl` | String? | Generated PDF receipt URL after successful payment |
 | `createdAt` | OffsetDateTime | |
 | `updatedAt` | OffsetDateTime | |
 
@@ -88,6 +88,7 @@ Header: X-Idempotency-Key  (optional; safe retry when present)
 ```json
 {
   "amount": "42.50",
+  "tipAmount": "5.00",
   "paymentType": "split",
   "provider": "card",
   "providerDetails": {
@@ -103,6 +104,7 @@ Header: X-Idempotency-Key  (optional; safe retry when present)
 | Field | Required | Notes |
 |-------|----------|-------|
 | `amount` | yes | Decimal string; must be > 0 and ≤ remaining |
+| `tipAmount` | no | Defaults to `0`; must be ≥ 0 and ≤ `amount` |
 | `paymentType` | yes | `full`, `custom`, or `split` |
 | `provider` | yes | `card`, `apple`, or `google` |
 | `providerDetails` | conditional | Required for `card` (at least `last4`, `brand`); optional/minimal for wallets |
@@ -195,7 +197,7 @@ Order must belong to the `tableId` in the URL path.
 
 - `amount > 0`
 - `amount ≤ remaining` — **hard reject** on overpayment (422)
-- No tips or overpayment allowance in v1
+- `tipAmount` optional; when present must be ≥ 0 and ≤ `amount`
 
 ### Provider-specific
 
