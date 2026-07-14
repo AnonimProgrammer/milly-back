@@ -1,54 +1,51 @@
-﻿# System Design
-
-**Author:** Omar Ismayilov
+# System Design
 
 ---
 
 ## Summary
 
-High-level overview of the Milly restaurant ordering platform: multi-venue identity, how **staff** and **customer** apps talk to the backend, where data is stored, and how modules are organized on both sides. Users authenticate **globally** (system level); access to a venue's operations is granted via **venue roles**. REST (`/api/v1`) handles reads and writes; STOMP over WebSocket pushes real-time events after mutations. PostgreSQL is the system of record; Caffeine holds ephemeral handshake data (WebSocket tickets, invitation redemption).
+Milly is a **multi-venue** restaurant ordering platform. One **Spring Boot** backend and one **Next.js** frontend serve staff (venue operations) and customers (table ordering). Clients load and mutate data over REST (`/api/v1`); the backend pushes real-time updates over STOMP/WebSocket. PostgreSQL is the system of record; Caffeine holds short-lived ephemeral state.
 
-For WebSocket details see [web-socket-flow.md](./web-socket-flow.md). For login, OAuth, venue membership, and authorization see [security-flow.md](./security-flow.md).
+Deeper topics live in the [related documentation](#related-documentation).
 
 ---
 
 ## Table of contents
 
 1. [System context](#system-context)
-2. [Identity model](#identity-model)
-3. [Pages and routes](#pages-and-routes)
-4. [Communication model](#communication-model)
-5. [Persistence](#persistence)
-6. [Backend modules](#backend-modules)
-7. [Frontend modules](#frontend-modules)
-8. [Client flows](#client-flows)
+2. [High-level architecture](#high-level-architecture)
+3. [Persistence](#persistence)
+4. [Modules](#modules)
+5. [Related documentation](#related-documentation)
 
 ---
 
 ## System context
 
-Milly is a **multi-venue** restaurant platform. A user account exists independently of any venue. To operate a restaurant, the user either **registers a new venue** (becomes Manager) or **joins an existing venue** via an invitation. Customers at a table remain anonymous â€” no account required.
+Users have a **global** account. Operating a restaurant requires **venue access** (create a venue or join one). Customers at a table order without an account.
 
-| Journey | Route | Auth | Purpose |
-|---------|-------|------|---------|
-| **Onboarding** | `/`, `/login`, `/register-venue`, `/join-venue` | Global user session | Sign up, create or join a venue |
-| **Staff portal** | `/venue/{venueId}/staff` | Global session + venue role | Orders, menu, tables, QR (by role) |
-| **Customer** | `/table/{tableId}` | None | Browse menu, order, pay |
+| Client | Who | Purpose |
+|--------|-----|---------|
+| **Staff** | Authenticated users with venue access | Orders, menu, tables, and venue management |
+| **Customer** | Anonymous table guests | Browse menu, place orders, pay; table chat |
 
-One **Next.js** frontend and one **Spring Boot** backend serve all journeys.
+---
+
+## High-level architecture
+
+Staff and customer UIs talk to the same backend. REST is the source of truth for reads and writes; WebSocket notifies subscribed clients after mutations (and carries table chat).
 
 ```mermaid
 flowchart TB
   subgraph clients [Next.js Frontend]
-    Onboard[Onboarding]
-    Staff[Staff /venue/id/staff]
-    Customer[Customer /table/tableId]
+    Staff[Staff portal]
+    Customer[Customer table flow]
   end
 
   subgraph backend [Spring Boot Backend]
     REST[REST API]
-    WS[STOMP Broker /ws]
-    Modules[Domain Modules]
+    WS[STOMP Broker]
+    Modules[Domain modules]
   end
 
   subgraph storage [Storage]
@@ -56,7 +53,6 @@ flowchart TB
     Cache[(Caffeine)]
   end
 
-  Onboard --> REST
   Staff --> REST
   Staff --> WS
   Customer --> REST
@@ -70,81 +66,61 @@ flowchart TB
 
 ---
 
-## Identity model
+## Persistence
 
-Milly separates **system identity** from **venue access**.
-
-### System level
-
-| Concept | Description |
-|---------|-------------|
-| **User** | Global account â€” created on sign-up / OAuth |
-| **System role** | `USER` â€” every authenticated account has this role by default |
-| **Session** | JWT in HttpOnly cookies; proves who the user is, not which venue they operate |
-
-Sign-in methods (planned): email/password, Google OAuth2, Apple (optional).
-
-### Venue level
-
-| Concept | Description |
-|---------|-------------|
-| **Venue** | A restaurant (name, location, â€¦) â€” tenant boundary for menu, tables, orders |
-| **Venue membership** | Link between a user and a venue |
-| **Venue role** | What the user can do **inside that venue** |
-
-| Venue role | Access |
-|------------|--------|
-| **Manager** | Orders, menu, tables, QR codes, invitations, venue settings |
-| **Waiter** | Orders only (view, approve, reject, close) |
-
-A user can belong to **multiple venues** with different roles at each.
-
-### Authorization rule
-
-Every staff request is checked in two steps:
-
-1. **Authenticated?** â€” valid global session (cookie).
-2. **Authorized for this venue?** â€” user has a venue membership with the required role.
-
-If step 2 fails â†’ **403 Forbidden**. The frontend may hide UI by role, but the **backend always enforces** permissions. The frontend can validate the current user's venue role via a backend call (e.g. proxy / session endpoint) â€” never trust client-side role state alone.
-
-```mermaid
-flowchart LR
-  Request[Staff request] --> Auth{Global session valid?}
-  Auth -->|No| U401[401 Unauthorized]
-  Auth -->|Yes| Venue{Venue role sufficient?}
-  Venue -->|No| Forbidden[403]
-  Venue -->|Yes| Handler[Execute use case]
-```
+| Store | Technology | Purpose |
+|-------|------------|---------|
+| **Primary database** | PostgreSQL | Users, venues, memberships, menu, tables, orders, payments, invitations |
+| **Ephemeral cache** | Caffeine | Short-lived state: WebSocket tickets, refresh tokens, venue invitations, idempotency records |
 
 ---
 
-## Pages and routes
+## Modules
 
-### Home and authentication
+Feature code is organized under `com.milly` by bounded context. Module names are **singular**.
 
-| Route | Purpose |
-|-------|---------|
-| `/` | Welcome screen â€” **Join Venue** and **Register Venue** |
-| `/login` | Sign in / sign up (email, Google, Apple). Both home buttons lead here; intended post-login destination is remembered |
+```
+com.milly/
+├── config/      # Cross-cutting wiring (security, WebSocket, Jackson, cache, AI client)
+├── common/      # Shared kernel (IDs, money, errors, idempotency)
+├── auth/        # Global identity, login, sessions, admin users
+├── venue/       # Venues, memberships, invitations
+├── table/       # Tables within a venue
+├── menu/        # Menu catalog per venue
+├── order/       # Order lifecycle per venue
+├── billing/     # Payments per venue
+└── chatbot/     # Table chat assistant over WebSocket
+```
 
-After login, the user is redirected based on which home action they chose:
+| Module | Owns |
+|--------|------|
+| **config** | Global infrastructure configuration (including AI chat port) |
+| **common** | Shared value objects, domain exceptions, idempotency support |
+| **auth** | Sign-up / sign-in, JWT sessions, WebSocket ticket issuance, admin user APIs |
+| **venue** | Venue CRUD, memberships, roles, invitations |
+| **table** | Tables and QR entry points within a venue |
+| **menu** | Menu catalog scoped to a venue |
+| **order** | Order lifecycle and related real-time events |
+| **billing** | Payments and related real-time events |
+| **chatbot** | Customer table chat via STOMP; replies use menu context and the AI client |
 
-- **Register Venue** â†’ `/register-venue`
-- **Join Venue** â†’ `/join-venue`
+Venue-bound modules scope data and operations by venue. Details of authentication, WebSocket, AI, and payments are in the docs below.
 
-### Register venue
+---
 
-| Route | Purpose |
-|-------|---------|
-| `/register-venue` | Form: venue name, location, and other basic fields â†’ **Create** |
+## Related documentation
 
-On create, the backend creates the venue and assigns the user **Manager** at that venue. User is redirected to `/venue/{venueId}/staff`.
-
-### Join venue
-
-| Route | Purpose |
-|-------|---------|
-| `/join-venue` | **My venues** â€” list of venues the user belongs to, with role shown per row |
-| `/join-venue` (action) | **Join new venue** â€” paste invitation link or code â†’ **Confirm** |
-
+| Document | Covers |
+|----------|--------|
+| [installation.md](./installation.md) | Docker Compose, local Gradle run |
+| [environment-setup.md](./environment-setup.md) | Environment variables and profiles |
+| [development-instructions.md](./development-instructions.md) | Day-to-day dev workflow, layout, tests, git |
+| [api-documentation.md](./api-documentation.md) | Bruno collection + Swagger / OpenAPI |
+| [security/security-flow.md](./security/security-flow.md) | Security model overview; links to security subdocs |
+| [security/public-vs-protected-endpoints.md](./security/public-vs-protected-endpoints.md) | Public vs authenticated vs admin routes |
+| [security/token-and-session-management.md](./security/token-and-session-management.md) | Auth providers, cookies, refresh, logout |
+| [security/venue-authorization-flow.md](./security/venue-authorization-flow.md) | Venue membership and role checks |
+| [web-socket-flow.md](./web-socket-flow.md) | STOMP connections, tickets, subscription guards |
+| [ai/ai-integration.md](./ai/ai-integration.md) | AI ports, OpenRouter/LangChain4j, enablement |
+| [ai/chatbot.md](./ai/chatbot.md) | Table chat WebSocket + AI message flow |
+| [billing-flow.md](./billing-flow.md) | Payment model, validation, billing API flow |
