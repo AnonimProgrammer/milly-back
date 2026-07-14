@@ -34,7 +34,10 @@ public class SecurityConfig {
                                 "/api/v1/auth/logout",
                                 "/api/v1/public/**",
                                 "/actuator/**",
-                                "/ws/**")
+                                "/ws/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html")
                         .permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
