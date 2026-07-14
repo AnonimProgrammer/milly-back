@@ -1,12 +1,10 @@
 # WebSocket Connection & Security Flow
 
-**Author:** Omar Ismayilov
-
 ---
 
 ## Summary
 
-Describes how Milly secures STOMP over WebSocket: staff authenticate via a **single-use ticket** exchanged from a cookie-based JWT; customers connect **anonymously** with table-scoped subscriptions. Staff topics are **venue-scoped** (`/topic/venue/{venueId}/staff`). Covers ticket storage in Caffeine, handshake rules, subscription guards, and failure handling. Global login and venue authorization are described in [security-flow.md](./security-flow.md). Part of the broader system in [system-design.md](./system-design.md).
+Describes how Milly secures STOMP over WebSocket: staff authenticate via a **single-use ticket** exchanged from a cookie-based JWT; customers connect **anonymously** with table-scoped subscriptions. Staff topics are **venue-scoped** (`/topic/venue/{venueId}/staff`). Covers ticket storage in Caffeine, handshake rules, subscription guards, and failure handling. Global login is in [security-flow.md](./security/security-flow.md) and [token-and-session-management.md](./security/token-and-session-management.md); venue authorization is in [venue-authorization-flow.md](./security/venue-authorization-flow.md). Table chat + AI: [chatbot.md](./ai/chatbot.md). Part of the broader system in [system-design.md](./system-design.md).
 
 ---
 
@@ -24,7 +22,7 @@ Describes how Milly secures STOMP over WebSocket: staff authenticate via a **sin
 
 ## Architecture overview
 
-Milly uses **STOMP over WebSocket** for real-time order and payment notifications. HTTP (REST) remains the source of truth for reads and writes; WebSocket is a **push channel** only.
+Milly uses **STOMP over WebSocket** for real-time order and payment notifications, and for **table chat**. HTTP (REST) remains the source of truth for business reads and writes. Domain mutation events are **server push** after REST; table chat also accepts customer `SEND` messages (see [chatbot.md](./ai/chatbot.md)).
 
 ```mermaid
 flowchart TB
@@ -56,6 +54,7 @@ flowchart TB
   SVC -->|publish events| WS
   WS -->|/topic/venue/id/staff| Staff
   WS -->|/topic/table/id| Customer
+  WS -->|/topic/table/id/chat| Customer
 ```
 
 ---
@@ -64,7 +63,7 @@ flowchart TB
 
 | Mode | Page | REST | WebSocket handshake | Subscriptions allowed |
 |------|------|------|---------------------|------------------------|
-| **Public** | `/table/{tableId}` | Public endpoints (menu, orders for table, payments) | Anonymous — no ticket | `/topic/table/{tableId}` only |
+| **Public** | `/table/{tableId}` | Public endpoints (menu, orders for table, payments) | Anonymous — no ticket | `/topic/table/{tableId}` and `/topic/table/{tableId}/chat` |
 | **Authenticated** | `/venue/{venueId}/staff` | Protected endpoints (JWT cookie + venue role) | Ticket required | `/topic/venue/{venueId}/staff` |
 
 Both modes connect to the same STOMP endpoint: `wss://{host}/ws`
@@ -128,12 +127,14 @@ Enforce authorization at `SUBSCRIBE` time, not only at handshake:
 
 | Session type | Allowed subscriptions |
 |--------------|----------------------|
-| Anonymous (customer) | `/topic/table/{tableId}` — only the table the client is viewing |
-| Authenticated staff | `/topic/venue/{venueId}/staff` — only the venue the staff member is operating |
+| Anonymous (customer) | `/topic/table/{tableId}` and `/topic/table/{tableId}/chat` — only the table bound to the session |
+| Authenticated staff | `/topic/venue/{venueId}/staff` — only a venue the staff member belongs to |
 
 Any other subscription attempt is rejected.
 
-### Publish flow (server-side only)
+Anonymous sessions may also `SEND` to `/app/table/{tableId}/chat` when the destination matches the session-bound table. Staff sessions cannot send to table chat destinations. Details: [chatbot.md](./ai/chatbot.md).
+
+### Publish flow (server-side)
 
 ```mermaid
 sequenceDiagram
@@ -150,7 +151,7 @@ sequenceDiagram
   WS->>Sub: /topic/table/{tableId} and/or /topic/venue/{venueId}/staff
 ```
 
-Clients do not send business commands over WebSocket. The server publishes events after successful REST operations.
+Clients do not send **business mutations** over WebSocket. The server publishes domain events after successful REST operations. Table chat is the exception: customers send chat text via STOMP; the chatbot module replies on the chat topic.
 
 ---
 
@@ -182,7 +183,7 @@ sequenceDiagram
 
 - No `POST /api/v1/ws-ticket` for customers.
 - Connection is anonymous; security relies on **topic-scoped subscriptions** and **table-scoped REST** writes.
-- The customer app uses `tableId` from the route so the subscription guard only allows `/topic/table/{tableId}`.
+- The customer app uses `tableId` from the route so the subscription/send guard only allows that table’s topics (and chat send destination).
 - Knowing a `tableId` is intentional (QR code). Other tables' data must not be exposed via REST or WebSocket.
 
 ---
