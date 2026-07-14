@@ -1,4 +1,4 @@
-# System Design
+﻿# System Design
 
 **Author:** Omar Ismayilov
 
@@ -27,7 +27,7 @@ For WebSocket details see [web-socket-flow.md](./web-socket-flow.md). For login,
 
 ## System context
 
-Milly is a **multi-venue** restaurant platform. A user account exists independently of any venue. To operate a restaurant, the user either **registers a new venue** (becomes Manager) or **joins an existing venue** via an invitation. Customers at a table remain anonymous — no account required.
+Milly is a **multi-venue** restaurant platform. A user account exists independently of any venue. To operate a restaurant, the user either **registers a new venue** (becomes Manager) or **joins an existing venue** via an invitation. Customers at a table remain anonymous â€” no account required.
 
 | Journey | Route | Auth | Purpose |
 |---------|-------|------|---------|
@@ -78,8 +78,8 @@ Milly separates **system identity** from **venue access**.
 
 | Concept | Description |
 |---------|-------------|
-| **User** | Global account — created on sign-up / OAuth |
-| **System role** | `USER` — every authenticated account has this role by default |
+| **User** | Global account â€” created on sign-up / OAuth |
+| **System role** | `USER` â€” every authenticated account has this role by default |
 | **Session** | JWT in HttpOnly cookies; proves who the user is, not which venue they operate |
 
 Sign-in methods (planned): email/password, Google OAuth2, Apple (optional).
@@ -88,7 +88,7 @@ Sign-in methods (planned): email/password, Google OAuth2, Apple (optional).
 
 | Concept | Description |
 |---------|-------------|
-| **Venue** | A restaurant (name, location, …) — tenant boundary for menu, tables, orders |
+| **Venue** | A restaurant (name, location, â€¦) â€” tenant boundary for menu, tables, orders |
 | **Venue membership** | Link between a user and a venue |
 | **Venue role** | What the user can do **inside that venue** |
 
@@ -103,10 +103,10 @@ A user can belong to **multiple venues** with different roles at each.
 
 Every staff request is checked in two steps:
 
-1. **Authenticated?** — valid global session (cookie).
-2. **Authorized for this venue?** — user has a venue membership with the required role.
+1. **Authenticated?** â€” valid global session (cookie).
+2. **Authorized for this venue?** â€” user has a venue membership with the required role.
 
-If step 2 fails → **403 Forbidden**. The frontend may hide UI by role, but the **backend always enforces** permissions. The frontend can validate the current user's venue role via a backend call (e.g. proxy / session endpoint) — never trust client-side role state alone.
+If step 2 fails â†’ **403 Forbidden**. The frontend may hide UI by role, but the **backend always enforces** permissions. The frontend can validate the current user's venue role via a backend call (e.g. proxy / session endpoint) â€” never trust client-side role state alone.
 
 ```mermaid
 flowchart LR
@@ -125,19 +125,19 @@ flowchart LR
 
 | Route | Purpose |
 |-------|---------|
-| `/` | Welcome screen — **Join Venue** and **Register Venue** |
+| `/` | Welcome screen â€” **Join Venue** and **Register Venue** |
 | `/login` | Sign in / sign up (email, Google, Apple). Both home buttons lead here; intended post-login destination is remembered |
 
 After login, the user is redirected based on which home action they chose:
 
-- **Register Venue** → `/register-venue`
-- **Join Venue** → `/join-venue`
+- **Register Venue** â†’ `/register-venue`
+- **Join Venue** â†’ `/join-venue`
 
 ### Register venue
 
 | Route | Purpose |
 |-------|---------|
-| `/register-venue` | Form: venue name, location, and other basic fields → **Create** |
+| `/register-venue` | Form: venue name, location, and other basic fields â†’ **Create** |
 
 On create, the backend creates the venue and assigns the user **Manager** at that venue. User is redirected to `/venue/{venueId}/staff`.
 
@@ -145,240 +145,6 @@ On create, the backend creates the venue and assigns the user **Manager** at tha
 
 | Route | Purpose |
 |-------|---------|
-| `/join-venue` | **My venues** — list of venues the user belongs to, with role shown per row |
-| `/join-venue` (action) | **Join new venue** — paste invitation link or code → **Confirm** |
+| `/join-venue` | **My venues** â€” list of venues the user belongs to, with role shown per row |
+| `/join-venue` (action) | **Join new venue** â€” paste invitation link or code â†’ **Confirm** |
 
-Backend validates the invitation (not expired, not already used), creates venue membership with the role the Manager assigned, then redirects to `/venue/{venueId}/staff`.
-
-### Staff portal
-
-| Route | Purpose |
-|-------|---------|
-| `/venue/{venueId}/staff` | Venue-scoped dashboard. Tabs and actions depend on **venue role** (Waiter vs Manager) |
-
-On load, backend returns venue details and the user's role at that venue. No role → 403 on API; frontend shows access restricted.
-
-### Customer (unchanged)
-
-| Route | Purpose |
-|-------|---------|
-| `/table/{tableId}` | Public QR entry — menu, order, pay. No login |
-
----
-
-## Communication model
-
-| Channel | Role | Direction |
-|---------|------|-----------|
-| **REST** | Source of truth — load and mutate data | Client ↔ Backend |
-| **STOMP / WebSocket** | Real-time notifications after REST mutations | Backend → Client |
-
-Typical flow:
-
-1. Client calls REST (e.g. place order, approve order).
-2. Backend persists to PostgreSQL (scoped to `venueId` where applicable).
-3. Backend publishes an event to the appropriate STOMP topic.
-4. Subscribed clients receive the event and refresh state via REST.
-
-```mermaid
-sequenceDiagram
-  participant Client
-  participant REST as REST API
-  participant DB as PostgreSQL
-  participant WS as STOMP Broker
-  participant Peer as Other Client
-
-  Client->>REST: Mutation (POST / PATCH)
-  REST->>DB: Persist
-  REST-->>Client: 200 OK
-  REST->>WS: Publish event
-  WS-->>Peer: Push to venue-scoped topic
-  Peer->>REST: Refresh state
-```
-
-### STOMP topics (venue-scoped)
-
-| Topic | Subscriber | Example events |
-|-------|------------|----------------|
-| `/topic/venue/{venueId}/staff` | Staff at that venue (authenticated + venue role) | Order placed, order closed, payment received |
-| `/topic/table/{tableId}` | Customer at that table (public) | Order approved, payment received |
-
-Staff subscribe only to the topic for the venue they are viewing. Subscription guard rejects cross-venue topics.
-
-### Authentication per channel
-
-| Client | REST | WebSocket |
-|--------|------|-----------|
-| Staff | JWT cookie + venue role on each request | Single-use ticket via `POST /api/v1/ws-ticket` → `wss://host/ws?ticket=...` |
-| Customer | Public endpoints, table-scoped | Anonymous `wss://host/ws`, subscribe to own table topic only |
-
-See [web-socket-flow.md](./web-socket-flow.md) for ticket exchange and subscription guards. See [security-flow.md](./security-flow.md) for login, OAuth, session handling, and venue authorization.
-
----
-
-## Persistence
-
-| Store | Technology | Purpose | Lifetime |
-|-------|------------|---------|----------|
-| **Primary database** | PostgreSQL | Users, venues, memberships, menu, tables, orders, payments, invitations | Permanent |
-| **Ephemeral cache** | Caffeine (in-memory) | WebSocket handshake tickets; optional hot path for invitation redemption | Short-lived, single-use |
-
-PostgreSQL holds all business and identity data. Caffeine is not a domain entity cache — it holds short-lived tokens consumed at handshake or redemption (same pattern as WebSocket tickets).
-
----
-
-## Backend modules
-
-Backend follows **Clean Architecture** with one module per bounded context. Module names are **singular**.
-
-```
-com.milly/
-├── config/                         # Global: Security, WebSocket broker, Jackson
-├── common/                         # Shared kernel: IDs, Money, errors
-├── auth/                           # Global user identity, login, JWT, WS tickets
-├── venue/                          # Venues, memberships, venue roles, invitations
-├── table/
-├── menu/
-├── order/
-└── billing/
-```
-
-### Per-module structure
-
-Each feature module follows the same layered layout (not every layer is required in every module):
-
-```
-{module}/
-├── domain/
-│   ├── entity/
-│   ├── value-object/
-│   └── event/
-├── application/
-│   ├── port/inbound/
-│   ├── port/outbound/
-│   ├── usecase/
-│   └── dto/
-└── infrastructure/
-    ├── adapter/inbound/http/
-    ├── adapter/outbound/persistence/
-    ├── adapter/outbound/ws/
-    └── config/
-```
-
-### Module responsibilities
-
-| Module | Owns |
-|--------|------|
-| **common** | Shared value objects, domain exceptions |
-| **auth** | Global user sign-up/sign-in (password, OAuth), JWT cookies, `POST /api/v1/ws-ticket`, Caffeine ticket store |
-| **venue** | Venue CRUD, user–venue memberships, venue roles (Manager, Waiter), invitation link/code generation and redemption |
-| **table** | Tables within a venue (QR targets) |
-| **menu** | Menu catalog per venue |
-| **order** | Order lifecycle per venue, STOMP order events |
-| **billing** | Payments per venue, STOMP payment events |
-
-All venue-bound modules scope data and operations by `venueId`. Requests without a valid membership and role are rejected.
-
----
-
-## Frontend modules
-
-```
-src/
-├── app/                            # Next.js routes only
-└── modules/
-    ├── shared/                     # API client, WS client, store, UI primitives
-    ├── auth/                       # Login, sign-up, OAuth, session
-    ├── venue/                      # Register venue, join venue, my venues, invitations UI
-    ├── tables/
-    ├── menu/
-    ├── orders/
-    ├── billing/
-    ├── customer/                   # UI only — /table/{tableId} flow
-    └── staff/                      # UI only — /venue/{venueId}/staff shell
-```
-
-### Module responsibilities
-
-| Module | Maps to backend | Role |
-|--------|-----------------|------|
-| **shared** | common + config | REST client, STOMP client, app store, shared UI |
-| **auth** | auth | Login, sign-up, OAuth, global session |
-| **venue** | venue | Register venue, join venue, my venues list, paste invitation |
-| **tables** | table | Table CRUD, QR generation (Manager) |
-| **menu** | menu | Menu browse (customer) and CRUD (Manager) |
-| **orders** | order | Order placement, staff kanban, pending view |
-| **billing** | billing | Bill view, payments, payment progress |
-| **customer** | — | State machine: menu → pending → bill |
-| **staff** | — | Venue-scoped portal; tabs filtered by venue role |
-
-### Routes
-
-| Route | Entry | Modules |
-|-------|-------|---------|
-| `/` | Home — Join / Register venue | — |
-| `/login` | Auth | `auth` |
-| `/register-venue` | Create venue | `auth`, `venue` |
-| `/join-venue` | My venues + join via invitation | `auth`, `venue` |
-| `/venue/[venueId]/staff` | Staff dashboard | `staff`, `orders`, `tables`, `menu`, `billing` |
-| `/table/[tableId]` | Customer flow | `customer`, `menu`, `orders`, `billing` |
-
----
-
-## Client flows
-
-### Onboarding (register venue)
-
-```mermaid
-flowchart LR
-  Home[/ Home] -->|Register Venue| Login[/login]
-  Login --> Register[/register-venue]
-  Register -->|Create venue| API[POST venue]
-  API --> Role[Assign Manager role]
-  Role --> Staff[/venue/id/staff]
-```
-
-User signs in globally, fills venue details, backend creates venue + Manager membership, redirects to staff portal.
-
-### Onboarding (join venue)
-
-```mermaid
-flowchart LR
-  Home[/ Home] -->|Join Venue| Login[/login]
-  Login --> Join[/join-venue]
-  Join -->|Paste invitation| API[Redeem invitation]
-  API --> Role[Assign venue role]
-  Role --> Staff[/venue/id/staff]
-```
-
-Invitation is single-use and time-limited (same idea as WebSocket tickets). Backend assigns Waiter or Manager as configured when the invitation was created.
-
-### Staff (inside a venue)
-
-```mermaid
-flowchart LR
-  Page[/venue/id/staff] --> Check[Backend: membership + role]
-  Check -->|403| Block[Access restricted]
-  Check -->|OK| Cookie[access-token cookie]
-  Cookie --> REST[Venue-scoped REST]
-  Cookie --> Ticket[POST /api/v1/ws-ticket]
-  Ticket --> WS[STOMP /ws?ticket=...]
-  WS --> Sub[SUBSCRIBE /topic/venue/id/staff]
-```
-
-Waiter sees orders only. Manager sees orders, menu, tables, QR, invitations. Backend enforces on every call regardless of UI state.
-
-### Customer
-
-```mermaid
-flowchart LR
-  QR[Scan QR] --> Page[/table/tableId]
-  Page --> REST[Public REST]
-  Page --> WS[STOMP /ws]
-  WS --> Sub[SUBSCRIBE /topic/table/id]
-  REST --> PG[(PostgreSQL)]
-  REST --> Push[Publish events]
-  Push --> Sub
-```
-
-Customer needs no login. REST and WebSocket stay scoped to the table (and its venue on the backend).
